@@ -102,7 +102,7 @@ fun RemoteImage(path: String?, load: suspend (String) -> ByteArray?, description
 // --- Mitgliederliste ---
 
 @Composable
-fun MemberList(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> Unit) {
+fun MemberList(client: AdminClient, errors: AdminErrors, onAdmit: (() -> Unit)?, onOpen: (Int) -> Unit) {
     var search by remember { mutableStateOf("") }
     var former by remember { mutableStateOf(false) }
     var rows by remember { mutableStateOf<List<MemberRow>>(emptyList()) }
@@ -150,6 +150,9 @@ fun MemberList(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> Unit) 
                 }, modifier = Modifier.padding(start = 8.dp))
             }
         }
+        onAdmit?.let { admit ->
+            TextButton(onClick = admit, modifier = Modifier.padding(horizontal = 8.dp)) { Text("+ Neues Mitglied") }
+        }
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
         LazyColumn(Modifier.fillMaxSize()) {
@@ -179,6 +182,7 @@ private sealed interface Dialog {
     data object ChangeType : Dialog
     data object Move : Dialog
     data object Exit : Dialog
+    data object Reentry : Dialog
     data class Confirm(val preview: Preview, val action: suspend () -> Changed<MemberDetail>) : Dialog
 }
 
@@ -330,11 +334,14 @@ fun MemberScreen(
             OutlinedButton(onClick = { dialog = Dialog.Exit }, modifier = Modifier.fillMaxWidth()) {
                 Text("Austritt eintragen", color = MaterialTheme.colorScheme.error)
             }
-            Text(
-                "Ehrungen, Zusatzfelder, Bankverbindung und Wiedereintritt bitte vorerst im Browser.",
-                style = MaterialTheme.typography.bodySmall,
-            )
         }
+        if (canEdit && d.status == "former") {
+            HorizontalDivider()
+            OutlinedButton(onClick = { dialog = Dialog.Reentry }, modifier = Modifier.fillMaxWidth()) { Text("Wiedereintritt eintragen") }
+        }
+        AwardsSection(client, id, canEdit, errors, onChanged, reload)
+        FieldsButton(client, id, canEdit, errors, onChanged, reload)
+        BankSection(client, d, permissions, errors, onChanged, reload)
     }
 
     val d = detail
@@ -361,6 +368,14 @@ fun MemberScreen(
             confirm(mapOf("action" to "exit", "exit_date" to date, "exit_reason" to reason)) {
                 client.exit(id, date, reason, note)
             }
+        }
+        Dialog.Reentry -> if (d != null) ReentryDialog(client, d, errors, onDismiss = { dialog = null }) { type, from ->
+            dialog = null
+            val preview = Preview(
+                "Wiedereintritt",
+                listOf("Ab ${formatPlainDate(from)} wieder Mitglied als ${type.name}.", "Frühere Zeiten und Nummern bleiben erhalten."),
+            )
+            dialog = Dialog.Confirm(preview) { client.reentry(id, from, type.id) }
         }
         is Dialog.Confirm -> ConfirmDialog(current.preview, onDismiss = { dialog = null }) {
             dialog = null

@@ -211,10 +211,16 @@ class Api(val server: String, private val token: String? = null) {
      * Anfrage der Verwaltung (Schritt B2) unter `/api/app/v1/admin/u/<Einheit>/`. Liefert den
      * Text und das Änderungspaket für „Rückgängig“ (Kopfzeile `X-Change-Set`).
      */
-    suspend fun admin(method: String, path: String, body: String? = null): AdminResponse =
+    suspend fun admin(
+        method: String,
+        path: String,
+        body: String? = null,
+        headers: Map<String, String> = emptyMap(),
+    ): AdminResponse =
         withContext(Dispatchers.IO) {
             val builder = Request.Builder().url(server + path).header("Accept", "application/json")
             token?.let { builder.header("Authorization", "Bearer $it") }
+            headers.forEach { (k, v) -> builder.header(k, v) }
             builder.method(
                 method,
                 body?.toRequestBody(JSON_TYPE) ?: if (method == "GET" || method == "DELETE") null else "".toRequestBody(JSON_TYPE),

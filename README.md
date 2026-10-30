@@ -21,7 +21,8 @@ Sie ergänzt den Mitgliederbereich im Browser:
 - Verwaltung für Vorstand, Zugführung und Kasse (Reiter „Verwaltung“, nur mit Rechten):
   freigeschaltet mit Passwort und Zwei-Faktor-Code, geöffnet mit Fingerabdruck oder PIN,
   ohne Bildschirmfotos. Offene Aufgaben; Mitglieder suchen, anrufen, bearbeiten (Stammdaten,
-  Mitgliedsart, Untereinheit, Beitrag, Austritt) mit Bestätigung der Folgen und „Rückgängig“;
+  Mitgliedsart, Untereinheit, Beitrag, Austritt, Wiedereintritt, Ehrungen, Zusatzfelder,
+  Bankverbindung) mit Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen;
   Änderungsmeldungen und Fotos freigeben; Mitgliedsausweis per QR-Code prüfen; Geburtstage und
   Jubiläen (Termine und Kasse folgen)
 - Mehrere Konten, wenn du in Vereinen mit verschiedenen HUBIplan-Adressen bist (Wechsel

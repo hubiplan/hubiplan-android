@@ -198,6 +198,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var section by rememberSaveable(unit.id) { mutableStateOf(Section.TASKS) }
     var member by rememberSaveable(unit.id) { mutableStateOf<Int?>(null) }
     var requests by rememberSaveable(unit.id) { mutableStateOf(false) }
+    var admitting by rememberSaveable(unit.id) { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     var card by remember { mutableStateOf<CardCheck?>(null) }
     var cardError by remember { mutableStateOf<String?>(null) }
@@ -236,7 +237,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             UnitPicker(units, unit) { unitId = it.id }
-            if (hasMembers && member == null && !requests) {
+            if (hasMembers && member == null && !requests && !admitting) {
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -260,12 +261,25 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             cardError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
             val open = member
             when {
+                admitting -> AdmitScreen(client, errors, onBack = { admitting = false }) { id, text ->
+                    admitting = false
+                    member = id
+                    onChanged(text, null)
+                }
                 open != null -> MemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
                 requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
                     requests = false
                     member = it
                 }, onChanged = onChanged)
-                section == Section.MEMBERS && hasMembers -> MemberList(client, errors) { member = it }
+                section == Section.MEMBERS && hasMembers -> MemberList(
+                    client,
+                    errors,
+                    onAdmit = if (MEMBERS_EDIT in unit.permissions) {
+                        { admitting = true }
+                    } else {
+                        null
+                    },
+                ) { member = it }
                 section == Section.OCCASIONS && hasMembers -> OccasionsSection(client, errors) { member = it }
                 else -> TaskList(client, errors, until, vm, reload) { task ->
                     when {

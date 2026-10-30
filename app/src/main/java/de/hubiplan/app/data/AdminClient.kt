@@ -87,6 +87,51 @@ class AdminClient(private val api: Api, val unitId: Int, private val onUse: () -
     suspend fun jubilees(from: String, to: String): List<JubileeRow> =
         json.decodeFromString<Rows<JubileeRow>>(get("jubilees/?von=$from&bis=$to")).results
 
+    // --- B2b ---
+
+    suspend fun awards(id: Int): List<AwardItem> = decodeList(get("members/$id/honorary-titles/"))
+
+    suspend fun titles(): List<TitleItem> = decodeList<TitleItem>(get("honorary-titles/")).filterNot { it.isArchived }
+
+    suspend fun addAward(id: Int, title: Int, validFrom: String, note: String): Changed<Unit> =
+        changeUnit("POST", "members/$id/honorary-titles/", obj("title" to title, "valid_from" to validFrom, "note" to note))
+
+    suspend fun endAward(id: Int, award: Int, validUntil: String): Changed<Unit> =
+        changeUnit("PATCH", "members/$id/honorary-titles/$award/", obj("valid_until" to validUntil))
+
+    suspend fun fields(id: Int): List<FieldEntry> = decodeList(get("members/$id/fields/"))
+
+    suspend fun saveFields(id: Int, values: Map<String, JsonElement>): Changed<Unit> =
+        changeUnit("PUT", "members/$id/fields/", obj("values" to JsonObject(values)))
+
+    /** SEPA-Mandate; [full] nur nach erneuter Gerätesperre (ganze IBAN). */
+    suspend fun mandates(id: Int, full: Boolean = false): List<MandateItem> =
+        decodeList(get("billing/mandates/?mitglied=$id" + if (full) "&voll=1" else ""))
+
+    suspend fun addMandate(id: Int, holder: String, iban: String, bic: String, signedOn: String): Changed<Unit> =
+        changeUnit(
+            "POST",
+            "billing/mandates/",
+            obj("membership" to id, "holder" to holder, "iban" to iban.replace(" ", ""), "bic" to bic, "signed_on" to signedOn),
+        )
+
+    suspend fun reentry(id: Int, date: String, memberType: Int): Changed<MemberDetail> =
+        change("POST", "members/$id/reentry/", obj("entry_date" to date, "member_type" to memberType))
+
+    suspend fun duplicates(lastName: String, firstName: String, birthDate: String): List<DuplicateItem> {
+        fun enc(v: String) = URLEncoder.encode(v.trim(), "UTF-8")
+        return decodeList(get("members/duplicates/?name=${enc(lastName)}&vorname=${enc(firstName)}&geburtsdatum=$birthDate"))
+    }
+
+    /** Neues Mitglied; [key] schützt vor doppelter Aufnahme bei erneutem Senden. */
+    suspend fun admit(values: JsonObject, key: String): MemberDetail =
+        json.decodeFromString(use().admin("POST", "${base}members/admit/", values.toString(), mapOf("Idempotency-Key" to key)).text)
+
+    private suspend fun changeUnit(method: String, path: String, body: JsonObject): Changed<Unit> {
+        val r = use().admin(method, base + path, body.toString())
+        return Changed(Unit, r.changeSet.takeIf { r.undoable }, r.label)
+    }
+
     private suspend fun get(path: String): String = use().admin("GET", base + path).text
 
     private suspend fun change(method: String, path: String, body: JsonObject): Changed<MemberDetail> {

@@ -5,7 +5,14 @@ import de.hubiplan.app.data.DepartmentMembership
 import de.hubiplan.app.data.adminPath
 import de.hubiplan.app.data.json
 import de.hubiplan.app.data.obj
+import de.hubiplan.app.data.FieldDef
+import de.hubiplan.app.data.FieldEntry
 import de.hubiplan.app.ui.displayValue
+import de.hubiplan.app.ui.fieldChanges
+import de.hubiplan.app.ui.fieldText
+import de.hubiplan.app.ui.formatIban
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import de.hubiplan.app.ui.masterDataChanges
 import de.hubiplan.app.ui.parseGermanDate
 import org.junit.Assert.assertEquals
@@ -74,5 +81,28 @@ class AdminFormatTest {
     @Test
     fun jsonBauen() {
         assertEquals("""{"a":1,"b":true,"c":"x","d":null}""", obj("a" to 1, "b" to true, "c" to "x", "d" to null).toString())
+    }
+
+    @Test
+    fun zusatzfelder() {
+        val date = FieldEntry(FieldDef(1, "Taufe", "date"), JsonPrimitive("2001-04-03"))
+        val number = FieldEntry(FieldDef(2, "Schuh", "number"), JsonPrimitive(43.5))
+        val flag = FieldEntry(FieldDef(3, "Fahnenträger", "bool"), JsonPrimitive(true))
+        val list = FieldEntry(FieldDef(4, "Orden", repeatable = true), null)
+        assertEquals("03.04.2001", fieldText(date.definition, date.value))
+        assertEquals("43,5", fieldText(number.definition, number.value))
+        assertEquals("ja", fieldText(flag.definition, flag.value))
+        val entries = listOf(date, number, flag, list)
+        val unchanged = mapOf(1 to "03.04.2001", 2 to "43,5", 3 to "ja", 4 to "x")
+        assertEquals(emptyMap<String, Any>(), fieldChanges(entries, unchanged).first)
+        val (changes, fault) = fieldChanges(entries, mapOf(1 to "4.4.2001", 2 to "44", 3 to ""))
+        assertNull(fault)
+        assertEquals(mapOf("1" to JsonPrimitive("2001-04-04"), "2" to JsonPrimitive("44"), "3" to JsonNull), changes)
+        assertEquals("Taufe: bitte als TT.MM.JJJJ eingeben.", fieldChanges(entries, mapOf(1 to "4.13.2001")).second)
+    }
+
+    @Test
+    fun ibanInGruppen() {
+        assertEquals("DE89 3704 0044 0532 0130 00", formatIban("DE89370400440532013000"))
     }
 }

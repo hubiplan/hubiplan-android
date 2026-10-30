@@ -144,3 +144,53 @@ data class JubileeRow(
 
 @Serializable
 data class Rows<T>(val results: List<T> = emptyList())
+
+// --- B2b: Ehrungen, Zusatzfelder, Bankverbindung, Aufnahme ---
+
+@Serializable
+data class AwardItem(
+    val id: Int,
+    val title: Int,
+    @SerialName("title_name") val titleName: String = "",
+    @SerialName("valid_from") val validFrom: String = "",
+    @SerialName("valid_until") val validUntil: String? = null,
+    val note: String = "",
+)
+
+@Serializable
+data class TitleItem(val id: Int, val name: String, @SerialName("is_archived") val isArchived: Boolean = false)
+
+@Serializable
+data class FieldDef(
+    val id: Int,
+    val label: String,
+    @SerialName("field_type") val fieldType: String = "text",
+    val choices: List<String> = emptyList(),
+    val repeatable: Boolean = false,
+    @SerialName("help_text") val helpText: String = "",
+)
+
+@Serializable
+data class FieldEntry(val definition: FieldDef, val value: JsonElement? = null)
+
+@Serializable
+data class MandateItem(
+    val id: Int,
+    val reference: String = "",
+    val holder: String = "",
+    val iban: String? = null,
+    @SerialName("iban_masked") val ibanMasked: String = "",
+    val bic: String = "",
+    @SerialName("signed_on") val signedOn: String? = null,
+    val status: String = "",
+    @SerialName("status_label") val statusLabel: String = "",
+)
+
+@Serializable
+data class DuplicateItem(
+    val id: Int,
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("birth_date") val birthDate: String? = null,
+    @SerialName("already_member_here") val alreadyMemberHere: Boolean = false,
+)
