@@ -155,3 +155,50 @@ data class SendResult(
     val sent: Map<String, Int> = emptyMap(),
     val id: Int? = null,
 )
+
+@Serializable
+data class Contact(
+    val email: String = "",
+    val phone: String = "",
+    val street: String = "",
+    @SerialName("postal_code") val postalCode: String = "",
+    val city: String = "",
+    val country: String = "",
+)
+
+@Serializable
+data class ChangeRequestItem(
+    val id: Int,
+    val data: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+    val message: String = "",
+    val status: String = "",
+    @SerialName("status_label") val statusLabel: String = "",
+    val response: String = "",
+    @SerialName("created_at") val createdAt: String? = null,
+)
+
+/** Eigene Daten im Mitgliederbereich. */
+@Serializable
+data class Profile(
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("birth_date") val birthDate: String? = null,
+    @SerialName("club_number") val clubNumber: String = "",
+    @SerialName("member_type") val memberType: String? = null,
+    @SerialName("entry_date") val entryDate: String? = null,
+    val departments: List<String> = emptyList(),
+    val contact: Contact? = null,
+    val status: String = "",
+    @SerialName("contact_changes_need_approval") val changesNeedApproval: Boolean = false,
+    @SerialName("change_requests") val changeRequests: List<ChangeRequestItem> = emptyList(),
+)
+
+@Serializable
+data class PhotoVersion(val url: String, @SerialName("thumbnail_url") val thumbnailUrl: String = "")
+
+@Serializable
+data class PhotoState(
+    @SerialName("consent_at") val consentAt: String? = null,
+    val approved: PhotoVersion? = null,
+    val pending: PhotoVersion? = null,
+)

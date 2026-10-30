@@ -122,5 +122,30 @@ object Notifications {
         }
     }
 
+    /** Hinweis von HUBIplan (z. B. Foto freigegeben, Änderung übernommen); öffnet die App. */
+    fun showInfo(context: Context, accessId: Int, title: String, text: String) {
+        if (!allowed(context)) return
+        val id = ((accessId * 100_003 + (title + text).hashCode()) xor 0x1000_0000) and 0x3FFFFFFF
+        val open = PendingIntent.getActivity(
+            context,
+            id,
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_MESSAGES)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title.ifBlank { "HUBIplan" })
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        try {
+            NotificationManagerCompat.from(context).notify(id, notification)
+        } catch (e: SecurityException) {
+        }
+    }
+
     fun notificationId(accessId: Int, eventId: Int): Int = (accessId * 100_003 + eventId) and 0x3FFFFFFF
 }

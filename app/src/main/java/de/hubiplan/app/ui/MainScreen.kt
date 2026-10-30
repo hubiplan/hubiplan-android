@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,7 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class Tab(val label: String) { TERMINE("Termine"), MITTEILUNGEN("Mitteilungen"), KONTO("Konto") }
+private enum class Tab(val label: String) { TERMINE("Termine"), MITTEILUNGEN("Mitteilungen"), PROFIL("Profil"), KONTO("Konto") }
 
 /** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
 val TWO_PANE_MIN_WIDTH = 720.dp
@@ -57,7 +58,8 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
                             when (t) {
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
-                                Tab.KONTO -> Icons.Filled.Person
+                                Tab.PROFIL -> Icons.Filled.Person
+                                Tab.KONTO -> Icons.Filled.Settings
                             },
                             contentDescription = null,
                         )
@@ -94,6 +96,7 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
                     )
                     access != null && tab == Tab.TERMINE -> EventsPane(access, vm)
                     access != null && tab == Tab.MITTEILUNGEN -> CircularsPane(access, vm)
+                    access != null && tab == Tab.PROFIL -> ProfilePane(access, vm)
                 }
             }
         }

@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -201,6 +202,54 @@ class Api(val server: String, private val token: String? = null) {
                 """{"subject":${quote(subject)},"body":${quote(body)},"confirm":$confirm}""",
             ),
         )
+
+    suspend fun profile(accessId: Int): Profile = json.decodeFromString(expect("GET", "/api/portal/$accessId/"))
+
+    /** Änderung melden; Felder wie im Browser (email, phone, street, postal_code, city, …). */
+    suspend fun reportChange(accessId: Int, values: Map<String, String>, message: String): Boolean {
+        val body = JsonObject((values + ("message" to message)).mapValues { JsonPrimitive(it.value) })
+        val text = expect("POST", "/api/portal/$accessId/change-requests/", json.encodeToString(JsonObject.serializer(), body))
+        // true: wartet auf den Vorstand · false: sofort übernommen
+        return json.parseToJsonElement(text).jsonObject["request"].let { it != null && it !is kotlinx.serialization.json.JsonNull }
+    }
+
+    suspend fun photo(accessId: Int): PhotoState = json.decodeFromString(expect("GET", "/api/portal/$accessId/photo/"))
+
+    /** Foto hochladen (JPEG, auf dem Gerät verkleinert und ohne EXIF) mit Einwilligung. */
+    suspend fun uploadPhoto(accessId: Int, jpeg: ByteArray): PhotoState = withContext(Dispatchers.IO) {
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("consent", "true")
+            .addFormDataPart("file", "foto.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            .build()
+        val request = Request.Builder().url("$server/api/portal/$accessId/photo/")
+            .header("Accept", "application/json")
+            .apply { token?.let { header("Authorization", "Bearer $it") } }
+            .post(form)
+            .build()
+        try {
+            http.newCall(request).execute().use { resp ->
+                val text = resp.body?.string() ?: ""
+                if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text))
+                json.decodeFromString(PhotoState.serializer(), text)
+            }
+        } catch (e: IOException) {
+            throw ApiException(0, "Keine Verbindung zum Server. Bitte die Internetverbindung prüfen.")
+        }
+    }
+
+    suspend fun deletePhoto(accessId: Int): PhotoState = json.decodeFromString(expect("DELETE", "/api/portal/$accessId/photo/"))
+
+    /** Bild mit Geräteschlüssel laden (Pfad aus der Schnittstelle). */
+    suspend fun image(path: String): ByteArray? = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url(server + path)
+            .apply { token?.let { header("Authorization", "Bearer $it") } }
+            .build()
+        try {
+            http.newCall(request).execute().use { resp -> if (resp.isSuccessful) resp.body?.bytes() else null }
+        } catch (e: IOException) {
+            null
+        }
+    }
 
     suspend fun circulars(accessId: Int): List<CircularItem> =
         json.decodeFromString(expect("GET", "/api/portal/$accessId/circulars/"))

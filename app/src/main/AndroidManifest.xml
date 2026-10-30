@@ -57,6 +57,17 @@
             </intent-filter>
         </receiver>
 
+        <!-- Kamera schreibt das Foto in den Cache der App -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.dateien"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Hochkant-Zwang des Scanners aufheben (Tablets) -->
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"

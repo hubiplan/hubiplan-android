@@ -47,3 +47,11 @@ fun recipientSummary(counts: Map<String, Int>): String {
     val who = if (total == 1) "1 Mitglied" else "$total Mitglieder"
     return if (parts.isEmpty()) "geht an niemanden" else "geht an $who, davon ${parts.joinToString(", ")}"
 }
+
+/** Nur geänderte Felder melden (Leerzeichen am Rand zählen nicht). */
+fun changedFields(before: Map<String, String>, after: Map<String, String>): Map<String, String> =
+    after.mapValues { it.value.trim() }.filter { (k, v) -> v != (before[k] ?: "").trim() }
+
+/** Datum ohne Uhrzeit („2020-05-01“) als „01.05.2020“. */
+fun formatPlainDate(date: String?): String =
+    date?.let { runCatching { java.time.LocalDate.parse(it.take(10)).format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy")) }.getOrNull() } ?: ""

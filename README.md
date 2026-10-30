@@ -14,8 +14,11 @@ Sie ergänzt den Mitgliederbereich im Browser:
   holt die App neue Mitteilungen alle paar Stunden ab.
 - Vorstand und Zugführung: Kurzmitteilung an alle Mitglieder der Einheit senden, mit
   Empfängerzahl vorab
+- Eigenes Profil ansehen, Änderungen der Kontaktdaten melden (der Verein prüft sie)
+- Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen; mit Einwilligung,
+  der Verein gibt es frei. Foto und Einwilligung lassen sich in der App widerrufen.
 
-Geplant: eigenes Profil und Mitgliederfoto, Play-Fassung.
+Geplant: Play-Fassung.
 
 ## Verbinden
 

@@ -113,6 +113,10 @@ object PushSetup {
                 Notifications.showCircular(context, access, id, message.title, message.text, message.from, message.kind == "short")
                 store.addNotified(setOf(key))
             }
+            "info" -> {
+                val access = message.access ?: return
+                Notifications.showInfo(context, access, message.title, message.text)
+            }
             else -> SyncWorker.now(context)
         }
     }
