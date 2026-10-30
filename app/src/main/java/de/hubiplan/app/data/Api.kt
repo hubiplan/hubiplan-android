@@ -20,7 +20,10 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 /** Fehler mit Meldung für das Mitglied. [status] 401 mit Geräteschlüssel: neu verbinden. */
-class ApiException(val status: Int, message: String) : Exception(message)
+class ApiException(val status: Int, message: String, val body: String = "") : Exception(message)
+
+/** Antwort der Verwaltung mit Änderungspaket (für „Rückgängig“). */
+data class AdminResponse(val text: String, val changeSet: String?, val undoable: Boolean, val label: String?)
 
 val json = Json {
     ignoreUnknownKeys = true
@@ -203,6 +206,34 @@ class Api(val server: String, private val token: String? = null) {
     /** Mit dem Vorstandsschlüssel als [token]. */
     suspend fun adminTasks(unitId: Int): AdminTasks =
         json.decodeFromString(expect("GET", "/api/app/v1/admin/u/$unitId/tasks/"))
+
+    /**
+     * Anfrage der Verwaltung (Schritt B2) unter `/api/app/v1/admin/u/<Einheit>/`. Liefert den
+     * Text und das Änderungspaket für „Rückgängig“ (Kopfzeile `X-Change-Set`).
+     */
+    suspend fun admin(method: String, path: String, body: String? = null): AdminResponse =
+        withContext(Dispatchers.IO) {
+            val builder = Request.Builder().url(server + path).header("Accept", "application/json")
+            token?.let { builder.header("Authorization", "Bearer $it") }
+            builder.method(
+                method,
+                body?.toRequestBody(JSON_TYPE) ?: if (method == "GET" || method == "DELETE") null else "".toRequestBody(JSON_TYPE),
+            )
+            try {
+                http.newCall(builder.build()).execute().use { resp ->
+                    val text = resp.body?.string() ?: ""
+                    if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text), text)
+                    AdminResponse(
+                        text,
+                        resp.header("X-Change-Set"),
+                        resp.header("X-Change-Undoable") == "1",
+                        resp.header("X-Change-Label")?.let { java.net.URLDecoder.decode(it, "UTF-8") },
+                    )
+                }
+            } catch (e: IOException) {
+                throw ApiException(0, "Keine Verbindung zum Server. Bitte die Internetverbindung prüfen.")
+            }
+        }
 
     suspend fun unregisterPush() {
         expect("DELETE", "/api/app/v1/devices/current/push/")

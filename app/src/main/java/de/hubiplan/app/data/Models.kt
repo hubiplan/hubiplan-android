@@ -39,6 +39,9 @@ data class AdminTask(
     val detail: String = "",
     @SerialName("created_at") val createdAt: String? = null,
     val link: String = "",
+    /** Änderungsmeldung bzw. Foto (B2): zum Bearbeiten in der App */
+    val ref: Int? = null,
+    val membership: Int? = null,
 )
 
 @Serializable

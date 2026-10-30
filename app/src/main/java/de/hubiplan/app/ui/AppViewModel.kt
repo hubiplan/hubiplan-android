@@ -155,6 +155,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         return Api(main.account.server, token)
     }
 
+    /** Verwaltung wird gerade benutzt (für die Gerätesperre nach 5 Minuten Pause). */
+    fun touchAdmin() {
+        adminUsedAt = System.currentTimeMillis()
+    }
+
     /** Server meldet 401 für die Verwaltung: abgelaufen oder im Browser gesperrt. */
     fun adminRejected() {
         val main = screen.value as? Screen.Main ?: return

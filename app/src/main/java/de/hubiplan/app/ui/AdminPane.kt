@@ -6,10 +6,13 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import android.view.WindowManager
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,20 +25,28 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,9 +56,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
+import de.hubiplan.app.data.AdminClient
 import de.hubiplan.app.data.AdminTask
 import de.hubiplan.app.data.AdminUnit
+import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
+import de.hubiplan.app.data.CardCheck
+import kotlinx.coroutines.launch
 
 /**
  * Reiter „Verwaltung“ (Schritt A8): nur für Konten mit Verwaltungsrechten. Erst nach dem
@@ -166,26 +183,137 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
     }
 }
 
+private enum class Section(val label: String) { TASKS("Aufgaben"), MEMBERS("Mitglieder"), OCCASIONS("Anlässe") }
+
 @Composable
 private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main, vm: AppViewModel) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbar = remember { SnackbarHostState() }
     var unitId by rememberSaveable { mutableStateOf(units.first().id) }
     val unit = units.firstOrNull { it.id == unitId } ?: units.first()
-    var tasks by remember(unit.id) { mutableStateOf<List<AdminTask>?>(null) }
-    var error by remember(unit.id) { mutableStateOf<String?>(null) }
-    var reload by remember { mutableStateOf(0) }
-    LaunchedEffect(unit.id, reload) {
+    val client = remember(unit.id) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::touchAdmin) } } ?: return
+    val errors = remember { AdminErrors(onLocked = vm::adminRejected) }
+    val hasMembers = unit.permissions.any { it.startsWith("members.") }
+    var section by rememberSaveable(unit.id) { mutableStateOf(Section.TASKS) }
+    var member by rememberSaveable(unit.id) { mutableStateOf<Int?>(null) }
+    var requests by rememberSaveable(unit.id) { mutableStateOf(false) }
+    var reload by remember { mutableIntStateOf(0) }
+    var card by remember { mutableStateOf<CardCheck?>(null) }
+    var cardError by remember { mutableStateOf<String?>(null) }
+
+    // Nach jeder Änderung: Hinweis mit „Rückgängig“ (wie im Browser)
+    val onChanged: OnChanged = { text, changeSet ->
+        scope.launch {
+            val result = snackbar.showSnackbar(
+                text,
+                actionLabel = if (changeSet != null) "Rückgängig" else null,
+                withDismissAction = true,
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed && changeSet != null) {
+                try {
+                    client.undo(changeSet)
+                    reload++
+                    snackbar.showSnackbar("Rückgängig gemacht")
+                } catch (e: ApiException) {
+                    snackbar.showSnackbar(errors.message(e))
+                }
+            }
+        }
+    }
+    val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val code = result.contents ?: return@rememberLauncherForActivityResult
+        scope.launch {
+            try {
+                card = client.checkCard(code)
+            } catch (e: ApiException) {
+                cardError = errors.message(e)
+            }
+        }
+    }
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            UnitPicker(units, unit) { unitId = it.id }
+            if (hasMembers && member == null && !requests) {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Section.entries.forEach { s ->
+                        FilterChip(selected = section == s, onClick = { section = s }, label = { Text(s.label) })
+                    }
+                    TextButton(onClick = {
+                        scanner.launch(
+                            ScanOptions()
+                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                .setPrompt("Mitgliedsausweis scannen")
+                                .setBeepEnabled(false)
+                                .setOrientationLocked(false),
+                        )
+                    }) { Text("Ausweis prüfen") }
+                }
+            }
+            HorizontalDivider()
+            cardError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
+            val open = member
+            when {
+                open != null -> MemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
+                requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
+                    requests = false
+                    member = it
+                }, onChanged = onChanged)
+                section == Section.MEMBERS && hasMembers -> MemberList(client, errors) { member = it }
+                section == Section.OCCASIONS && hasMembers -> OccasionsSection(client, errors) { member = it }
+                else -> TaskList(client, errors, until, vm, reload) { task ->
+                    when {
+                        task.kind == "change_request" -> requests = true
+                        task.kind == "photo" && task.membership != null -> member = task.membership
+                        // Termine und Wechselanfragen: bis B3 im Browser
+                        else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(main.account.server + task.link)))
+                    }
+                }
+            }
+        }
+    }
+    card?.let { check ->
+        val server = main.account.server
+        CardResultDialog(
+            check,
+            loadPublic = { path -> Api(server).image(path) },
+            onOpen = {
+                card = null
+                member = it
+            },
+            onDismiss = { card = null },
+        )
+    }
+}
+
+@Composable
+private fun TaskList(
+    client: AdminClient,
+    errors: AdminErrors,
+    until: String?,
+    vm: AppViewModel,
+    reloadKey: Int,
+    onOpen: (AdminTask) -> Unit,
+) {
+    var tasks by remember(client.unitId) { mutableStateOf<List<AdminTask>?>(null) }
+    var error by remember(client.unitId) { mutableStateOf<String?>(null) }
+    var reload by remember { mutableIntStateOf(0) }
+    LaunchedEffect(client.unitId, reload, reloadKey) {
         val api = vm.adminApi() ?: return@LaunchedEffect
         try {
-            tasks = api.adminTasks(unit.id).items
+            tasks = api.adminTasks(client.unitId).items
             error = null
         } catch (e: ApiException) {
-            if (e.status == 401) vm.adminRejected() else error = e.message
+            error = errors.message(e)
         }
     }
     Column(Modifier.fillMaxSize()) {
-        UnitPicker(units, unit) { unitId = it.id }
-        HorizontalDivider()
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
         val list = tasks
         when {
@@ -207,10 +335,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         overlineContent = { Text(task.kindLabel) },
                         headlineContent = { Text(task.title) },
                         supportingContent = { Text(task.detail) },
-                        modifier = Modifier.clickable {
-                            // Bis B2/B3 wird im Browser entschieden
-                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(main.account.server + task.link)))
-                        },
+                        modifier = Modifier.clickable { onOpen(task) },
                     )
                     HorizontalDivider()
                 }

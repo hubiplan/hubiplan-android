@@ -20,7 +20,10 @@ Sie ergänzt den Mitgliederbereich im Browser:
   der Verein gibt es frei. Foto und Einwilligung lassen sich in der App widerrufen.
 - Verwaltung für Vorstand, Zugführung und Kasse (Reiter „Verwaltung“, nur mit Rechten):
   freigeschaltet mit Passwort und Zwei-Faktor-Code, geöffnet mit Fingerabdruck oder PIN,
-  ohne Bildschirmfotos; zuerst die offenen Aufgaben (weitere Schritte folgen)
+  ohne Bildschirmfotos. Offene Aufgaben; Mitglieder suchen, anrufen, bearbeiten (Stammdaten,
+  Mitgliedsart, Untereinheit, Beitrag, Austritt) mit Bestätigung der Folgen und „Rückgängig“;
+  Änderungsmeldungen und Fotos freigeben; Mitgliedsausweis per QR-Code prüfen; Geburtstage und
+  Jubiläen (Termine und Kasse folgen)
 - Mehrere Konten, wenn du in Vereinen mit verschiedenen HUBIplan-Adressen bist (Wechsel
   unter „Konto“); jedes Konto mit eigenem Geräteschlüssel, eigenen Kalendern und eigenem Push
 
