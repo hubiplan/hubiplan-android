@@ -5,11 +5,15 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.security.KeyStore
 import javax.crypto.Cipher
@@ -37,7 +41,23 @@ private object Keys {
     val display = stringPreferencesKey("display")
     val selectedAccess = intPreferencesKey("selected_access")
     val theme = stringPreferencesKey("theme")
+    val calendarOn = booleanPreferencesKey("kalender_an")
+    val reminderMinutes = intPreferencesKey("erinnerung_minuten")
+    val rsvpHints = booleanPreferencesKey("hinweis_rueckmeldung")
+    val notified = stringSetPreferencesKey("hinweise_gezeigt")
+    val lastSync = longPreferencesKey("letzter_abgleich")
 }
+
+/** Einstellungen der App auf diesem Gerät. */
+data class AppSettings(
+    val calendarOn: Boolean = false,
+    // Persönliche Erinnerung im Gerätekalender; null = keine (Standard 1 Tag vorher)
+    val reminderMinutes: Int? = DEFAULT_REMINDER_MINUTES,
+    val rsvpHints: Boolean = true,
+    val lastSync: Long? = null,
+)
+
+const val DEFAULT_REMINDER_MINUTES = 24 * 60
 
 /**
  * Speichert das Konto. Der Geräteschlüssel liegt nur verschlüsselt vor; der Schlüssel
@@ -50,6 +70,31 @@ class AccountStore(private val context: Context) {
     /** Zuletzt geladene Vereinsfarben (für den Start ohne Netz). */
     val cachedTheme: Flow<Theme?> = context.dataStore.data.map { prefs ->
         prefs[Keys.theme]?.let { runCatching { json.decodeFromString(Theme.serializer(), it) }.getOrNull() }
+    }
+
+    val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
+        AppSettings(
+            calendarOn = p[Keys.calendarOn] ?: false,
+            reminderMinutes = (p[Keys.reminderMinutes] ?: DEFAULT_REMINDER_MINUTES).takeIf { it >= 0 },
+            rsvpHints = p[Keys.rsvpHints] ?: true,
+            lastSync = p[Keys.lastSync],
+        )
+    }
+
+    suspend fun setCalendarOn(on: Boolean) = context.dataStore.edit { it[Keys.calendarOn] = on }
+
+    suspend fun setReminderMinutes(minutes: Int?) = context.dataStore.edit { it[Keys.reminderMinutes] = minutes ?: -1 }
+
+    suspend fun setRsvpHints(on: Boolean) = context.dataStore.edit { it[Keys.rsvpHints] = on }
+
+    suspend fun markSynced(at: Long) = context.dataStore.edit { it[Keys.lastSync] = at }
+
+    /** Hinweise „Rückmeldung fehlt“ nur einmal je Termin. */
+    suspend fun notifiedKeys(): Set<String> = context.dataStore.data.map { it[Keys.notified] ?: emptySet() }.first()
+
+    suspend fun addNotified(keys: Set<String>) = context.dataStore.edit {
+        // Nur die letzten 200 behalten
+        it[Keys.notified] = ((it[Keys.notified] ?: emptySet()) + keys).toList().takeLast(200).toSet()
     }
 
     private fun Preferences.toAccount(): Account? {

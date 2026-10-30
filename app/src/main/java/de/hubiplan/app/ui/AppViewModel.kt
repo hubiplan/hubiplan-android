@@ -16,9 +16,14 @@ import de.hubiplan.app.data.Paired
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.Theme
 import de.hubiplan.app.data.normalizeServer
+import de.hubiplan.app.calendar.DeviceCalendar
+import de.hubiplan.app.data.AppSettings
+import de.hubiplan.app.sync.SyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 sealed interface Screen {
@@ -48,6 +53,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _theme = MutableStateFlow<Theme?>(null)
     val theme: StateFlow<Theme?> = _theme
 
+    val settings: StateFlow<AppSettings> = store.settings
+        .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
+
+    private val context get() = getApplication<Application>()
+
+    /** Nach Änderungen (Rückmeldung, Einstellung) Kalender und Hinweise aktualisieren. */
+    fun syncSoon() = SyncWorker.now(context)
+
+    fun setCalendarOn(on: Boolean) {
+        viewModelScope.launch {
+            store.setCalendarOn(on)
+            if (!on) DeviceCalendar(context).removeCalendarsExcept(emptySet())
+            syncSoon()
+        }
+    }
+
+    fun setReminderMinutes(minutes: Int?) {
+        viewModelScope.launch {
+            store.setReminderMinutes(minutes)
+            syncSoon()
+        }
+    }
+
+    fun setRsvpHints(on: Boolean) {
+        viewModelScope.launch { store.setRsvpHints(on) }
+    }
+
     init {
         viewModelScope.launch {
             _theme.value = store.cachedTheme.first()
@@ -69,6 +101,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val access = me.portal.firstOrNull { it.id == account.selectedAccess } ?: me.portal.firstOrNull()
             _screen.value = Screen.Main(account, me, access, offline = false)
             access?.let { applyAccess(it) }
+            SyncWorker.schedule(context)
+            SyncWorker.now(context)
         } catch (e: ApiException) {
             if (e.status == 401) {
                 // Gerät abgemeldet (im Browser, Passwort geändert, lange nicht genutzt)
@@ -174,6 +208,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             // Auch ohne Netz lokal abmelden; der Server lässt den Schlüssel sonst nach 180 Tagen verfallen
             runCatching { Api(main.account.server, main.account.token).logout(main.account.deviceId) }
+            SyncWorker.cancel(context)
+            runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet()) }
             store.clear()
             _theme.value = null
             _connect.value = ConnectState()
@@ -184,6 +220,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Geräteschlüssel ungültig geworden (z. B. im Browser abgemeldet). */
     fun deviceRevoked(message: String?) {
         viewModelScope.launch {
+            SyncWorker.cancel(context)
+            runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet()) }
             store.clear()
             _connect.value = ConnectState(error = message)
             _screen.value = Screen.Connect
