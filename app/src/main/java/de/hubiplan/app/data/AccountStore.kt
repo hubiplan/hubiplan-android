@@ -62,6 +62,8 @@ private object Keys {
     val pushEndpoint = stringPreferencesKey("push_endpunkt")
     val pushError = stringPreferencesKey("push_fehler")
     val pushOff = booleanPreferencesKey("push_aus")
+    // Vorstandszugang (A8), mit AdminVault verschlüsselt (nur nach Entsperren lesbar)
+    val adminToken = stringPreferencesKey("verwaltung_schluessel")
 }
 
 /** Push auf diesem Gerät: über eine UnifiedPush-App oder (Play-Fassung) über Google. */
@@ -141,6 +143,13 @@ class AccountStore(private val context: Context, val slot: Int = 0) {
             it[Keys.pushDistributor] = pkg
         }
         it.remove(Keys.pushError)
+    }
+
+    /** Vorstandsschlüssel, mit [AdminVault] verschlüsselt; null: nicht freigeschaltet. */
+    suspend fun sealedAdminToken(): String? = dataStore.data.first()[Keys.adminToken]
+
+    suspend fun setSealedAdminToken(sealed: String?) = dataStore.edit {
+        if (sealed == null) it.remove(Keys.adminToken) else it[Keys.adminToken] = sealed
     }
 
     suspend fun setPushOff(off: Boolean) = dataStore.edit { it[Keys.pushOff] = off }

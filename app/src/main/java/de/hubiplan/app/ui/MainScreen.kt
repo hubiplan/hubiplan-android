@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
@@ -35,7 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-private enum class Tab(val label: String) { TERMINE("Termine"), MITTEILUNGEN("Mitteilungen"), PROFIL("Profil"), KONTO("Konto") }
+private enum class Tab(val label: String) {
+    TERMINE("Termine"), MITTEILUNGEN("Mitteilungen"), PROFIL("Profil"), VERWALTUNG("Verwaltung"), KONTO("Konto"),
+}
 
 /** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
 val TWO_PANE_MIN_WIDTH = 720.dp
@@ -46,10 +49,14 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest) { if (openRequest != null) tab = Tab.MITTEILUNGEN }
+    // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
+    val admin by vm.admin.collectAsStateWithLifecycle()
+    val tabs = Tab.entries.filter { it != Tab.VERWALTUNG || admin.visible }
+    LaunchedEffect(admin.visible) { if (tab == Tab.VERWALTUNG && !admin.visible) tab = Tab.TERMINE }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
         navigationSuiteItems = {
-            Tab.entries.forEach { t ->
+            tabs.forEach { t ->
                 item(
                     selected = tab == t,
                     onClick = { tab = t },
@@ -59,6 +66,7 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
                                 Tab.PROFIL -> Icons.Filled.Person
+                                Tab.VERWALTUNG -> Icons.Filled.Build
                                 Tab.KONTO -> Icons.Filled.Settings
                             },
                             contentDescription = null,
@@ -90,6 +98,7 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
             Box(Modifier.fillMaxSize()) {
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
+                    tab == Tab.VERWALTUNG -> AdminPane(main, vm)
                     main.me == null && !main.offline -> Loading()
                     access == null && main.me != null -> Message(
                         "Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an den Vorstand.",

@@ -2,7 +2,6 @@ package de.hubiplan.app
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.hubiplan.app.ui.AppViewModel
 import de.hubiplan.app.ui.ConnectScreen
@@ -21,7 +21,8 @@ import de.hubiplan.app.ui.MainScreen
 import de.hubiplan.app.ui.Screen
 import de.hubiplan.app.sync.Notifications
 
-class MainActivity : ComponentActivity() {
+// FragmentActivity statt ComponentActivity: nötig für die Abfrage von Fingerabdruck/PIN (Verwaltung)
+class MainActivity : FragmentActivity() {
     private val vm: AppViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -187,6 +187,23 @@ class Api(val server: String, private val token: String? = null) {
         )
     }
 
+    // --- Verwaltung (Schritt A8) ---
+
+    suspend fun adminOverview(): AdminOverview = json.decodeFromString(expect("GET", "/api/app/v1/admin/"))
+
+    /** Mit Passwort und Zwei-Faktor-Code freischalten; liefert den Vorstandsschlüssel. */
+    suspend fun unlockAdmin(password: String, code: String): AdminUnlock = json.decodeFromString(
+        expect("POST", "/api/app/v1/admin/unlock/", """{"password":${quote(password)},"code":${quote(code)}}"""),
+    )
+
+    suspend fun lockAdmin() {
+        expect("DELETE", "/api/app/v1/admin/unlock/")
+    }
+
+    /** Mit dem Vorstandsschlüssel als [token]. */
+    suspend fun adminTasks(unitId: Int): AdminTasks =
+        json.decodeFromString(expect("GET", "/api/app/v1/admin/u/$unitId/tasks/"))
+
     suspend fun unregisterPush() {
         expect("DELETE", "/api/app/v1/devices/current/push/")
     }

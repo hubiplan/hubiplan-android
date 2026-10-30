@@ -15,6 +15,35 @@ data class Instance(
     val push: List<PushWay> = emptyList(),
 )
 
+/** Einheit mit Verwaltungsrechten (Schritt A8). */
+@Serializable
+data class AdminUnit(val id: Int, val name: String, val type: String = "", val permissions: List<String> = emptyList())
+
+@Serializable
+data class AdminOverview(
+    val units: List<AdminUnit> = emptyList(),
+    @SerialName("two_factor") val twoFactor: Boolean = false,
+    val unlocked: Boolean = false,
+    val until: String? = null,
+)
+
+@Serializable
+data class AdminUnlock(val token: String, val until: String? = null)
+
+/** Offene Aufgabe (Änderungsmeldung, Foto, Wechsel, Termin mit Rückmeldungen …). */
+@Serializable
+data class AdminTask(
+    val kind: String = "",
+    @SerialName("kind_label") val kindLabel: String = "",
+    val title: String = "",
+    val detail: String = "",
+    @SerialName("created_at") val createdAt: String? = null,
+    val link: String = "",
+)
+
+@Serializable
+data class AdminTasks(val items: List<AdminTask> = emptyList())
+
 /** Push-Weg der Instanz (UnifiedPush mit VAPID-Schlüssel, später Gateway für Play). */
 @Serializable
 data class PushWay(
