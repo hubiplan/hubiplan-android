@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CircularItem
 import de.hubiplan.app.data.PortalAccess
@@ -34,6 +35,14 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
     var items by remember(access.id) { mutableStateOf<List<CircularItem>?>(null) }
     var error by remember(access.id) { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(access.id) { mutableStateOf<Int?>(null) }
+    val openRequest by vm.openRequest.collectAsStateWithLifecycle()
+    LaunchedEffect(openRequest, access.id) {
+        val request = openRequest ?: return@LaunchedEffect
+        if (request.first == access.id) {
+            selected = request.second
+            vm.openHandled()
+        }
+    }
 
     LaunchedEffect(access.id) {
         val api = vm.api() ?: return@LaunchedEffect

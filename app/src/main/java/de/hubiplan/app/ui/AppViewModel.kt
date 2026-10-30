@@ -18,6 +18,7 @@ import de.hubiplan.app.data.Theme
 import de.hubiplan.app.data.normalizeServer
 import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.data.AppSettings
+import de.hubiplan.app.push.PushSetup
 import de.hubiplan.app.sync.SyncWorker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +58,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
 
     private val context get() = getApplication<Application>()
+
+    /** Mitteilung, die aus einer Benachrichtigung geöffnet werden soll (Zugang, Nummer). */
+    private val _openRequest = MutableStateFlow<Pair<Int, Int>?>(null)
+    val openRequest: StateFlow<Pair<Int, Int>?> = _openRequest
+
+    fun openCircular(accessId: Int, circularId: Int) {
+        _openRequest.value = accessId to circularId
+        val main = screen.value as? Screen.Main ?: return
+        main.me?.portal?.firstOrNull { it.id == accessId }?.let { if (main.access?.id != it.id) selectAccess(it) }
+    }
+
+    fun openHandled() {
+        _openRequest.value = null
+    }
+
+    /** Push über eine UnifiedPush-App einschalten oder (null) abschalten. */
+    fun setPushDistributor(pkg: String?) {
+        viewModelScope.launch {
+            if (pkg == null) PushSetup.disable(context) else PushSetup.enable(context, pkg)
+        }
+    }
 
     /** Nach Änderungen (Rückmeldung, Einstellung) Kalender und Hinweise aktualisieren. */
     fun syncSoon() = SyncWorker.now(context)
@@ -103,9 +125,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             access?.let { applyAccess(it) }
             SyncWorker.schedule(context)
             SyncWorker.now(context)
+            runCatching { PushSetup.refresh(context) }
         } catch (e: ApiException) {
             if (e.status == 401) {
                 // Gerät abgemeldet (im Browser, Passwort geändert, lange nicht genutzt)
+                runCatching { PushSetup.forget(context) }
                 store.clear()
                 _connect.value = ConnectState(error = e.message, server = account.server)
                 _screen.value = Screen.Connect
@@ -207,6 +231,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val main = screen.value as? Screen.Main ?: return
         viewModelScope.launch {
             // Auch ohne Netz lokal abmelden; der Server lässt den Schlüssel sonst nach 180 Tagen verfallen
+            runCatching { PushSetup.disable(context, main.account.server, main.account.token) }
             runCatching { Api(main.account.server, main.account.token).logout(main.account.deviceId) }
             SyncWorker.cancel(context)
             runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet()) }
@@ -220,6 +245,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Geräteschlüssel ungültig geworden (z. B. im Browser abgemeldet). */
     fun deviceRevoked(message: String?) {
         viewModelScope.launch {
+            runCatching { PushSetup.forget(context) }
             SyncWorker.cancel(context)
             runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet()) }
             store.clear()

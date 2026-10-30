@@ -1,5 +1,6 @@
 package de.hubiplan.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,7 @@ import de.hubiplan.app.ui.HubiplanTheme
 import de.hubiplan.app.ui.Loading
 import de.hubiplan.app.ui.MainScreen
 import de.hubiplan.app.ui.Screen
+import de.hubiplan.app.sync.Notifications
 
 class MainActivity : ComponentActivity() {
     private val vm: AppViewModel by viewModels()
@@ -25,6 +27,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        openFrom(intent)
         setContent {
             val theme by vm.theme.collectAsStateWithLifecycle()
             val screen by vm.screen.collectAsStateWithLifecycle()
@@ -41,5 +44,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        openFrom(intent)
+    }
+
+    /** Aus einer Benachrichtigung: Mitteilung öffnen. */
+    private fun openFrom(intent: Intent?) {
+        val access = intent?.getIntExtra(Notifications.EXTRA_ACCESS, -1) ?: -1
+        val circular = intent?.getIntExtra(Notifications.EXTRA_CIRCULAR, -1) ?: -1
+        if (access > 0 && circular > 0) vm.openCircular(access, circular)
+        intent?.removeExtra(Notifications.EXTRA_CIRCULAR)
     }
 }

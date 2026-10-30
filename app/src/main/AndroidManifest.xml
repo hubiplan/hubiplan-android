@@ -11,6 +11,13 @@
     <!-- QR-Code scannen; die App funktioniert auch ohne Kamera (Anmeldung mit Passwort) -->
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
+    <!-- UnifiedPush: installierte Verteiler-Apps (z. B. ntfy) finden (Android 11+) -->
+    <queries>
+        <intent>
+            <action android:name="org.unifiedpush.android.distributor.REGISTER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".HubiplanApp"
         android:allowBackup="false"
@@ -36,6 +43,19 @@
         <receiver
             android:name=".sync.RsvpActionReceiver"
             android:exported="false" />
+
+        <!-- UnifiedPush: Endpunkt und Nachrichten der Verteiler-App (Inhalt verschlüsselt) -->
+        <receiver
+            android:name=".push.PushReceiver"
+            android:exported="true"
+            tools:ignore="ExportedReceiver">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.connector.MESSAGE" />
+                <action android:name="org.unifiedpush.android.connector.UNREGISTERED" />
+                <action android:name="org.unifiedpush.android.connector.NEW_ENDPOINT" />
+                <action android:name="org.unifiedpush.android.connector.REGISTRATION_FAILED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Hochkant-Zwang des Scanners aufheben (Tablets) -->
         <activity

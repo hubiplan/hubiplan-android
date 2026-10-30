@@ -26,7 +26,9 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +43,8 @@ val TWO_PANE_MIN_WIDTH = 720.dp
 @Composable
 fun MainScreen(main: Screen.Main, vm: AppViewModel) {
     var tab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
+    val openRequest by vm.openRequest.collectAsStateWithLifecycle()
+    LaunchedEffect(openRequest) { if (openRequest != null) tab = Tab.MITTEILUNGEN }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
         navigationSuiteItems = {

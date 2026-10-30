@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.layout.Box
 import de.hubiplan.app.calendar.DeviceCalendar
+import de.hubiplan.app.push.UnifiedPush
 import de.hubiplan.app.sync.Notifications
 import java.text.DateFormat
 import java.util.Date
@@ -88,6 +90,8 @@ fun SettingsSection(vm: AppViewModel) {
             ReminderPicker(settings.reminderMinutes, vm::setReminderMinutes)
         }
 
+        PushSection(vm)
+
         Text("Hinweise", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
         SwitchRow(
             label = "Hinweis, wenn eine Rückmeldung fehlt",
@@ -135,5 +139,62 @@ private fun ReminderPicker(current: Int?, onPick: (Int?) -> Unit) {
                 })
             }
         }
+    }
+}
+
+/** Konto › Mitteilungen sofort aufs Telefon (UnifiedPush), sonst Abruf alle paar Stunden. */
+@Composable
+private fun PushSection(vm: AppViewModel) {
+    val context = LocalContext.current
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val push = settings.push
+    // Bei jedem Anzeigen neu suchen (Verteiler-App inzwischen installiert?)
+    val distributors = remember(push.distributor) { UnifiedPush.distributors(context) }
+    var choose by remember { mutableStateOf(false) }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    Text("Mitteilungen", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+    when {
+        push.active -> {
+            val label = distributors.firstOrNull { it.packageName == push.distributor }?.label ?: push.distributor
+            Text("Mitteilungen kommen sofort über $label.")
+        }
+        push.distributor != null && push.error == null -> Text("Wird eingerichtet …")
+        else -> Text(
+            "Ohne Push-App holt die App neue Mitteilungen nur alle paar Stunden ab. Wer die Mitteilungen sofort " +
+                "bekommen will, installiert einmal eine UnifiedPush-App, zum Beispiel „ntfy“ aus F-Droid.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    push.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (distributors.isNotEmpty()) {
+            Box {
+                OutlinedButton(onClick = {
+                    if (!Notifications.allowed(context) && Build.VERSION.SDK_INT >= 33) {
+                        notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    if (distributors.size == 1) vm.setPushDistributor(distributors.first().packageName) else choose = true
+                }) { Text(if (push.distributor == null) "Push einschalten" else "Neu einrichten") }
+                DropdownMenu(expanded = choose, onDismissRequest = { choose = false }) {
+                    distributors.forEach { d ->
+                        DropdownMenuItem(text = { Text(d.label) }, onClick = {
+                            choose = false
+                            vm.setPushDistributor(d.packageName)
+                        })
+                    }
+                }
+            }
+        }
+        if (push.distributor != null) {
+            TextButton(onClick = { vm.setPushDistributor(null) }) { Text("Push ausschalten") }
+        }
+    }
+    if (push.active) {
+        Text(
+            "Kommen Mitteilungen verspätet an, nimm die Push-App in den Android-Einstellungen vom Energiesparen aus " +
+                "(Apps › ntfy › Akku › Nicht eingeschränkt).",
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }

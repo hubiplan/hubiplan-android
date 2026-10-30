@@ -8,10 +8,12 @@ Sie ergänzt den Mitgliederbereich im Browser:
 - Mitteilungen und Rundschreiben lesen
 - Farben und Wappen des Vereins aus HUBIplan
 - Ansicht für Telefon und Tablet (Liste und Detail nebeneinander)
+- Termine im Gerätekalender mit Erinnerungen, Hinweis „Rückmeldung fehlt“
+- Mitteilungen des Vorstands sofort per Push über eine UnifiedPush-App (z. B. ntfy), ohne
+  Google; der Inhalt ist Ende-zu-Ende verschlüsselt (Web-Push, RFC 8291). Ohne Push-App
+  holt die App neue Mitteilungen alle paar Stunden ab.
 
-Geplant: Termine im Gerätekalender mit Erinnerungen, Push-Nachrichten des Vorstands
-(ohne Google über UnifiedPush, in der Play-Fassung verschlüsselt über Google),
-eigenes Profil und Mitgliederfoto.
+Geplant: Mitteilungen aus der App senden, eigenes Profil und Mitgliederfoto, Play-Fassung.
 
 ## Verbinden
 
