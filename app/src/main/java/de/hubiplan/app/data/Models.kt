@@ -1,0 +1,124 @@
+package de.hubiplan.app.data
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+// Antworten von HUBIplan (/api/app/v1/ und Mitgliederbereich /api/portal/…).
+// Unbekannte Felder werden ignoriert, damit neue Server-Versionen die App nicht stören.
+
+@Serializable
+data class Instance(
+    val product: String,
+    @SerialName("api_version") val apiVersion: Int,
+    @SerialName("min_app_version") val minAppVersion: Int = 1,
+    val url: String = "",
+)
+
+@Serializable
+data class AppUser(val email: String, val display: String)
+
+@Serializable
+data class DeviceInfo(
+    val id: Int,
+    val name: String,
+    val platform: String = "android",
+    @SerialName("last_seen_at") val lastSeenAt: String? = null,
+    val current: Boolean = false,
+)
+
+@Serializable
+data class Paired(val token: String, val device: DeviceInfo, val user: AppUser)
+
+@Serializable
+data class Theme(
+    val primary: String,
+    @SerialName("on_primary") val onPrimary: String,
+    val accent: String,
+    @SerialName("on_accent") val onAccent: String,
+    @SerialName("logo_url") val logoUrl: String? = null,
+)
+
+/** Zugang zum Mitgliederbereich einer Einheit. */
+@Serializable
+data class PortalAccess(
+    val id: Int,
+    @SerialName("club_name") val clubName: String,
+    @SerialName("club_display_name") val clubDisplayName: String = "",
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String = "",
+    val theme: Theme? = null,
+    @SerialName("events_enabled") val eventsEnabled: Boolean = true,
+    @SerialName("imprint_key") val imprintKey: String? = null,
+) {
+    val title: String get() = clubDisplayName.ifBlank { clubName }
+}
+
+@Serializable
+data class Me(val user: AppUser, val device: DeviceInfo, val portal: List<PortalAccess>)
+
+@Serializable
+data class Category(val name: String = "", val color: String? = null)
+
+/** Einzeltermin (bei Serien eine Wiederholung). */
+@Serializable
+data class Occurrence(
+    val key: String,
+    @SerialName("event_id") val eventId: Int,
+    val title: String,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    @SerialName("all_day") val allDay: Boolean = false,
+    val location: String = "",
+    val address: String = "",
+    val category: Category? = null,
+    @SerialName("is_cancelled") val isCancelled: Boolean = false,
+    val note: String = "",
+    val owner: String = "",
+    @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = false,
+    @SerialName("my_response") val myResponse: String? = null,
+)
+
+@Serializable
+data class EventList(val items: List<Occurrence>)
+
+@Serializable
+data class MyResponse(val status: String, val guests: Int = 0, val note: String = "")
+
+@Serializable
+data class Rsvp(
+    val enabled: Boolean = false,
+    val deadline: String? = null,
+    val capacity: Int? = null,
+    @SerialName("guests_allowed") val guestsAllowed: Boolean = false,
+    @SerialName("max_guests") val maxGuests: Int = 10,
+    val free: Int? = null,
+    val mine: MyResponse? = null,
+    @SerialName("can_respond") val canRespond: Boolean = false,
+    val reason: String? = null,
+)
+
+@Serializable
+data class EventDetail(
+    val id: Int,
+    val title: String,
+    val description: String = "",
+    val location: String = "",
+    val address: String = "",
+    @SerialName("all_day") val allDay: Boolean = false,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    @SerialName("is_cancelled") val isCancelled: Boolean = false,
+    @SerialName("cancel_note") val cancelNote: String = "",
+    val owner: String = "",
+    val rsvp: Rsvp = Rsvp(),
+)
+
+@Serializable
+data class CircularItem(
+    val id: Int,
+    val subject: String,
+    val sender: String = "",
+    @SerialName("kind_label") val kindLabel: String = "",
+    @SerialName("sent_at") val sentAt: String? = null,
+    val body: String? = null,
+)
