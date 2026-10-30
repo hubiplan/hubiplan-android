@@ -12,7 +12,6 @@ Sie ergänzt den Mitgliederbereich im Browser:
 - Mitteilungen des Vorstands sofort per Push über eine UnifiedPush-App (z. B. ntfy), ohne
   Google; der Inhalt ist Ende-zu-Ende verschlüsselt (Web-Push, RFC 8291). Ohne Push-App
   holt die App neue Mitteilungen alle paar Stunden ab.
-
 - Vorstand und Zugführung: Kurzmitteilung an alle Mitglieder der Einheit senden, mit
   Empfängerzahl vorab
 
