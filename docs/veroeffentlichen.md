@@ -26,22 +26,23 @@ Vorbereitung für F-Droid.
 (`app/build/outputs/apk/foss/release/`). Den Schlüssel nie verlieren: Updates müssen mit
 demselben Schlüssel signiert sein. Fingerabdruck (SHA-256) neben der Datei angeben.
 
-## Google Play (Variante `play`)
+## Google Play
+
+**Entscheidung 30.10.2026:** Im Play Store erscheint die Variante `foss`, also ohne Google-Push
+und ohne jede Google-Bibliothek. So gibt es kein Firebase-Projekt und kein Push-Gateway, und der
+Herausgeber ist für keinen Verein Auftragsverarbeiter. Push kommt über UnifiedPush (z. B. ntfy);
+ohne Push-App gleicht die App alle 15 Minuten ab, mit Push alle 6 Stunden. Die Variante `play`
+(Firebase über das Push-Gateway) bleibt im Code, wird aber nicht veröffentlicht.
 
 Voraussetzungen von Google (Stand 10/2026): `targetSdk` mindestens 36 (Android 16) für neue Apps
-und Updates; die App zielt schon auf 37 (Android 17, AGP 9, Gradle 9). `minSdk` bleibt 26. Ein Weg zum Löschen von Konto und Daten in der App (Konto ›
-„Konto und Daten löschen“) und als Webseite des Herausgebers. Prüferzugang auf dem Testserver mit
-erfundenen Daten. Ausführliche Anleitung: `anleitungen/play-store-veroeffentlichung.md` im
-Projektordner.
+und Updates; die App zielt schon auf 37 (Android 17, AGP 9, Gradle 9). `minSdk` bleibt 26. Ein Weg
+zum Löschen von Konto und Daten in der App (Konto › „Konto und Daten löschen“) und als Webseite des
+Herausgebers. Prüferzugang auf dem Testserver mit erfundenen Daten. Ausführliche Anleitung:
+`anleitungen/play-store-veroeffentlichung.md` im Projektordner.
 
-1. Firebase-Projekt des Herausgebers anlegen, Android-App `de.hubiplan.app` eintragen.
-   Aus der Projektübersicht die vier Werte in `firebase.properties` übernehmen (nicht ins Repo).
-2. Dienstkonto mit der Rolle „Firebase Cloud Messaging API Admin“ anlegen, Schlüssel (JSON)
-   nur auf dem Server des Push-Gateways ablegen (`PUSH_GATEWAY_FCM_CREDENTIALS`).
-3. Push-Gateway betreiben (Beschreibung in `hubiplan/docs/app.md`, Abschnitt Push-Gateway)
-   und in jeder Instanz `PUSH_GATEWAY_URL` setzen.
-4. `./gradlew bundlePlayRelease`, im Play-Konto hochladen (Play App Signing).
-   Datensicherheit-Angaben siehe unten.
+1. `./gradlew bundleFossRelease` (mit `keystore.properties`, Upload-Schlüssel), Datei
+   `app/build/outputs/bundle/fossRelease/app-foss-release.aab`.
+2. Im Play-Konto hochladen, Play App Signing einschalten. Datensicherheit siehe unten.
 
 ## Textbaustein für die Datenschutzhinweise des Vereins
 
@@ -59,12 +60,9 @@ Datenschutz) übernehmen. Eckige Klammern anpassen.
 >
 > **Push-Mitteilungen.** Wenn Sie Push einschalten, senden wir Mitteilungen
 > Ende-zu-Ende-verschlüsselt (Web-Push) an den von Ihnen gewählten Push-Dienst: eine
-> UnifiedPush-App wie ntfy (mit deren Server) oder, in der Fassung aus Google Play, Google
-> Firebase Cloud Messaging über das Push-Gateway von [Herausgeber]. Der Push-Dienst erfährt
-> nur, dass zu einem Zeitpunkt eine Nachricht bestimmter Größe an Ihr Gerät geht, nicht
-> deren Inhalt. Bei Google gelten dessen Datenschutzbestimmungen; dabei kann eine
-> Übermittlung in die USA stattfinden (Angemessenheitsbeschluss EU-US Data Privacy
-> Framework). Rechtsgrundlage ist Ihre Einwilligung durch das Einschalten (Art. 6 Abs. 1
+> UnifiedPush-App wie ntfy (mit deren Server). Der Push-Dienst erfährt nur, dass zu einem
+> Zeitpunkt eine Nachricht bestimmter Größe an Ihr Gerät geht, nicht deren Inhalt. Ohne
+> Push-App fragt die App selbst regelmäßig bei uns nach neuen Mitteilungen. Rechtsgrundlage ist Ihre Einwilligung durch das Einschalten (Art. 6 Abs. 1
 > lit. a DSGVO); Sie können Push in der App jederzeit ausschalten.
 >
 > **Kalender.** Auf Wunsch trägt die App Termine in einen Kalender auf Ihrem Gerät ein. Ob
@@ -83,5 +81,5 @@ Datenschutz) übernehmen. Eckige Klammern anpassen.
 - Erhobene Daten: E-Mail-Adresse, Name, Telefonnummer, Anschrift (Profil, nur an die
   Instanz des Vereins), Fotos (nur auf Wunsch), Kalendertermine (nur auf dem Gerät),
   Geräte-IDs (Push-Kennung).
-- Weitergabe an Dritte: keine (Push-Inhalte sind verschlüsselt; Firebase als Auftragsverarbeiter).
+- Weitergabe an Dritte: keine (Push-Inhalte sind Ende-zu-Ende verschlüsselt; kein Google-Dienst).
 - Verschlüsselung bei der Übertragung: ja. Löschung auf Wunsch: ja (im Verein und per Abmelden).

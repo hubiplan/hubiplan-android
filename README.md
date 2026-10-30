@@ -10,9 +10,8 @@ Sie ergänzt den Mitgliederbereich im Browser:
 - Ansicht für Telefon und Tablet (Liste und Detail nebeneinander)
 - Termine im Gerätekalender mit Erinnerungen, Hinweis „Rückmeldung fehlt“
 - Mitteilungen des Vorstands sofort per Push über eine UnifiedPush-App (z. B. ntfy), ohne
-  Google; der Inhalt ist Ende-zu-Ende verschlüsselt (Web-Push, RFC 8291). Die Play-Fassung
-  nutzt ohne UnifiedPush-App Google (FCM) über das Push-Gateway; auch dann sieht Google nur
-  verschlüsselte Daten. Ohne Push holt die App neue Mitteilungen alle paar Stunden ab.
+  Google; der Inhalt ist Ende-zu-Ende verschlüsselt (Web-Push, RFC 8291). Ohne Push-App holt
+  die App neue Mitteilungen alle 15 Minuten ab.
 - Vorstand und Zugführung: Kurzmitteilung an alle Mitglieder der Einheit senden, mit
   Empfängerzahl vorab
 - Eigenes Profil ansehen, Änderungen der Kontaktdaten melden (der Verein prüft sie)
@@ -46,8 +45,8 @@ scripts/test.sh            # Unit-Tests, Lint, Debug-APKs; prüft „foss ohne G
 ./gradlew assembleFossRelease bundlePlayRelease
 ```
 
-Varianten: `foss` (F-Droid, APK, ohne Google-Bibliotheken) und `play` (Google Play, zusätzlich
-Firebase Cloud Messaging). Mindestversion Android 8.0.
+Varianten: `foss` (F-Droid, APK und Google Play, ohne Google-Bibliotheken) und `play` (zusätzlich
+Firebase Cloud Messaging über ein Push-Gateway; wird derzeit nicht veröffentlicht). Mindestversion Android 8.0.
 
 Nur auf dem Rechner des Herausgebers, nie im Repo:
 
