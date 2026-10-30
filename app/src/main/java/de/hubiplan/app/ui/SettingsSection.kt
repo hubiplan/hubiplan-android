@@ -1,7 +1,12 @@
 package de.hubiplan.app.ui
 
 import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -155,7 +160,7 @@ private fun ReminderPicker(current: Int?, onPick: (Int?) -> Unit) {
     }
 }
 
-/** Konto › Mitteilungen sofort aufs Telefon (UnifiedPush), sonst Abruf alle paar Stunden. */
+/** Konto › Mitteilungen sofort aufs Telefon (UnifiedPush), sonst Abruf alle 15 Minuten. */
 @Composable
 private fun PushSection(vm: AppViewModel) {
     val context = LocalContext.current
@@ -178,11 +183,12 @@ private fun PushSection(vm: AppViewModel) {
         push.distributor != null && push.error == null -> Text("Wird eingerichtet …")
         else -> Text(
             if (distributors.any { it.packageName == GooglePush.ID }) {
-                "Ohne Push holt die App neue Mitteilungen nur alle paar Stunden ab. Mit Push kommen sie sofort, " +
+                "Ohne Push holt die App neue Mitteilungen etwa alle 15 Minuten ab. Mit Push kommen sie sofort, " +
                     "über Google oder eine UnifiedPush-App wie „ntfy“. Der Inhalt bleibt verschlüsselt."
             } else {
-                "Ohne Push-App holt die App neue Mitteilungen nur alle paar Stunden ab. Wer die Mitteilungen sofort " +
-                    "bekommen will, installiert einmal eine UnifiedPush-App, zum Beispiel „ntfy“ aus F-Droid."
+                "Ohne Push-App holt die App neue Mitteilungen etwa alle 15 Minuten ab, auch wenn sie geschlossen ist. " +
+                    "Wer die Mitteilungen sofort bekommen will, installiert einmal eine UnifiedPush-App, zum Beispiel " +
+                    "„ntfy“ (aus Google Play oder F-Droid)."
             },
             style = MaterialTheme.typography.bodySmall,
         )
@@ -218,4 +224,33 @@ private fun PushSection(vm: AppViewModel) {
             style = MaterialTheme.typography.bodySmall,
         )
     }
+    if (!push.active && !ignoresBatteryOptimization(context)) BatteryHint(context)
+}
+
+/** HUBIplan ist vom Energiesparen ausgenommen (dann läuft der Abruf zuverlässig). */
+private fun ignoresBatteryOptimization(context: Context): Boolean =
+    (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
+        ?.isIgnoringBatteryOptimizations(context.packageName) == true
+
+/**
+ * Ohne Push hängt alles am Abruf im Hintergrund. Manche Hersteller (Samsung „Ruhende Apps“,
+ * Xiaomi, Huawei) stoppen ihn trotzdem; dann hilft „Nicht eingeschränkt“ für HUBIplan.
+ */
+@Composable
+private fun BatteryHint(context: Context) {
+    Text(
+        "Kommen Mitteilungen erst beim Öffnen der App an, stoppt das Telefon den Abruf im Hintergrund. Stelle dann " +
+            "für HUBIplan den Akku auf „Nicht eingeschränkt“ (App-Info › Akku). Auf Samsung-Geräten zusätzlich " +
+            "unter Einstellungen › Akku › Hintergrundnutzungslimits HUBIplan nicht zu den ruhenden Apps zählen. " +
+            "„Beenden erzwingen“ stoppt den Abruf, bis du die App wieder öffnest.",
+        style = MaterialTheme.typography.bodySmall,
+    )
+    TextButton(onClick = {
+        runCatching {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+        }
+    }) { Text("App-Info öffnen") }
 }
