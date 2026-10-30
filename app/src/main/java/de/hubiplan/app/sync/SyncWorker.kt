@@ -54,6 +54,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val now = OffsetDateTime.now()
                 items.filter { it.needsRsvpReminder(now) }.forEach { hints += Triple(access.id, it, access.title) }
             }
+            missedPushes(store, api, me.portal.map { it.id }, firstSync = settings.lastSync == null)
             if (settings.calendarOn) calendar.removeCalendarsExcept(keep)
             if (settings.rsvpHints) showHints(store, hints)
             store.markSynced(System.currentTimeMillis())
@@ -63,6 +64,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 401 -> {
                     // Gerät abgemeldet: Kalender und Konto entfernen, die App fragt beim Öffnen neu
                     calendar.removeCalendarsExcept(emptySet())
+                    runCatching { de.hubiplan.app.push.PushSetup.forget(applicationContext) }
                     store.clear()
                     Result.success()
                 }
@@ -74,6 +76,35 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             store.setCalendarOn(false)
             Result.success()
         }
+    }
+
+    /**
+     * Rückfallweg ohne Push: Mitteilungen, die per App zugestellt wurden, aber noch nicht
+     * angezeigt sind (Push verloren, Energiesparen, kein Verteiler). Beim ersten Abgleich nur
+     * merken, damit nach dem Verbinden keine alten Mitteilungen aufpoppen.
+     */
+    private suspend fun missedPushes(
+        store: de.hubiplan.app.data.AccountStore,
+        api: Api,
+        accessIds: List<Int>,
+        firstSync: Boolean,
+    ) {
+        val done = store.notifiedKeys()
+        val since = OffsetDateTime.now().minusDays(3)
+        val seen = mutableSetOf<String>()
+        for (accessId in accessIds) {
+            val items = runCatching { api.circulars(accessId) }.getOrNull() ?: continue
+            for (c in items.filter { it.channel == "app" }.take(20)) {
+                val key = de.hubiplan.app.push.PushSetup.circularKey(accessId, c.id)
+                if (key in done) continue
+                val sent = c.sentAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
+                if (!firstSync && sent != null && sent.isAfter(since)) {
+                    Notifications.showCircular(applicationContext, accessId, c.id, c.subject, "", c.sender, false)
+                }
+                seen += key
+            }
+        }
+        if (seen.isNotEmpty()) store.addNotified(seen)
     }
 
     private suspend fun showHints(

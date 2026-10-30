@@ -17,10 +17,18 @@ import de.hubiplan.app.R
 /** Benachrichtigungskanäle (je Art einzeln abschaltbar in den Android-Einstellungen). */
 object Notifications {
     const val CHANNEL_RSVP = "rueckmeldung"
+    const val CHANNEL_MESSAGES = "mitteilungen"
+    const val EXTRA_ACCESS = "zugang"
+    const val EXTRA_CIRCULAR = "mitteilung"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_MESSAGES, "Mitteilungen", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Mitteilungen und Rundschreiben des Vorstands"
+            },
+        )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_RSVP, "Rückmeldung fehlt", NotificationManager.IMPORTANCE_DEFAULT).apply {
                 description = "Hinweis vor dem Anmeldeschluss, wenn du noch nicht zu- oder abgesagt hast"
@@ -66,6 +74,37 @@ object Notifications {
             NotificationManagerCompat.from(context).notify(id, notification)
         } catch (e: SecurityException) {
             // Erlaubnis inzwischen entzogen
+        }
+    }
+
+    /** Mitteilung des Vorstands; Antippen öffnet sie in der App. */
+    fun showCircular(context: Context, accessId: Int, circularId: Int, title: String, text: String, from: String, short: Boolean) {
+        if (!allowed(context)) return
+        val id = (notificationId(accessId, circularId) xor 0x2000_0000) and 0x3FFFFFFF
+        val open = PendingIntent.getActivity(
+            context,
+            id,
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(EXTRA_ACCESS, accessId)
+                .putExtra(EXTRA_CIRCULAR, circularId),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val body = if (short) text else text.ifBlank { "Neues Rundschreiben" }
+        val notification = NotificationCompat.Builder(context, CHANNEL_MESSAGES)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title.ifBlank { "Mitteilung" })
+            .setContentText(body)
+            .setSubText(from.ifBlank { null })
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .build()
+        try {
+            NotificationManagerCompat.from(context).notify(id, notification)
+        } catch (e: SecurityException) {
         }
     }
 

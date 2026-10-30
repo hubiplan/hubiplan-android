@@ -12,6 +12,15 @@ data class Instance(
     @SerialName("api_version") val apiVersion: Int,
     @SerialName("min_app_version") val minAppVersion: Int = 1,
     val url: String = "",
+    val push: List<PushWay> = emptyList(),
+)
+
+/** Push-Weg der Instanz (UnifiedPush mit VAPID-Schlüssel, später Gateway für Play). */
+@Serializable
+data class PushWay(
+    val kind: String,
+    @SerialName("vapid_public_key") val vapidPublicKey: String? = null,
+    val gateway: String? = null,
 )
 
 @Serializable
@@ -122,4 +131,6 @@ data class CircularItem(
     @SerialName("kind_label") val kindLabel: String = "",
     @SerialName("sent_at") val sentAt: String? = null,
     val body: String? = null,
+    // Versandweg: app, mail, letter, portal
+    val channel: String = "",
 )

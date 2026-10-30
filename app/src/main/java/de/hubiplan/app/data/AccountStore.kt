@@ -46,6 +46,20 @@ private object Keys {
     val rsvpHints = booleanPreferencesKey("hinweis_rueckmeldung")
     val notified = stringSetPreferencesKey("hinweise_gezeigt")
     val lastSync = longPreferencesKey("letzter_abgleich")
+    val pushKeys = stringPreferencesKey("push_schluessel")
+    val pushDistributor = stringPreferencesKey("push_verteiler")
+    val pushToken = stringPreferencesKey("push_kennung")
+    val pushEndpoint = stringPreferencesKey("push_endpunkt")
+    val pushError = stringPreferencesKey("push_fehler")
+}
+
+/** Push über UnifiedPush auf diesem Gerät. */
+data class PushState(
+    val distributor: String? = null,
+    val endpoint: String? = null,
+    val error: String? = null,
+) {
+    val active: Boolean get() = distributor != null && endpoint != null
 }
 
 /** Einstellungen der App auf diesem Gerät. */
@@ -55,6 +69,7 @@ data class AppSettings(
     val reminderMinutes: Int? = DEFAULT_REMINDER_MINUTES,
     val rsvpHints: Boolean = true,
     val lastSync: Long? = null,
+    val push: PushState = PushState(),
 )
 
 const val DEFAULT_REMINDER_MINUTES = 24 * 60
@@ -78,7 +93,43 @@ class AccountStore(private val context: Context) {
             reminderMinutes = (p[Keys.reminderMinutes] ?: DEFAULT_REMINDER_MINUTES).takeIf { it >= 0 },
             rsvpHints = p[Keys.rsvpHints] ?: true,
             lastSync = p[Keys.lastSync],
+            push = PushState(p[Keys.pushDistributor], p[Keys.pushEndpoint], p[Keys.pushError]),
         )
+    }
+
+    /** Schlüssel für Web-Push; beim ersten Gebrauch erzeugt, verschlüsselt gespeichert. */
+    suspend fun pushKeys(): de.hubiplan.app.push.PushKeys {
+        val stored = context.dataStore.data.first()[Keys.pushKeys]?.let { decrypt(it) }
+        stored?.let { de.hubiplan.app.push.PushKeys.parse(it) }?.let { return it }
+        val keys = de.hubiplan.app.push.PushKeys.generate()
+        context.dataStore.edit { it[Keys.pushKeys] = encrypt(keys.serialize()) }
+        return keys
+    }
+
+    /** Kennung dieser App beim Verteiler (zufällig, je Anmeldung neu). */
+    suspend fun pushToken(): String {
+        context.dataStore.data.first()[Keys.pushToken]?.let { return it }
+        val token = java.util.UUID.randomUUID().toString()
+        context.dataStore.edit { it[Keys.pushToken] = token }
+        return token
+    }
+
+    suspend fun storedPushToken(): String? = context.dataStore.data.first()[Keys.pushToken]
+
+    suspend fun setPushDistributor(pkg: String?) = context.dataStore.edit {
+        if (pkg == null) {
+            it.remove(Keys.pushDistributor)
+            it.remove(Keys.pushEndpoint)
+            it.remove(Keys.pushToken)
+        } else {
+            it[Keys.pushDistributor] = pkg
+        }
+        it.remove(Keys.pushError)
+    }
+
+    suspend fun setPushEndpoint(endpoint: String?, error: String? = null) = context.dataStore.edit {
+        if (endpoint == null) it.remove(Keys.pushEndpoint) else it[Keys.pushEndpoint] = endpoint
+        if (error == null) it.remove(Keys.pushError) else it[Keys.pushError] = error
     }
 
     suspend fun setCalendarOn(on: Boolean) = context.dataStore.edit { it[Keys.calendarOn] = on }
@@ -93,8 +144,9 @@ class AccountStore(private val context: Context) {
     suspend fun notifiedKeys(): Set<String> = context.dataStore.data.map { it[Keys.notified] ?: emptySet() }.first()
 
     suspend fun addNotified(keys: Set<String>) = context.dataStore.edit {
-        // Nur die letzten 200 behalten
-        it[Keys.notified] = ((it[Keys.notified] ?: emptySet()) + keys).toList().takeLast(200).toSet()
+        // Höchstens 400 behalten; die neuen immer (die Menge selbst hat keine Reihenfolge)
+        val old = (it[Keys.notified] ?: emptySet()) - keys
+        it[Keys.notified] = keys + old.take((400 - keys.size).coerceAtLeast(0))
     }
 
     private fun Preferences.toAccount(): Account? {
