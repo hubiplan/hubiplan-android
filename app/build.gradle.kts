@@ -1,23 +1,23 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = "de.hubiplan.app"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "de.hubiplan.app"
         // Android 8.0: Benachrichtigungskanäle, einheitliche Hintergrundregeln (Konzept, Frage 12)
         minSdk = 26
-        targetSdk = 36
-        versionCode = 13
-        versionName = "0.12.0"
+        targetSdk = 37
+        versionCode = 14
+        versionName = "0.12.1"
     }
 
     // Signatur der Veröffentlichung aus keystore.properties (nur auf dem Rechner des Herausgebers):
@@ -64,9 +64,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
         buildConfig = true
@@ -75,6 +72,13 @@ android {
     dependenciesInfo {
         includeInApk = false
         includeInBundle = false
+    }
+}
+
+// Kotlin ist seit AGP 9 eingebaut (kein eigenes Plugin org.jetbrains.kotlin.android mehr)
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
