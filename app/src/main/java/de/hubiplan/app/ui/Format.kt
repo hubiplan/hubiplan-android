@@ -29,3 +29,21 @@ fun formatWhen(start: String, end: String, allDay: Boolean, zone: ZoneId = ZoneI
 
 fun formatDate(iso: String?, zone: ZoneId = ZoneId.systemDefault()): String =
     iso?.let { runCatching { local(it, zone).format(DAY) }.getOrNull() } ?: ""
+
+fun recipientTotal(counts: Map<String, Int>): Int =
+    listOf("app", "mail", "portal", "letter").sumOf { counts[it] ?: 0 }
+
+/** Empfängerzahl in Worten: „43 Mitglieder, davon 31 per App, 12 per E-Mail“. */
+fun recipientSummary(counts: Map<String, Int>): String {
+    val app = counts["app"] ?: 0
+    val mail = counts["mail"] ?: 0
+    val portal = counts["portal"] ?: 0
+    val total = recipientTotal(counts)
+    val parts = buildList {
+        if (app > 0) add("$app per App")
+        if (mail > 0) add("$mail per E-Mail")
+        if (portal > 0) add("$portal nur im Mitgliederbereich")
+    }
+    val who = if (total == 1) "1 Mitglied" else "$total Mitglieder"
+    return if (parts.isEmpty()) "geht an niemanden" else "geht an $who, davon ${parts.joinToString(", ")}"
+}

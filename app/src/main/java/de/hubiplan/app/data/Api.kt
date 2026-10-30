@@ -190,6 +190,18 @@ class Api(val server: String, private val token: String? = null) {
         expect("DELETE", "/api/app/v1/devices/current/push/")
     }
 
+    suspend fun senders(): Senders = json.decodeFromString(expect("GET", "/api/app/v1/send/"))
+
+    /** Kurzmitteilung: [confirm] false zählt nur die Empfänger, true sendet. */
+    suspend fun sendShort(sender: Sender, subject: String, body: String, confirm: Boolean): SendResult =
+        json.decodeFromString(
+            expect(
+                "POST",
+                "/api/app/v1/send/${sender.type}/${sender.id}/",
+                """{"subject":${quote(subject)},"body":${quote(body)},"confirm":$confirm}""",
+            ),
+        )
+
     suspend fun circulars(accessId: Int): List<CircularItem> =
         json.decodeFromString(expect("GET", "/api/portal/$accessId/circulars/"))
 

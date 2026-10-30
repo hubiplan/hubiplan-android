@@ -59,6 +59,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val context get() = getApplication<Application>()
 
+    /** Darf dieses Konto Kurzmitteilungen senden (Vorstand, Zugführung)? */
+    private val _canSend = MutableStateFlow(false)
+    val canSend: StateFlow<Boolean> = _canSend
+
     /** Mitteilung, die aus einer Benachrichtigung geöffnet werden soll (Zugang, Nummer). */
     private val _openRequest = MutableStateFlow<Pair<Int, Int>?>(null)
     val openRequest: StateFlow<Pair<Int, Int>?> = _openRequest
@@ -126,6 +130,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             SyncWorker.schedule(context)
             SyncWorker.now(context)
             runCatching { PushSetup.refresh(context) }
+            _canSend.value = runCatching { Api(account.server, account.token).senders().senders.isNotEmpty() }.getOrDefault(false)
         } catch (e: ApiException) {
             if (e.status == 401) {
                 // Gerät abgemeldet (im Browser, Passwort geändert, lange nicht genutzt)

@@ -3,7 +3,11 @@ package de.hubiplan.app.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Button
+import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,6 +39,9 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
     var items by remember(access.id) { mutableStateOf<List<CircularItem>?>(null) }
     var error by remember(access.id) { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(access.id) { mutableStateOf<Int?>(null) }
+    val canSend by vm.canSend.collectAsStateWithLifecycle()
+    var notice by remember { mutableStateOf<String?>(null) }
+    var reload by remember { mutableStateOf(0) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, access.id) {
         val request = openRequest ?: return@LaunchedEffect
@@ -44,7 +51,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
         }
     }
 
-    LaunchedEffect(access.id) {
+    LaunchedEffect(access.id, reload) {
         val api = vm.api() ?: return@LaunchedEffect
         try {
             items = api.circulars(access.id)
@@ -59,33 +66,56 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
         emptyDetail = "Mitteilung auswählen",
         list = {
             val list = items
-            when {
-                error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
-                list == null -> Loading()
-                list.isEmpty() -> Message("Noch keine Mitteilungen.")
-                else -> LazyColumn(Modifier.fillMaxSize()) {
-                    items(list, key = { it.id }) { c ->
-                        ListItem(
-                            modifier = Modifier.clickable { selected = c.id },
-                            colors = if (c.id == selected) {
-                                ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                            } else {
-                                ListItemDefaults.colors()
-                            },
-                            overlineContent = { Text(listOf(c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · ")) },
-                            headlineContent = { Text(c.subject.ifBlank { "(ohne Betreff)" }) },
-                            supportingContent = { if (c.sender.isNotBlank()) Text(c.sender) },
-                        )
-                        HorizontalDivider()
+            Column(Modifier.fillMaxSize()) {
+                if (canSend) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Button(onClick = { selected = SEND }) { Text("Kurzmitteilung senden") }
+                    }
+                }
+                notice?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp)) }
+                when {
+                    error != null -> Text(error ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp))
+                    list == null -> Loading()
+                    list.isEmpty() -> Message("Noch keine Mitteilungen.")
+                    else -> LazyColumn(Modifier.fillMaxSize()) {
+                        items(list, key = { it.id }) { c ->
+                            ListItem(
+                                modifier = Modifier.clickable { selected = c.id },
+                                colors = if (c.id == selected) {
+                                    ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                                } else {
+                                    ListItemDefaults.colors()
+                                },
+                                overlineContent = { Text(listOf(c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · ")) },
+                                headlineContent = { Text(c.subject.ifBlank { "(ohne Betreff)" }) },
+                                supportingContent = { if (c.sender.isNotBlank()) Text(c.sender) },
+                            )
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
         },
         detail = {
-            selected?.let { id -> CircularDetail(access, id, vm) { selected = null } }
+            when (val id = selected) {
+                null -> {}
+                SEND -> SendPane(
+                    vm,
+                    onDone = { text ->
+                        notice = text
+                        selected = null
+                        reload++
+                    },
+                    onCancel = { selected = null },
+                )
+                else -> CircularDetail(access, id, vm) { selected = null }
+            }
         },
     )
 }
+
+// Statt einer Nummer: Kurzmitteilung verfassen (Vorstand, Zugführung)
+private const val SEND = -1
 
 @Composable
 private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBack: () -> Unit) {

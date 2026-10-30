@@ -35,4 +35,14 @@ class FormatTest {
             errorMessage(400, """{"status":400,"errors":[{"message":"Falsches Passwort.","code":"x"}]}"""),
         )
     }
+
+    @Test
+    fun empfaengerzahl_in_worten() {
+        assertEquals(
+            "geht an 43 Mitglieder, davon 31 per App, 12 per E-Mail",
+            de.hubiplan.app.ui.recipientSummary(mapOf("total" to 45, "app" to 31, "mail" to 12, "letter" to 0, "opted_out" to 2)),
+        )
+        assertEquals("geht an 1 Mitglied, davon 1 nur im Mitgliederbereich", de.hubiplan.app.ui.recipientSummary(mapOf("portal" to 1)))
+        assertEquals("geht an niemanden", de.hubiplan.app.ui.recipientSummary(emptyMap()))
+    }
 }
