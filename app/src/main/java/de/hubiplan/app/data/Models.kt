@@ -54,7 +54,7 @@ data class AdminOverview(
 }
 
 @Serializable
-data class AdminUnlock(val token: String, val until: String? = null)
+data class AdminUnlock(val token: String, val until: String? = null, val signed: Boolean = false)
 
 /** Offene Aufgabe (Änderungsmeldung, Foto, Wechsel, Termin mit Rückmeldungen …). */
 @Serializable
@@ -91,7 +91,17 @@ data class DeviceInfo(
     val platform: String = "android",
     @SerialName("last_seen_at") val lastSeenAt: String? = null,
     val current: Boolean = false,
+    // Härtung H7: null = Server kennt keine Schlüsselpaare (ältere Instanz)
+    val key: Boolean? = null,
+    @SerialName("renew_due") val renewDue: Boolean = false,
 )
+
+/** Neuer Geräteschlüssel nach der Erneuerung (H7). */
+@Serializable
+data class Renewed(val token: String, val device: DeviceInfo)
+
+@Serializable
+data class RenewChallenge(val challenge: String)
 
 @Serializable
 data class Paired(val token: String, val device: DeviceInfo, val user: AppUser)

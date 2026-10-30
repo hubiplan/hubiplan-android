@@ -11,6 +11,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -36,6 +37,19 @@ private val JSON_TYPE = "application/json".toMediaType()
 /** Geräteschlüssel neben dem Vorstandsschlüssel (Härtung H3). */
 const val DEVICE_HEADER = "X-Hubiplan-Device"
 
+private const val TOKEN_PREFIX = "hpd_"
+// Unterschrieben werden nur Anfragen mit dem Vorstandsschlüssel (Einheit u/, Untereinheit d/)
+private val ADMIN_PREFIXES = listOf("/api/app/v1/admin/u/", "/api/app/v1/admin/d/")
+private val KEY_PATHS = setOf("/api/app/v1/devices/current/renew/", "/api/app/v1/devices/current/key/")
+private const val OFFLINE = "Keine Verbindung zum Server. Bitte die Internetverbindung prüfen."
+
+/** `code` aus einer Fehlerantwort (z. B. `device_renew`, `admin_signature`). */
+fun errorCode(text: String): String? = try {
+    (json.parseToJsonElement(text) as? JsonObject)?.get("code")?.jsonPrimitive?.contentOrNull
+} catch (e: Exception) {
+    null
+}
+
 private val http: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
@@ -54,29 +68,91 @@ sealed interface LoginStep {
  * Vorstandsschlüssel (hpa_…) und [deviceToken] der Geräteschlüssel desselben Geräts: der Server
  * nimmt den Vorstandsschlüssel nur zusammen mit ihm an (Kopf `X-Hubiplan-Device`).
  */
-class Api(val server: String, private val token: String? = null, private val deviceToken: String? = null) {
+class Api(
+    val server: String,
+    private val token: String? = null,
+    private val deviceToken: String? = null,
+    /** Härtung H7: Vorstands-Schlüsselpaar; gesetzt, wenn Vorstandsanfragen unterschrieben werden. */
+    private val adminKeyAlias: String? = null,
+) {
+
+    private class Raw(val code: Int, val body: ByteArray, val headers: okhttp3.Headers) {
+        val text: String get() = String(body)
+    }
+
+    /** Geräteschlüssel, mit dem dieses Objekt angemeldet ist (direkt oder neben dem Vorstandsschlüssel). */
+    private fun deviceKeyToken(): String? =
+        (if (token?.startsWith(TOKEN_PREFIX) == true) token else deviceToken)?.let(DeviceTokens::current)
+
+    private fun request(
+        method: String,
+        path: String,
+        body: ByteArray?,
+        contentType: okhttp3.MediaType?,
+        headers: Map<String, String>,
+        accept: Boolean,
+    ): Request {
+        val url = (server + path).toHttpUrl()
+        val builder = Request.Builder().url(url)
+        if (accept) builder.header("Accept", "application/json")
+        token?.let { builder.header("Authorization", "Bearer ${if (it.startsWith(TOKEN_PREFIX)) DeviceTokens.current(it) else it}") }
+        deviceToken?.let { builder.header(DEVICE_HEADER, DeviceTokens.current(it)) }
+        if (adminKeyAlias != null && ADMIN_PREFIXES.any { path.startsWith(it) }) {
+            val signedPath = url.encodedPath + (url.encodedQuery?.let { "?$it" } ?: "")
+            val time = (System.currentTimeMillis() / 1000).toString()
+            val signature = try {
+                DeviceKeys.sign(adminKeyAlias, SignedFormat.adminMessage(method, signedPath, time, body ?: ByteArray(0)))
+            } catch (e: DeviceKeys.Unavailable) {
+                // Wie „Verwaltung gesperrt“: die App schaltet neu frei
+                throw ApiException(401, "Bitte die Verwaltung neu freischalten.")
+            }
+            builder.header(SignedFormat.TIME_HEADER, time).header(SignedFormat.SIGNATURE_HEADER, signature)
+        }
+        headers.forEach { (k, v) -> builder.header(k, v) }
+        val requestBody = body?.toRequestBody(contentType)
+        builder.method(method, requestBody ?: if (method == "GET" || method == "DELETE") null else ByteArray(0).toRequestBody(JSON_TYPE))
+        return builder.build()
+    }
+
+    /**
+     * Eine Anfrage; erneuert bei `401 device_renew` den Geräteschlüssel und wiederholt einmal.
+     * Ohne Erneuerung nie 401 nach oben geben (das hieße „Gerät abgemeldet“).
+     */
+    private suspend fun send(
+        method: String,
+        path: String,
+        body: okhttp3.RequestBody? = null,
+        headers: Map<String, String> = emptyMap(),
+        accept: Boolean = true,
+        retry: Boolean = true,
+    ): Raw = withContext(Dispatchers.IO) {
+        val bytes = body?.let { b -> okio.Buffer().also { b.writeTo(it) }.readByteArray() }
+        val used = deviceKeyToken()
+        val raw = try {
+            http.newCall(request(method, path, bytes, body?.contentType(), headers, accept)).execute().use { resp ->
+                Raw(resp.code, resp.body?.bytes() ?: ByteArray(0), resp.headers)
+            }
+        } catch (e: IOException) {
+            throw ApiException(0, OFFLINE)
+        }
+        // Erneuern und Nachmelden selbst nie erneut erneuern (das wäre eine Schleife)
+        if (raw.code == 401 && errorCode(raw.text) == "device_renew" && used != null && path !in KEY_PATHS) {
+            if (!retry || DeviceTokens.renew(server, used) == null) {
+                throw ApiException(0, "Der Geräteschlüssel ließ sich gerade nicht erneuern. Bitte später erneut versuchen.")
+            }
+            return@withContext send(method, path, body?.let { bytes!!.toRequestBody(it.contentType()) }, headers, accept, retry = false)
+        }
+        raw
+    }
 
     private suspend fun call(
         method: String,
         path: String,
         body: String? = null,
         headers: Map<String, String> = emptyMap(),
-    ): Pair<Int, String> = withContext(Dispatchers.IO) {
-        val builder = Request.Builder()
-            .url(server + path)
-            .header("Accept", "application/json")
-        token?.let { builder.header("Authorization", "Bearer $it") }
-        deviceToken?.let { builder.header(DEVICE_HEADER, it) }
-        headers.forEach { (k, v) -> builder.header(k, v) }
-        val requestBody = body?.toRequestBody(JSON_TYPE)
-        builder.method(method, requestBody ?: if (method == "GET" || method == "DELETE") null else "".toRequestBody(JSON_TYPE))
-        try {
-            http.newCall(builder.build()).execute().use { resp ->
-                resp.code to (resp.body?.string() ?: "")
-            }
-        } catch (e: IOException) {
-            throw ApiException(0, "Keine Verbindung zum Server. Bitte die Internetverbindung prüfen.")
-        }
+    ): Pair<Int, String> {
+        val raw = send(method, path, body?.toRequestBody(JSON_TYPE), headers)
+        return raw.code to raw.text
     }
 
     private suspend fun expect(
@@ -92,7 +168,7 @@ class Api(val server: String, private val token: String? = null, private val dev
 
     suspend fun instance(): Instance = json.decodeFromString(expect("GET", "/api/app/v1/instance/"))
 
-    suspend fun pair(code: String = "", loginLink: String = "", deviceName: String, appVersion: String): Paired =
+    suspend fun pair(code: String = "", loginLink: String = "", deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
         json.decodeFromString(
             expect(
                 "POST",
@@ -105,6 +181,7 @@ class Api(val server: String, private val token: String? = null, private val dev
                         "name" to deviceName,
                         "platform" to "android",
                         "app_version" to appVersion,
+                        "device_key" to deviceKey,
                     ),
                 ),
             ),
@@ -147,20 +224,38 @@ class Api(val server: String, private val token: String? = null, private val dev
         throw ApiException(status, runCatching { allauthMessage(root) }.getOrNull() ?: "Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen.")
     }
 
-    suspend fun createDevice(sessionToken: String, deviceName: String, appVersion: String): Paired =
+    suspend fun createDevice(sessionToken: String, deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
         json.decodeFromString(
             expect(
                 "POST",
                 "/api/app/v1/devices/",
                 json.encodeToString(
                     JsonObject.serializer(),
-                    jsonObjectOf("name" to deviceName, "platform" to "android", "app_version" to appVersion),
+                    jsonObjectOf("name" to deviceName, "platform" to "android", "app_version" to appVersion, "device_key" to deviceKey),
                 ),
                 mapOf("X-Session-Token" to sessionToken),
             ),
         )
 
     suspend fun me(): Me = json.decodeFromString(expect("GET", "/api/app/v1/me/"))
+
+    // --- Geräteschlüssel erneuern (Härtung H7) ---
+
+    suspend fun renewChallenge(): String =
+        json.decodeFromString<RenewChallenge>(expect("POST", "/api/app/v1/devices/current/renew/")).challenge
+
+    suspend fun renew(challenge: String, signature: String): Renewed = json.decodeFromString(
+        expect(
+            "POST",
+            "/api/app/v1/devices/current/renew/",
+            """{"challenge":${quote(challenge)},"signature":${quote(signature)}}""",
+        ),
+    )
+
+    /** Schlüsselpaar einer älteren Verbindung nachmelden. */
+    suspend fun registerDeviceKey(publicKey: String): DeviceInfo = json.decodeFromString(
+        expect("PUT", "/api/app/v1/devices/current/key/", """{"device_key":${quote(publicKey)}}"""),
+    )
 
     suspend fun logout(deviceId: Int) {
         expect("DELETE", "/api/app/v1/devices/$deviceId/")
@@ -201,8 +296,12 @@ class Api(val server: String, private val token: String? = null, private val dev
     suspend fun adminOverview(): AdminOverview = json.decodeFromString(expect("GET", "/api/app/v1/admin/"))
 
     /** Mit Passwort und Zwei-Faktor-Code freischalten; liefert den Vorstandsschlüssel. */
-    suspend fun unlockAdmin(password: String, code: String): AdminUnlock = json.decodeFromString(
-        expect("POST", "/api/app/v1/admin/unlock/", """{"password":${quote(password)},"code":${quote(code)}}"""),
+    suspend fun unlockAdmin(password: String, code: String, adminKey: String = ""): AdminUnlock = json.decodeFromString(
+        expect(
+            "POST",
+            "/api/app/v1/admin/unlock/",
+            """{"password":${quote(password)},"code":${quote(code)},"admin_key":${quote(adminKey)}}""",
+        ),
     )
 
     suspend fun lockAdmin() {
@@ -249,28 +348,17 @@ class Api(val server: String, private val token: String? = null, private val dev
         path: String,
         body: okhttp3.RequestBody?,
         headers: Map<String, String>,
-    ): AdminResponse =
-        withContext(Dispatchers.IO) {
-            val builder = Request.Builder().url(server + path).header("Accept", "application/json")
-            token?.let { builder.header("Authorization", "Bearer $it") }
-            deviceToken?.let { builder.header(DEVICE_HEADER, it) }
-            headers.forEach { (k, v) -> builder.header(k, v) }
-            builder.method(method, body)
-            try {
-                http.newCall(builder.build()).execute().use { resp ->
-                    val text = resp.body?.string() ?: ""
-                    if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text), text)
-                    AdminResponse(
-                        text,
-                        resp.header("X-Change-Set"),
-                        resp.header("X-Change-Undoable") == "1",
-                        resp.header("X-Change-Label")?.let { java.net.URLDecoder.decode(it, "UTF-8") },
-                    )
-                }
-            } catch (e: IOException) {
-                throw ApiException(0, "Keine Verbindung zum Server. Bitte die Internetverbindung prüfen.")
-            }
-        }
+    ): AdminResponse {
+        val resp = send(method, path, body, headers)
+        val text = resp.text
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text), text)
+        return AdminResponse(
+            text,
+            resp.headers["X-Change-Set"],
+            resp.headers["X-Change-Undoable"] == "1",
+            resp.headers["X-Change-Label"]?.let { java.net.URLDecoder.decode(it, "UTF-8") },
+        )
+    }
 
     suspend fun unregisterPush() {
         expect("DELETE", "/api/app/v1/devices/current/push/")
@@ -301,41 +389,23 @@ class Api(val server: String, private val token: String? = null, private val dev
     suspend fun photo(accessId: Int): PhotoState = json.decodeFromString(expect("GET", "/api/portal/$accessId/photo/"))
 
     /** Foto hochladen (JPEG, auf dem Gerät verkleinert und ohne EXIF) mit Einwilligung. */
-    suspend fun uploadPhoto(accessId: Int, jpeg: ByteArray): PhotoState = withContext(Dispatchers.IO) {
+    suspend fun uploadPhoto(accessId: Int, jpeg: ByteArray): PhotoState {
         val form = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("consent", "true")
             .addFormDataPart("file", "foto.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
             .build()
-        val request = Request.Builder().url("$server/api/portal/$accessId/photo/")
-            .header("Accept", "application/json")
-            .apply { token?.let { header("Authorization", "Bearer $it") } }
-            .apply { deviceToken?.let { header(DEVICE_HEADER, it) } }
-            .post(form)
-            .build()
-        try {
-            http.newCall(request).execute().use { resp ->
-                val text = resp.body?.string() ?: ""
-                if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text))
-                json.decodeFromString(PhotoState.serializer(), text)
-            }
-        } catch (e: IOException) {
-            throw ApiException(0, "Keine Verbindung zum Server. Bitte die Internetverbindung prüfen.")
-        }
+        val resp = send("POST", "/api/portal/$accessId/photo/", form)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text))
+        return json.decodeFromString(PhotoState.serializer(), resp.text)
     }
 
     suspend fun deletePhoto(accessId: Int): PhotoState = json.decodeFromString(expect("DELETE", "/api/portal/$accessId/photo/"))
 
     /** Bild mit Geräteschlüssel laden (Pfad aus der Schnittstelle). */
-    suspend fun image(path: String): ByteArray? = withContext(Dispatchers.IO) {
-        val request = Request.Builder().url(server + path)
-            .apply { token?.let { header("Authorization", "Bearer $it") } }
-            .apply { deviceToken?.let { header(DEVICE_HEADER, it) } }
-            .build()
-        try {
-            http.newCall(request).execute().use { resp -> if (resp.isSuccessful) resp.body?.bytes() else null }
-        } catch (e: IOException) {
-            null
-        }
+    suspend fun image(path: String): ByteArray? = try {
+        send("GET", path, accept = false).takeIf { it.code in 200..299 }?.body
+    } catch (e: ApiException) {
+        null
     }
 
     suspend fun circulars(accessId: Int): List<CircularItem> =

@@ -14,6 +14,9 @@ class HubiplanApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifications.createChannels(this)
+        // Härtung H7: alle Anfragen erneuern den Geräteschlüssel bei Bedarf über die Konten
+        val keys = de.hubiplan.app.data.KeyMaintenance(this, accounts)
+        de.hubiplan.app.data.DeviceTokens.renewer = { server, token -> keys.renew(server, token) }
         de.hubiplan.app.push.GooglePush.init(this)
     }
 }

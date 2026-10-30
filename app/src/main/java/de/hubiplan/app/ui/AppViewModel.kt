@@ -10,6 +10,8 @@ import de.hubiplan.app.data.Account
 import de.hubiplan.app.data.AdminOverview
 import de.hubiplan.app.data.AdminVault
 import de.hubiplan.app.data.Api
+import de.hubiplan.app.data.DeviceKeys
+import de.hubiplan.app.data.KeyMaintenance
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.LoginStep
 import de.hubiplan.app.data.Me
@@ -22,6 +24,7 @@ import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.data.AppSettings
 import de.hubiplan.app.push.PushSetup
 import de.hubiplan.app.sync.SyncWorker
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -30,6 +33,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface Screen {
     data object Loading : Screen
@@ -57,6 +61,8 @@ data class AdminState(
     val token: String? = null,
     val busy: Boolean = false,
     val error: String? = null,
+    // Härtung H7: Vorstandsanfragen mit diesem Schlüsselpaar unterschreiben
+    val keyAlias: String? = null,
 ) {
     val visible: Boolean get() = overview?.allUnits?.isNotEmpty() == true
 }
@@ -95,7 +101,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val overview = runCatching { Api(account.server, account.token).adminOverview() }.getOrNull()
         val sealed = store.sealedAdminToken()
         if (overview != null && !overview.unlocked && sealed != null) store.setSealedAdminToken(null)
-        _admin.value = AdminState(overview = overview, sealed = overview?.unlocked == true && sealed != null)
+        val signed = store.adminSigned()
+        val signedAlias = account.keyAlias?.takeIf { signed }?.let(DeviceKeys::adminAlias)
+        _admin.value = AdminState(
+            overview = overview,
+            sealed = overview?.unlocked == true && sealed != null,
+            keyAlias = signedAlias,
+        )
     }
 
     /** Nach Fingerabdruck/PIN: Vorstandsschlüssel aus dem Tresor holen. */
@@ -121,9 +133,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _admin.value = _admin.value.copy(busy = true, error = null)
         viewModelScope.launch {
             try {
-                val result = Api(main.account.server, main.account.token).unlockAdmin(password, code.trim())
+                // Härtung H7: neues Vorstands-Schlüsselpaar, nur bei entsperrtem Telefon nutzbar
+                val alias = main.account.keyAlias?.let(DeviceKeys::adminAlias)
+                val adminKey = alias?.let {
+                    withContext(Dispatchers.Default) {
+                        runCatching {
+                            DeviceKeys.create(it, admin = true, strongBox = DeviceKeys.hasStrongBox(context.packageManager))
+                        }.getOrNull()
+                    }
+                } ?: ""
+                val result = Api(main.account.server, main.account.token).unlockAdmin(password, code.trim(), adminKey)
                 try {
-                    store.setSealedAdminToken(AdminVault.seal(result.token))
+                    store.setSealedAdminToken(AdminVault.seal(result.token), signed = result.signed && adminKey.isNotEmpty())
                 } catch (e: Exception) {
                     // Ohne Tresor (keine Bildschirmsperre) nicht speichern und gleich wieder sperren
                     runCatching { Api(main.account.server, main.account.token).lockAdmin() }
@@ -154,7 +175,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val main = screen.value as? Screen.Main ?: return null
         val token = _admin.value.token ?: return null
         adminUsedAt = System.currentTimeMillis()
-        return Api(main.account.server, token, main.account.token)
+        return Api(main.account.server, token, main.account.token, _admin.value.keyAlias)
     }
 
     /** Verwaltung wird gerade benutzt (für die Gerätesperre nach 5 Minuten Pause). */
@@ -321,6 +342,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             for (s in accounts.allStores()) runCatching { PushSetup.refresh(context, s) }
             _canSend.value = runCatching { Api(account.server, account.token).senders().senders.isNotEmpty() }.getOrDefault(false)
             loadAdmin(account)
+            // Härtung H7: Schlüsselpaar nachmelden, Geräteschlüssel erneuern, wenn fällig
+            runCatching { KeyMaintenance(context, accounts).maintain(store, me.device) }
         } catch (e: ApiException) {
             if (e.status == 401) {
                 // Gerät abgemeldet (im Browser, Passwort geändert, lange nicht genutzt)
@@ -366,7 +389,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun confirmPairing() {
         val link = _connect.value.pendingPairing ?: return
         _connect.value = _connect.value.copy(pendingPairing = null)
-        run(link.server) { api -> api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion) }
+        run(link.server) { api, key -> api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion, deviceKey = key()) }
     }
 
     fun cancelPairing() {
@@ -380,9 +403,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         _connect.value = _connect.value.copy(server = server)
-        run(server) { api ->
+        run(server) { api, key ->
             when (val step = api.login(email.trim(), password)) {
-                is LoginStep.Done -> api.createDevice(step.sessionToken, deviceName, appVersion)
+                is LoginStep.Done -> api.createDevice(step.sessionToken, deviceName, appVersion, key())
                 is LoginStep.NeedsCode -> {
                     _connect.value = _connect.value.copy(pendingSession = step.sessionToken)
                     null
@@ -394,9 +417,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun secondFactor(code: String) {
         val state = _connect.value
         val session = state.pendingSession ?: return
-        run(state.server) { api ->
+        run(state.server) { api, key ->
             when (val step = api.secondFactor(session, code.trim())) {
-                is LoginStep.Done -> api.createDevice(step.sessionToken, deviceName, appVersion)
+                is LoginStep.Done -> api.createDevice(step.sessionToken, deviceName, appVersion, key())
                 is LoginStep.NeedsCode -> throw ApiException(400, "Der Code stimmt nicht. Bitte erneut versuchen.")
             }
         }
@@ -406,9 +429,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _connect.value = _connect.value.copy(pendingSession = null, error = null)
     }
 
-    private fun run(server: String, action: suspend (Api) -> Paired?) {
+    /** [action] bekommt die Api und eine Funktion, die das Geräteschlüsselpaar erzeugt (H7). */
+    private fun run(server: String, action: suspend (Api, suspend () -> String) -> Paired?) {
         _connect.value = _connect.value.copy(busy = true, error = null, server = server)
         viewModelScope.launch {
+            val alias = DeviceKeys.newAlias()
+            var created = false
+            val key: suspend () -> String = {
+                // Ohne Keystore-Schlüssel (sehr alte Geräte) verbindet die App wie bisher
+                withContext(Dispatchers.Default) {
+                    runCatching {
+                        DeviceKeys.create(alias, admin = false, strongBox = DeviceKeys.hasStrongBox(context.packageManager))
+                    }.getOrNull()
+                }?.also { created = true } ?: ""
+            }
             try {
                 val api = Api(server)
                 val instance = api.instance()
@@ -416,7 +450,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (instance.minAppVersion > BuildConfig.VERSION_CODE) {
                     throw ApiException(0, "Bitte die App aktualisieren, diese Version wird von HUBIplan nicht mehr unterstützt.")
                 }
-                val paired = action(api)
+                val paired = action(api, key)
+                if (paired == null && created) DeviceKeys.delete(alias)
                 if (paired != null) {
                     val slot = accounts.slotFor(server)
                     val target = accounts.store(slot)
@@ -425,7 +460,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         runCatching { PushSetup.disable(context, target) }
                         runCatching { Api(old.server, old.token).logout(old.deviceId) }
                     }
-                    target.save(server, paired)
+                    target.save(server, paired, alias.takeIf { created })
                     accounts.setActive(slot)
                     _connect.value = ConnectState()
                     _theme.value = null
@@ -435,6 +470,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     _connect.value = _connect.value.copy(busy = false)
                 }
             } catch (e: ApiException) {
+                if (created) DeviceKeys.delete(alias)
                 _connect.value = _connect.value.copy(busy = false, error = e.message)
             }
         }

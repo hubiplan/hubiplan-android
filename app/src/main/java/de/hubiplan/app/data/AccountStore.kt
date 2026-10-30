@@ -31,6 +31,8 @@ data class Account(
     val email: String,
     val display: String,
     val selectedAccess: Int?,
+    // Härtung H7: Name des Geräteschlüsselpaars im Keystore (null: ältere Verbindung)
+    val keyAlias: String? = null,
 )
 
 // Je Datei darf es nur einen DataStore geben: einmal je Platz anlegen
@@ -64,6 +66,9 @@ private object Keys {
     val pushOff = booleanPreferencesKey("push_aus")
     // Vorstandszugang (A8), mit AdminVault verschlüsselt (nur nach Entsperren lesbar)
     val adminToken = stringPreferencesKey("verwaltung_schluessel")
+    // Härtung H7: Schlüsselpaare im Keystore, Vorstandsanfragen unterschrieben
+    val keyAlias = stringPreferencesKey("schluesselpaar")
+    val adminSigned = booleanPreferencesKey("verwaltung_unterschrieben")
 }
 
 /** Push auf diesem Gerät: über eine UnifiedPush-App oder (Play-Fassung) über Google. */
@@ -148,9 +153,24 @@ class AccountStore(private val context: Context, val slot: Int = 0) {
     /** Vorstandsschlüssel, mit [AdminVault] verschlüsselt; null: nicht freigeschaltet. */
     suspend fun sealedAdminToken(): String? = dataStore.data.first()[Keys.adminToken]
 
-    suspend fun setSealedAdminToken(sealed: String?) = dataStore.edit {
-        if (sealed == null) it.remove(Keys.adminToken) else it[Keys.adminToken] = sealed
+    suspend fun setSealedAdminToken(sealed: String?, signed: Boolean = false) = dataStore.edit {
+        if (sealed == null) {
+            it.remove(Keys.adminToken)
+            it.remove(Keys.adminSigned)
+        } else {
+            it[Keys.adminToken] = sealed
+            it[Keys.adminSigned] = signed
+        }
     }
+
+    /** Vorstandsanfragen müssen unterschrieben werden (H7). */
+    suspend fun adminSigned(): Boolean = dataStore.data.first()[Keys.adminSigned] ?: false
+
+    /** Neuer Geräteschlüssel nach der Erneuerung (H7). */
+    suspend fun setToken(token: String) = dataStore.edit { it[Keys.token] = encrypt(token) }
+
+    /** Schlüsselpaar nachträglich gemeldet (ältere Verbindung). */
+    suspend fun setKeyAlias(alias: String) = dataStore.edit { it[Keys.keyAlias] = alias }
 
     suspend fun setPushOff(off: Boolean) = dataStore.edit { it[Keys.pushOff] = off }
 
@@ -186,11 +206,19 @@ class AccountStore(private val context: Context, val slot: Int = 0) {
             email = this[Keys.email] ?: "",
             display = this[Keys.display] ?: "",
             selectedAccess = this[Keys.selectedAccess],
+            keyAlias = this[Keys.keyAlias],
         )
     }
 
-    suspend fun save(server: String, paired: Paired) {
+    suspend fun save(server: String, paired: Paired, keyAlias: String? = null) {
+        val old = dataStore.data.first()[Keys.keyAlias]
+        if (old != null && old != keyAlias) forgetKeys(old)
+        // Ältere Instanz ohne Schlüsselpaare: das eben erzeugte wieder löschen
+        if (keyAlias != null && paired.device.key != true) forgetKeys(keyAlias)
         dataStore.edit {
+            if (keyAlias != null && paired.device.key == true) it[Keys.keyAlias] = keyAlias else it.remove(Keys.keyAlias)
+            it.remove(Keys.adminToken)
+            it.remove(Keys.adminSigned)
             it[Keys.server] = server
             it[Keys.token] = encrypt(paired.token)
             it[Keys.deviceId] = paired.device.id
@@ -209,7 +237,13 @@ class AccountStore(private val context: Context, val slot: Int = 0) {
 
     /** Abmelden: alles auf dem Gerät löschen. */
     suspend fun clear() {
+        dataStore.data.first()[Keys.keyAlias]?.let { forgetKeys(it) }
         dataStore.edit { it.clear() }
+    }
+
+    private fun forgetKeys(alias: String) {
+        DeviceKeys.delete(alias)
+        DeviceKeys.delete(DeviceKeys.adminAlias(alias))
     }
 
     private fun key(): SecretKey {

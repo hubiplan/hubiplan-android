@@ -49,6 +49,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val writeCalendar = settings.calendarOn && calendar.hasPermission()
         return try {
             val me = api.me()
+            // Härtung H7: Geräteschlüssel erneuern, wenn fällig
+            runCatching {
+                de.hubiplan.app.data.KeyMaintenance(applicationContext, (applicationContext as HubiplanApp).accounts)
+                    .maintain(store, me.device)
+            }
             val today = LocalDate.now()
             val keep = mutableSetOf<String>()
             val hints = mutableListOf<Triple<Int, de.hubiplan.app.data.Occurrence, String>>()
