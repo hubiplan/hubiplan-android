@@ -14,8 +14,14 @@ data class Changed<T>(val value: T, val changeSet: String?, val label: String?)
  * Verwaltung einer Einheit (Schritt B2) mit dem Vorstandsschlüssel. Pfade wie im Browser,
  * nur unter `/api/app/v1/admin/u/<Einheit>/`.
  */
-class AdminClient(private val api: Api, val unitId: Int, private val onUse: () -> Unit = {}) {
-    private val base = "/api/app/v1/admin/u/$unitId/"
+class AdminClient(
+    private val api: Api,
+    val unitId: Int,
+    private val onUse: () -> Unit = {},
+    /** "u": Einheit · "d": Untereinheit mit Rollen nur dort (Zugführung, B4) */
+    val scope: String = "u",
+) {
+    private val base = "/api/app/v1/admin/$scope/$unitId/"
 
     /** Jede Anfrage zählt als Nutzung (Gerätesperre erst nach 5 Minuten Pause). */
     private fun use(): Api {
@@ -161,6 +167,53 @@ class AdminClient(private val api: Api, val unitId: Int, private val onUse: () -
         val r = use().admin("DELETE", "${base}events/$id/responses/$membership/")
         return Changed(Unit, r.changeSet.takeIf { r.undoable }, r.label)
     }
+
+    // --- B4: Kasse ---
+
+    suspend fun accounts(): List<FinanceAccount> =
+        decodeList<FinanceAccount>(get("finance/accounts/")).filter { it.isActive }
+
+    suspend fun categories(): List<FinanceCategory> =
+        decodeList<FinanceCategory>(get("finance/categories/")).filter { it.isActive }
+
+    suspend fun bookings(page: Int, withoutReceipt: Boolean = false): BookingPage =
+        json.decodeFromString(get("finance/bookings/?page=$page&page_size=30" + if (withoutReceipt) "&ohne_beleg=1" else ""))
+
+    suspend fun booking(id: Int): BookingItem = json.decodeFromString(get("finance/bookings/$id/"))
+
+    suspend fun receipt(id: Int): ByteArray? = use().image("${base}finance/receipts/$id/")
+
+    /** Buchung mit Beleg in einem Schritt; [draft].key schützt vor doppeltem Buchen. */
+    suspend fun book(draft: BookingDraft, jpeg: ByteArray): BookingItem {
+        val fields = buildMap {
+            put("date", draft.date)
+            put("kind", draft.kind)
+            put("amount", draft.amount)
+            put("account", draft.account.toString())
+            draft.category?.let { put("category", it.toString()) }
+            put("text", draft.text)
+            if (draft.counterparty.isNotBlank()) put("counterparty", draft.counterparty)
+        }
+        val r = use().adminForm("${base}finance/app-booking/", fields, "beleg.jpg", jpeg, mapOf("Idempotency-Key" to draft.key))
+        return json.decodeFromString(r.text)
+    }
+
+    /** Beleg zu einer vorhandenen Buchung nachreichen. */
+    suspend fun addReceipt(bookingId: Int, jpeg: ByteArray) {
+        use().adminForm("${base}finance/bookings/$bookingId/receipts/", emptyMap(), "beleg.jpg", jpeg)
+    }
+
+    // --- B4: Untereinheit (Zugführung) ---
+
+    suspend fun deptMembers(search: String, page: Int): MemberPage {
+        val q = URLEncoder.encode(search.trim(), "UTF-8")
+        return json.decodeFromString(get("members/?suche=$q&page=$page&page_size=50"))
+    }
+
+    suspend fun deptMember(id: Int): DeptMemberDetail = json.decodeFromString(get("members/$id/"))
+
+    suspend fun deptUpdate(id: Int, values: Map<String, JsonElement>): Changed<DeptMemberDetail> =
+        changeAs("PATCH", "members/$id/", JsonObject(values))
 
     private suspend inline fun <reified T> changeAs(method: String, path: String, body: JsonObject): Changed<T> {
         val r = use().admin(method, base + path, body.toString())

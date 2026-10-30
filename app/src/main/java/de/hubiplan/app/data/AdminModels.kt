@@ -291,3 +291,84 @@ data class AdminResponses(
     val items: List<ResponseRow> = emptyList(),
     val open: List<OpenRow> = emptyList(),
 )
+
+// --- B4: Kasse ---
+
+@Serializable
+data class FinanceAccount(
+    val id: Int,
+    val name: String,
+    val kind: String = "",
+    @SerialName("kind_label") val kindLabel: String = "",
+    val balance: String? = null,
+    @SerialName("is_active") val isActive: Boolean = true,
+)
+
+@Serializable
+data class FinanceCategory(
+    val id: Int,
+    val name: String,
+    val kind: String = "",
+    @SerialName("is_active") val isActive: Boolean = true,
+)
+
+@Serializable
+data class ReceiptInfo(val id: Int, val name: String = "", @SerialName("content_type") val contentType: String = "")
+
+@Serializable
+data class BookingItem(
+    val id: Int,
+    @SerialName("display_number") val displayNumber: String = "",
+    val date: String = "",
+    val kind: String = "",
+    @SerialName("kind_label") val kindLabel: String = "",
+    val amount: String = "0",
+    @SerialName("account_name") val accountName: String = "",
+    @SerialName("to_account_name") val toAccountName: String? = null,
+    @SerialName("category_name") val categoryName: String? = null,
+    val text: String = "",
+    val counterparty: String = "",
+    val receipts: List<ReceiptInfo> = emptyList(),
+)
+
+@Serializable
+data class BookingPage(val count: Int = 0, val next: String? = null, val results: List<BookingItem> = emptyList())
+
+/** Buchung aus der App: Entwurf auf dem Gerät (verschlüsselt), bis sie gesendet ist. */
+@Serializable
+data class BookingDraft(
+    /** Zugleich `Idempotency-Key`: erneutes Senden bucht nicht doppelt. */
+    val key: String,
+    @SerialName("unit_id") val unitId: Int,
+    @SerialName("unit_name") val unitName: String = "",
+    val date: String,
+    val kind: String,
+    val amount: String,
+    val account: Int,
+    @SerialName("account_name") val accountName: String = "",
+    val category: Int? = null,
+    @SerialName("category_name") val categoryName: String = "",
+    val text: String,
+    val counterparty: String = "",
+    /** Belegfoto (JPEG) als Base64 */
+    val photo: String,
+    val error: String? = null,
+)
+
+// --- B4: Untereinheit (Zugführung) ---
+
+@Serializable
+data class DeptMemberDetail(
+    val id: Int,
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("birth_date") val birthDate: String? = null,
+    val gender: String = "",
+    @SerialName("club_number") val clubNumber: String = "",
+    @SerialName("member_type") val memberType: String? = null,
+    @SerialName("entry_date") val entryDate: String? = null,
+    val departments: List<String> = emptyList(),
+    val contact: Contact? = null,
+) {
+    val name: String get() = "$firstName $lastName".trim()
+}

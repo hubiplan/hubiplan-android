@@ -216,15 +216,39 @@ class Api(val server: String, private val token: String? = null) {
         path: String,
         body: String? = null,
         headers: Map<String, String> = emptyMap(),
+    ): AdminResponse = adminSend(
+        method,
+        path,
+        body?.toRequestBody(JSON_TYPE) ?: if (method == "GET" || method == "DELETE") null else "".toRequestBody(JSON_TYPE),
+        headers,
+    )
+
+    /** Formular mit Datei (Schritt B4: Beleg als JPEG), sonst wie [admin]. */
+    suspend fun adminForm(
+        path: String,
+        fields: Map<String, String>,
+        fileName: String,
+        jpeg: ByteArray,
+        headers: Map<String, String> = emptyMap(),
+    ): AdminResponse {
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM).apply {
+            fields.forEach { (k, v) -> addFormDataPart(k, v) }
+            addFormDataPart("file", fileName, jpeg.toRequestBody("image/jpeg".toMediaType()))
+        }.build()
+        return adminSend("POST", path, form, headers)
+    }
+
+    private suspend fun adminSend(
+        method: String,
+        path: String,
+        body: okhttp3.RequestBody?,
+        headers: Map<String, String>,
     ): AdminResponse =
         withContext(Dispatchers.IO) {
             val builder = Request.Builder().url(server + path).header("Accept", "application/json")
             token?.let { builder.header("Authorization", "Bearer $it") }
             headers.forEach { (k, v) -> builder.header(k, v) }
-            builder.method(
-                method,
-                body?.toRequestBody(JSON_TYPE) ?: if (method == "GET" || method == "DELETE") null else "".toRequestBody(JSON_TYPE),
-            )
+            builder.method(method, body)
             try {
                 http.newCall(builder.build()).execute().use { resp ->
                     val text = resp.body?.string() ?: ""
