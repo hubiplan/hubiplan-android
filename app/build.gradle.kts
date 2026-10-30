@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -14,19 +16,46 @@ android {
         // Android 8.0: Benachrichtigungskanäle, einheitliche Hintergrundregeln (Konzept, Frage 12)
         minSdk = 26
         targetSdk = 35
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.6.0"
     }
 
-    // foss: F-Droid und APK, ohne Google-Bibliotheken · play: Google Play (später mit FCM)
+    // Signatur der Veröffentlichung aus keystore.properties (nur auf dem Rechner des Herausgebers):
+    // storeFile, storePassword, keyAlias, keyPassword. Fehlt die Datei, bleibt release unsigniert
+    // (F-Droid signiert selbst).
+    val keystore = rootProject.file("keystore.properties")
+    if (keystore.exists()) {
+        val p = Properties().apply { keystore.inputStream().use { load(it) } }
+        signingConfigs {
+            create("release") {
+                storeFile = file(p.getProperty("storeFile"))
+                storePassword = p.getProperty("storePassword")
+                keyAlias = p.getProperty("keyAlias")
+                keyPassword = p.getProperty("keyPassword")
+            }
+        }
+    }
+
+    // foss: F-Droid und APK, ohne Google-Bibliotheken · play: Google Play, zusätzlich Push über Google
     flavorDimensions += "vertrieb"
     productFlavors {
         create("foss") { dimension = "vertrieb" }
-        create("play") { dimension = "vertrieb" }
+        create("play") {
+            dimension = "vertrieb"
+            // Firebase-Projekt des Herausgebers aus firebase.properties (nicht im Repo); leer: kein Google-Push
+            val firebase = Properties().apply {
+                rootProject.file("firebase.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+            }
+            listOf("app_id", "project_id", "api_key", "sender_id").forEach { key ->
+                val value = firebase.getProperty(key, "").replace("\"", "")
+                buildConfigField("String", "FIREBASE_" + key.uppercase(), "\"$value\"")
+            }
+        }
     }
 
     buildTypes {
         release {
+            if (keystore.exists()) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
@@ -66,5 +95,6 @@ dependencies {
     implementation(libs.zxing.embedded)
     implementation(libs.androidx.work)
     debugImplementation(libs.compose.ui.tooling)
+    "playImplementation"(libs.firebase.messaging)
     testImplementation(libs.junit)
 }

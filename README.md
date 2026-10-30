@@ -10,15 +10,16 @@ Sie ergänzt den Mitgliederbereich im Browser:
 - Ansicht für Telefon und Tablet (Liste und Detail nebeneinander)
 - Termine im Gerätekalender mit Erinnerungen, Hinweis „Rückmeldung fehlt“
 - Mitteilungen des Vorstands sofort per Push über eine UnifiedPush-App (z. B. ntfy), ohne
-  Google; der Inhalt ist Ende-zu-Ende verschlüsselt (Web-Push, RFC 8291). Ohne Push-App
-  holt die App neue Mitteilungen alle paar Stunden ab.
+  Google; der Inhalt ist Ende-zu-Ende verschlüsselt (Web-Push, RFC 8291). Die Play-Fassung
+  nutzt ohne UnifiedPush-App Google (FCM) über das Push-Gateway; auch dann sieht Google nur
+  verschlüsselte Daten. Ohne Push holt die App neue Mitteilungen alle paar Stunden ab.
 - Vorstand und Zugführung: Kurzmitteilung an alle Mitglieder der Einheit senden, mit
   Empfängerzahl vorab
 - Eigenes Profil ansehen, Änderungen der Kontaktdaten melden (der Verein prüft sie)
 - Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen; mit Einwilligung,
   der Verein gibt es frei. Foto und Einwilligung lassen sich in der App widerrufen.
 
-Geplant: Play-Fassung.
+Geplant: mehrere HUBIplan-Instanzen in einer App.
 
 ## Verbinden
 
@@ -32,12 +33,24 @@ sich jederzeit unter „Mein Konto“ abmelden lässt.
 Voraussetzungen: JDK 17 oder neuer (in WSL Debian: 21), Android-SDK (Plattform 35), `ANDROID_HOME` gesetzt.
 
 ```
-scripts/test.sh            # Unit-Tests und Debug-APK (Variante foss)
-./gradlew assembleFossRelease
+scripts/test.sh            # Unit-Tests, Lint, Debug-APKs; prüft „foss ohne Google“
+./gradlew assembleFossRelease bundlePlayRelease
 ```
 
-Varianten: `foss` (F-Droid, APK, ohne Google-Bibliotheken) und `play` (Google Play).
-Mindestversion Android 8.0.
+Varianten: `foss` (F-Droid, APK, ohne Google-Bibliotheken) und `play` (Google Play, zusätzlich
+Firebase Cloud Messaging). Mindestversion Android 8.0.
+
+Nur auf dem Rechner des Herausgebers, nie im Repo:
+
+- `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`): Signatur
+  der Veröffentlichung. Ohne die Datei bleibt `release` unsigniert (F-Droid signiert selbst).
+- `firebase.properties` (`app_id`, `project_id`, `api_key`, `sender_id` aus dem
+  Firebase-Projekt): nur für `play`. Ohne die Datei hat `play` keinen Google-Push.
+
+## Veröffentlichen
+
+Siehe [docs/veroeffentlichen.md](docs/veroeffentlichen.md): F-Droid, Google Play, APK zum
+Herunterladen und der Textbaustein für die Datenschutzhinweise des Vereins.
 
 ## Lizenz
 

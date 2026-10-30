@@ -10,5 +10,6 @@ class HubiplanApp : Application() {
     override fun onCreate() {
         super.onCreate()
         Notifications.createChannels(this)
+        de.hubiplan.app.push.GooglePush.init(this)
     }
 }

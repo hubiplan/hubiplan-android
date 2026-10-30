@@ -77,10 +77,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _openRequest.value = null
     }
 
-    /** Push über eine UnifiedPush-App einschalten oder (null) abschalten. */
+    /** Push über eine UnifiedPush-App oder Google einschalten oder (null) abschalten. */
     fun setPushDistributor(pkg: String?) {
         viewModelScope.launch {
-            if (pkg == null) PushSetup.disable(context) else PushSetup.enable(context, pkg)
+            if (pkg == null) PushSetup.turnOff(context) else PushSetup.enable(context, pkg)
         }
     }
 

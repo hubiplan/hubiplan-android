@@ -20,6 +20,18 @@ if [ -z "${ANDROID_HOME:-}" ]; then
     exit 2
 fi
 TASKS=("$@")
-[ ${#TASKS[@]} -eq 0 ] && TASKS=(testFossDebugUnitTest assembleFossDebug lintFossDebug)
+DEFAULT=0
+if [ ${#TASKS[@]} -eq 0 ]; then
+    DEFAULT=1
+    TASKS=(testFossDebugUnitTest assembleFossDebug lintFossDebug assemblePlayDebug)
+fi
 ./gradlew --no-daemon --max-workers=12 "${TASKS[@]}"
+if [ "$DEFAULT" = 1 ]; then
+    # F-Droid: in der foss-Fassung darf keine Google-Bibliothek stecken (Firebase, Play-Dienste)
+    if ./gradlew --no-daemon -q :app:dependencies --configuration fossReleaseRuntimeClasspath \
+        | grep -E "com\.google\.(firebase|android\.gms|android\.play)|com\.google\.android\.datatransport"; then
+        echo "Abbruch: Google-Bibliothek in der foss-Fassung." >&2
+        exit 1
+    fi
+fi
 echo "OK: $(git rev-parse --short HEAD) gebaut und getestet."

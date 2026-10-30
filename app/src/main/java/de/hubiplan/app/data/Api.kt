@@ -176,13 +176,13 @@ class Api(val server: String, private val token: String? = null) {
         json.decodeFromString(expect("DELETE", "/api/portal/$accessId/events/$eventId/response/"))
 
     /** Push-Endpunkt dieses Geräts melden (UnifiedPush). */
-    suspend fun registerPush(endpoint: String, p256dh: String, auth: String) {
+    suspend fun registerPush(endpoint: String, p256dh: String, auth: String, kind: String = "unifiedpush") {
         expect(
             "PUT",
             "/api/app/v1/devices/current/push/",
             json.encodeToString(
                 JsonObject.serializer(),
-                jsonObjectOf("kind" to "unifiedpush", "endpoint" to endpoint, "p256dh" to p256dh, "auth" to auth),
+                jsonObjectOf("kind" to kind, "endpoint" to endpoint, "p256dh" to p256dh, "auth" to auth),
             ),
         )
     }

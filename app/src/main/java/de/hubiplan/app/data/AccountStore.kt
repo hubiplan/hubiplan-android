@@ -51,13 +51,16 @@ private object Keys {
     val pushToken = stringPreferencesKey("push_kennung")
     val pushEndpoint = stringPreferencesKey("push_endpunkt")
     val pushError = stringPreferencesKey("push_fehler")
+    val pushOff = booleanPreferencesKey("push_aus")
 }
 
-/** Push über UnifiedPush auf diesem Gerät. */
+/** Push auf diesem Gerät: über eine UnifiedPush-App oder (Play-Fassung) über Google. */
 data class PushState(
     val distributor: String? = null,
     val endpoint: String? = null,
     val error: String? = null,
+    // Selbst ausgeschaltet: dann nicht von allein über Google einrichten
+    val off: Boolean = false,
 ) {
     val active: Boolean get() = distributor != null && endpoint != null
 }
@@ -93,7 +96,7 @@ class AccountStore(private val context: Context) {
             reminderMinutes = (p[Keys.reminderMinutes] ?: DEFAULT_REMINDER_MINUTES).takeIf { it >= 0 },
             rsvpHints = p[Keys.rsvpHints] ?: true,
             lastSync = p[Keys.lastSync],
-            push = PushState(p[Keys.pushDistributor], p[Keys.pushEndpoint], p[Keys.pushError]),
+            push = PushState(p[Keys.pushDistributor], p[Keys.pushEndpoint], p[Keys.pushError], p[Keys.pushOff] ?: false),
         )
     }
 
@@ -126,6 +129,8 @@ class AccountStore(private val context: Context) {
         }
         it.remove(Keys.pushError)
     }
+
+    suspend fun setPushOff(off: Boolean) = context.dataStore.edit { it[Keys.pushOff] = off }
 
     suspend fun setPushEndpoint(endpoint: String?, error: String? = null) = context.dataStore.edit {
         if (endpoint == null) it.remove(Keys.pushEndpoint) else it[Keys.pushEndpoint] = endpoint

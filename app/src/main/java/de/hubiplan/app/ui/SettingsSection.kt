@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Box
 import de.hubiplan.app.calendar.DeviceCalendar
+import de.hubiplan.app.push.GooglePush
 import de.hubiplan.app.push.UnifiedPush
 import de.hubiplan.app.sync.Notifications
 import java.text.DateFormat
@@ -149,7 +150,10 @@ private fun PushSection(vm: AppViewModel) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val push = settings.push
     // Bei jedem Anzeigen neu suchen (Verteiler-App inzwischen installiert?)
-    val distributors = remember(push.distributor) { UnifiedPush.distributors(context) }
+    val distributors = remember(push.distributor) {
+        UnifiedPush.distributors(context) +
+            listOfNotNull(GooglePush.takeIf { it.available(context) }?.let { UnifiedPush.Distributor(it.ID, it.LABEL) })
+    }
     var choose by remember { mutableStateOf(false) }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
@@ -161,8 +165,13 @@ private fun PushSection(vm: AppViewModel) {
         }
         push.distributor != null && push.error == null -> Text("Wird eingerichtet …")
         else -> Text(
-            "Ohne Push-App holt die App neue Mitteilungen nur alle paar Stunden ab. Wer die Mitteilungen sofort " +
-                "bekommen will, installiert einmal eine UnifiedPush-App, zum Beispiel „ntfy“ aus F-Droid.",
+            if (distributors.any { it.packageName == GooglePush.ID }) {
+                "Ohne Push holt die App neue Mitteilungen nur alle paar Stunden ab. Mit Push kommen sie sofort, " +
+                    "über Google oder eine UnifiedPush-App wie „ntfy“. Der Inhalt bleibt verschlüsselt."
+            } else {
+                "Ohne Push-App holt die App neue Mitteilungen nur alle paar Stunden ab. Wer die Mitteilungen sofort " +
+                    "bekommen will, installiert einmal eine UnifiedPush-App, zum Beispiel „ntfy“ aus F-Droid."
+            },
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -190,7 +199,7 @@ private fun PushSection(vm: AppViewModel) {
             TextButton(onClick = { vm.setPushDistributor(null) }) { Text("Push ausschalten") }
         }
     }
-    if (push.active) {
+    if (push.active && push.distributor != GooglePush.ID) {
         Text(
             "Kommen Mitteilungen verspätet an, nimm die Push-App in den Android-Einstellungen vom Energiesparen aus " +
                 "(Apps › ntfy › Akku › Nicht eingeschränkt).",
