@@ -9,15 +9,15 @@ plugins {
 
 android {
     namespace = "de.hubiplan.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "de.hubiplan.app"
         // Android 8.0: Benachrichtigungskanäle, einheitliche Hintergrundregeln (Konzept, Frage 12)
         minSdk = 26
-        targetSdk = 35
-        versionCode = 11
-        versionName = "0.11.0"
+        targetSdk = 36
+        versionCode = 12
+        versionName = "0.11.1"
     }
 
     // Signatur der Veröffentlichung aus keystore.properties (nur auf dem Rechner des Herausgebers):

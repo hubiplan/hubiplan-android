@@ -1,7 +1,8 @@
 # Veröffentlichen
 
-Stand Schritt A6. Wer die App im Play Store herausgibt, ist noch offen (Konzept, Frage 11);
-bis dahin gibt es die APK zum Herunterladen und die Vorbereitung für F-Droid.
+Herausgeber im Play Store ist **Philipsen EDV** mit einem Organisationskonto (Entscheidung
+30.10.2026, Konzept Frage 11). Bis das Konto steht, gibt es die APK zum Herunterladen und die
+Vorbereitung für F-Droid.
 
 ## Versionen
 
@@ -26,6 +27,12 @@ bis dahin gibt es die APK zum Herunterladen und die Vorbereitung für F-Droid.
 demselben Schlüssel signiert sein. Fingerabdruck (SHA-256) neben der Datei angeben.
 
 ## Google Play (Variante `play`)
+
+Voraussetzungen von Google (Stand 10/2026): `targetSdk` mindestens 36 (Android 16) für neue Apps
+und Updates; `minSdk` bleibt 26. Ein Weg zum Löschen von Konto und Daten in der App (Konto ›
+„Konto und Daten löschen“) und als Webseite des Herausgebers. Prüferzugang auf dem Testserver mit
+erfundenen Daten. Ausführliche Anleitung: `anleitungen/play-store-veroeffentlichung.md` im
+Projektordner.
 
 1. Firebase-Projekt des Herausgebers anlegen, Android-App `de.hubiplan.app` eintragen.
    Aus der Projektübersicht die vier Werte in `firebase.properties` übernehmen (nicht ins Repo).
