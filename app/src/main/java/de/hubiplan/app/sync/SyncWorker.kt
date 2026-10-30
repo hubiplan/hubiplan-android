@@ -14,6 +14,7 @@ import de.hubiplan.app.HubiplanApp
 import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.calendar.needsRsvpReminder
 import de.hubiplan.app.calendar.toCalendarEntry
+import de.hubiplan.app.data.AccountStore
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.ui.DEFAULT_PRIMARY
@@ -31,8 +32,17 @@ import java.util.concurrent.TimeUnit
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
-        val store = (applicationContext as HubiplanApp).store
-        val account = store.account.first() ?: return Result.success()
+        // Jedes Konto (je Instanz) für sich; ein Fehler bei einem hält die anderen nicht auf
+        var retry = false
+        for (store in (applicationContext as HubiplanApp).accounts.allStores()) {
+            if (syncAccount(store)) retry = true
+        }
+        return if (retry) Result.retry() else Result.success()
+    }
+
+    /** Ein Konto abgleichen; true: später erneut versuchen (kein Netz, Server gestört). */
+    private suspend fun syncAccount(store: AccountStore): Boolean {
+        val account = store.account.first() ?: return false
         val settings = store.settings.first()
         val api = Api(account.server, account.token)
         val calendar = DeviceCalendar(applicationContext)
@@ -55,26 +65,26 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 items.filter { it.needsRsvpReminder(now) }.forEach { hints += Triple(access.id, it, access.title) }
             }
             missedPushes(store, api, me.portal.map { it.id }, firstSync = settings.lastSync == null)
-            if (settings.calendarOn) calendar.removeCalendarsExcept(keep)
+            if (settings.calendarOn) calendar.removeCalendarsExcept(keep, account.server)
             if (settings.rsvpHints) showHints(store, hints)
             store.markSynced(System.currentTimeMillis())
-            Result.success()
+            false
         } catch (e: ApiException) {
             when (e.status) {
                 401 -> {
                     // Gerät abgemeldet: Kalender und Konto entfernen, die App fragt beim Öffnen neu
-                    calendar.removeCalendarsExcept(emptySet())
-                    runCatching { de.hubiplan.app.push.PushSetup.forget(applicationContext) }
-                    store.clear()
-                    Result.success()
+                    calendar.removeCalendarsExcept(emptySet(), account.server)
+                    runCatching { de.hubiplan.app.push.PushSetup.forget(applicationContext, store) }
+                    (applicationContext as HubiplanApp).accounts.remove(store.slot)
+                    false
                 }
-                0, in 500..599 -> Result.retry()
-                else -> Result.failure()
+                0, in 500..599 -> true
+                else -> false
             }
         } catch (e: SecurityException) {
             // Kalendererlaubnis entzogen
             store.setCalendarOn(false)
-            Result.success()
+            false
         }
     }
 
@@ -99,7 +109,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 if (key in done) continue
                 val sent = c.sentAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
                 if (!firstSync && sent != null && sent.isAfter(since)) {
-                    Notifications.showCircular(applicationContext, accessId, c.id, c.subject, "", c.sender, false)
+                    Notifications.showCircular(applicationContext, store.slot, accessId, c.id, c.subject, "", c.sender, false)
                 }
                 seen += key
             }
@@ -118,6 +128,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             if (key in done) continue
             Notifications.showRsvpMissing(
                 applicationContext,
+                store.slot,
                 accessId,
                 occ.eventId,
                 occ.title,

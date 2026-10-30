@@ -13,6 +13,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -39,13 +41,36 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             Text("Angemeldet als Mitglied von ${a.title}", style = MaterialTheme.typography.bodySmall)
         }
         androidx.compose.material3.HorizontalDivider()
+        AccountsSection(main, vm)
+        androidx.compose.material3.HorizontalDivider()
         SettingsSection(vm)
         androidx.compose.material3.HorizontalDivider()
-        OutlinedButton(onClick = vm::logout) { Text("Von diesem Gerät abmelden") }
+        OutlinedButton(onClick = vm::logout) { Text("Dieses Konto vom Gerät abmelden") }
         Text(
             "HUBIplan-App ${BuildConfig.VERSION_NAME} · freie Software unter der GNU AGPL 3.0 oder neuer",
             style = MaterialTheme.typography.bodySmall,
         )
         TextButton(onClick = { open(SOURCE_URL) }) { Text("Quellcode") }
     }
+}
+
+/** Weitere Konten (andere HUBIplan-Adressen): wechseln oder hinzufügen. */
+@Composable
+private fun AccountsSection(main: Screen.Main, vm: AppViewModel) {
+    val list by vm.accountList.collectAsStateWithLifecycle()
+    val active by vm.activeSlot.collectAsStateWithLifecycle()
+    Text("Konten", style = MaterialTheme.typography.titleMedium)
+    val others = list.filter { it.first != active }
+    if (others.isEmpty()) {
+        Text(
+            "Bist du auch in einem Verein mit eigener HUBIplan-Adresse, kannst du ihn hier als weiteres Konto verbinden.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+    others.forEach { (slot, account) ->
+        TextButton(onClick = { vm.switchAccount(slot) }) {
+            Text("Wechseln zu ${account.display.ifBlank { account.email }} · ${account.server.removePrefix("https://")}")
+        }
+    }
+    OutlinedButton(onClick = vm::addAccount) { Text("Weiteres Konto verbinden") }
 }

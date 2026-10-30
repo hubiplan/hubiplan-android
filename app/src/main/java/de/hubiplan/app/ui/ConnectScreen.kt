@@ -50,6 +50,13 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text("HUBIplan", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
+                if (state.adding) {
+                    Text(
+                        "Weiteres Konto verbinden, zum Beispiel für einen zweiten Verein mit eigener HUBIplan-Adresse. " +
+                            "Für weitere Einheiten derselben Adresse ist kein zweites Konto nötig.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
                 if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 state.error?.let {
                     Text(it, color = MaterialTheme.colorScheme.error)
@@ -78,6 +85,9 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                 ) { Text("Mit QR-Code verbinden") }
                 HorizontalDivider()
                 PasswordLogin(state, vm)
+                if (state.adding) {
+                    TextButton(onClick = vm::cancelAdd, enabled = !state.busy) { Text("Abbrechen, zurück zum bisherigen Konto") }
+                }
             }
         }
     }

@@ -20,6 +20,7 @@ object Notifications {
     const val CHANNEL_MESSAGES = "mitteilungen"
     const val EXTRA_ACCESS = "zugang"
     const val EXTRA_CIRCULAR = "mitteilung"
+    const val EXTRA_SLOT = "konto"
 
     fun createChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
@@ -41,13 +42,15 @@ object Notifications {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
     /** Hinweis mit Knöpfen Zusage/Absage; die Antwort geht ohne Öffnen der App an HUBIplan. */
-    fun showRsvpMissing(context: Context, accessId: Int, eventId: Int, title: String, text: String) {
+    fun showRsvpMissing(context: Context, slot: Int, accessId: Int, eventId: Int, title: String, text: String) {
         if (!allowed(context)) return
-        val id = notificationId(accessId, eventId)
+        val id = notificationId(slot, accessId, eventId)
         val open = PendingIntent.getActivity(
             context,
             id,
-            Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP),
+            Intent(context, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(EXTRA_SLOT, slot),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         fun action(status: String, label: String, request: Int) = NotificationCompat.Action(
@@ -56,7 +59,7 @@ object Notifications {
             PendingIntent.getBroadcast(
                 context,
                 request,
-                RsvpActionReceiver.intent(context, accessId, eventId, status, id),
+                RsvpActionReceiver.intent(context, slot, accessId, eventId, status, id),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             ),
         )
@@ -78,14 +81,15 @@ object Notifications {
     }
 
     /** Mitteilung des Vorstands; Antippen öffnet sie in der App. */
-    fun showCircular(context: Context, accessId: Int, circularId: Int, title: String, text: String, from: String, short: Boolean) {
+    fun showCircular(context: Context, slot: Int, accessId: Int, circularId: Int, title: String, text: String, from: String, short: Boolean) {
         if (!allowed(context)) return
-        val id = (notificationId(accessId, circularId) xor 0x2000_0000) and 0x3FFFFFFF
+        val id = (notificationId(slot, accessId, circularId) xor 0x2000_0000) and 0x3FFFFFFF
         val open = PendingIntent.getActivity(
             context,
             id,
             Intent(context, MainActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(EXTRA_SLOT, slot)
                 .putExtra(EXTRA_ACCESS, accessId)
                 .putExtra(EXTRA_CIRCULAR, circularId),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -123,14 +127,15 @@ object Notifications {
     }
 
     /** Hinweis von HUBIplan (z. B. Foto freigegeben, Änderung übernommen); öffnet die App. */
-    fun showInfo(context: Context, accessId: Int, title: String, text: String) {
+    fun showInfo(context: Context, slot: Int, accessId: Int, title: String, text: String) {
         if (!allowed(context)) return
-        val id = ((accessId * 100_003 + (title + text).hashCode()) xor 0x1000_0000) and 0x3FFFFFFF
+        val id = (notificationId(slot, accessId, (title + text).hashCode()) xor 0x1000_0000) and 0x3FFFFFFF
         val open = PendingIntent.getActivity(
             context,
             id,
             Intent(context, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                .putExtra(EXTRA_SLOT, slot),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_MESSAGES)
@@ -147,5 +152,7 @@ object Notifications {
         }
     }
 
-    fun notificationId(accessId: Int, eventId: Int): Int = (accessId * 100_003 + eventId) and 0x3FFFFFFF
+    /** Kennung je Konto, Zugang und Termin/Mitteilung (Konto 0 wie in früheren Versionen). */
+    fun notificationId(slot: Int, accessId: Int, itemId: Int): Int =
+        (accessId * 100_003 + itemId + slot * 7_919_993) and 0x3FFFFFFF
 }

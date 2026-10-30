@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.first
 /** Knopf „Zusage“/„Absage“ in der Benachrichtigung: Rückmeldung senden, auch ohne Netz (später). */
 class RsvpActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val slot = intent.getIntExtra(EXTRA_SLOT, 0)
         val access = intent.getIntExtra(EXTRA_ACCESS, -1)
         val event = intent.getIntExtra(EXTRA_EVENT, -1)
         val status = intent.getStringExtra(EXTRA_STATUS) ?: return
@@ -28,24 +29,26 @@ class RsvpActionReceiver : BroadcastReceiver() {
         NotificationManagerCompat.from(context).cancel(notification)
         // Gemerkt und gesendet, sobald Netz da ist
         WorkManager.getInstance(context).enqueueUniqueWork(
-            "rueckmeldung-$access-$event",
+            "rueckmeldung-$slot-$access-$event",
             ExistingWorkPolicy.REPLACE,
             OneTimeWorkRequestBuilder<RsvpWorker>()
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-                .setInputData(workDataOf(EXTRA_ACCESS to access, EXTRA_EVENT to event, EXTRA_STATUS to status, EXTRA_NOTIFICATION to notification))
+                .setInputData(workDataOf(EXTRA_SLOT to slot, EXTRA_ACCESS to access, EXTRA_EVENT to event, EXTRA_STATUS to status, EXTRA_NOTIFICATION to notification))
                 .build(),
         )
     }
 
     companion object {
+        const val EXTRA_SLOT = "konto"
         const val EXTRA_ACCESS = "zugang"
         const val EXTRA_EVENT = "termin"
         const val EXTRA_STATUS = "status"
         const val EXTRA_NOTIFICATION = "hinweis"
 
-        fun intent(context: Context, accessId: Int, eventId: Int, status: String, notificationId: Int): Intent =
+        fun intent(context: Context, slot: Int, accessId: Int, eventId: Int, status: String, notificationId: Int): Intent =
             Intent(context, RsvpActionReceiver::class.java)
                 .setAction("de.hubiplan.app.RUECKMELDUNG.$status")
+                .putExtra(EXTRA_SLOT, slot)
                 .putExtra(EXTRA_ACCESS, accessId)
                 .putExtra(EXTRA_EVENT, eventId)
                 .putExtra(EXTRA_STATUS, status)
@@ -55,7 +58,8 @@ class RsvpActionReceiver : BroadcastReceiver() {
 
 class RsvpWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val store = (applicationContext as HubiplanApp).store
+        val slot = inputData.getInt(RsvpActionReceiver.EXTRA_SLOT, 0)
+        val store = (applicationContext as HubiplanApp).accounts.store(slot)
         val account = store.account.first() ?: return Result.success()
         val access = inputData.getInt(RsvpActionReceiver.EXTRA_ACCESS, -1)
         val event = inputData.getInt(RsvpActionReceiver.EXTRA_EVENT, -1)

@@ -20,7 +20,9 @@ import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.data.AppSettings
 import de.hubiplan.app.push.PushSetup
 import de.hubiplan.app.sync.SyncWorker
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.first
@@ -40,10 +42,20 @@ data class ConnectState(
     val server: String = "",
     // Zweiter Faktor: Sitzung der Anmeldung, bis der Code eingegeben ist
     val pendingSession: String? = null,
+    // Weiteres Konto verbinden (zurück zum bisherigen möglich)
+    val adding: Boolean = false,
 )
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModel(app: Application) : AndroidViewModel(app) {
-    private val store = (app as HubiplanApp).store
+    private val accounts = (app as HubiplanApp).accounts
+    private val store get() = accounts.activeStore()
+
+    /** Alle Konten auf dem Gerät (Platz, Konto), für den Wechsel unter „Konto“. */
+    private val _accountList = MutableStateFlow<List<Pair<Int, Account>>>(emptyList())
+    val accountList: StateFlow<List<Pair<Int, Account>>> = _accountList
+
+    val activeSlot: StateFlow<Int> = accounts.active
 
     private val _screen = MutableStateFlow<Screen>(Screen.Loading)
     val screen: StateFlow<Screen> = _screen
@@ -54,7 +66,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _theme = MutableStateFlow<Theme?>(null)
     val theme: StateFlow<Theme?> = _theme
 
-    val settings: StateFlow<AppSettings> = store.settings
+    val settings: StateFlow<AppSettings> = accounts.active
+        .flatMapLatest { accounts.store(it).settings }
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
 
     private val context get() = getApplication<Application>()
@@ -67,8 +80,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _openRequest = MutableStateFlow<Pair<Int, Int>?>(null)
     val openRequest: StateFlow<Pair<Int, Int>?> = _openRequest
 
-    fun openCircular(accessId: Int, circularId: Int) {
+    fun openCircular(slot: Int, accessId: Int, circularId: Int) {
         _openRequest.value = accessId to circularId
+        if (slot != accounts.active.value) {
+            // Mitteilung eines anderen Kontos: dorthin wechseln, mit dem Zugang der Mitteilung
+            viewModelScope.launch {
+                accounts.store(slot).currentAccount() ?: return@launch
+                accounts.store(slot).selectAccess(accessId, null)
+                switchTo(slot)
+            }
+            return
+        }
         val main = screen.value as? Screen.Main ?: return
         main.me?.portal?.firstOrNull { it.id == accessId }?.let { if (main.access?.id != it.id) selectAccess(it) }
     }
@@ -80,7 +102,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** Push über eine UnifiedPush-App oder Google einschalten oder (null) abschalten. */
     fun setPushDistributor(pkg: String?) {
         viewModelScope.launch {
-            if (pkg == null) PushSetup.turnOff(context) else PushSetup.enable(context, pkg)
+            if (pkg == null) PushSetup.turnOff(context, store) else PushSetup.enable(context, store, pkg)
         }
     }
 
@@ -90,7 +112,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setCalendarOn(on: Boolean) {
         viewModelScope.launch {
             store.setCalendarOn(on)
-            if (!on) DeviceCalendar(context).removeCalendarsExcept(emptySet())
+            if (!on) store.currentAccount()?.let { DeviceCalendar(context).removeCalendarsExcept(emptySet(), it.server) }
             syncSoon()
         }
     }
@@ -108,9 +130,65 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         viewModelScope.launch {
+            // Aktives Konto fehlt (abgemeldet), aber andere sind da: zum ersten wechseln
+            if (store.currentAccount() == null) accounts.list().firstOrNull()?.let { accounts.setActive(it.first) }
             _theme.value = store.cachedTheme.first()
+            loadAccounts()
             val account = store.account.first()
             if (account == null) _screen.value = Screen.Connect else refresh(account)
+        }
+    }
+
+    private suspend fun loadAccounts() {
+        _accountList.value = accounts.list()
+    }
+
+    private suspend fun switchTo(slot: Int) {
+        accounts.setActive(slot)
+        _canSend.value = false
+        _theme.value = store.cachedTheme.first()
+        loadAccounts()
+        val account = store.currentAccount()
+        if (account == null) _screen.value = Screen.Connect else refresh(account)
+    }
+
+    /** Zu einem anderen Konto (andere Instanz) wechseln. */
+    fun switchAccount(slot: Int) {
+        if (slot == accounts.active.value) return
+        viewModelScope.launch { switchTo(slot) }
+    }
+
+    /** Weiteres Konto verbinden (QR-Code oder Anmeldung einer anderen Instanz). */
+    fun addAccount() {
+        _connect.value = ConnectState(adding = true)
+        _screen.value = Screen.Connect
+    }
+
+    /** Verbinden abbrechen: zurück zum bisherigen Konto. */
+    fun cancelAdd() {
+        viewModelScope.launch {
+            _connect.value = ConnectState()
+            val account = store.currentAccount()
+            if (account == null) _screen.value = Screen.Connect else refresh(account)
+        }
+    }
+
+    /** Konto ist weg (abgemeldet, ungültig): zum nächsten wechseln oder Verbinden zeigen. */
+    private suspend fun dropActive(error: String?) {
+        val slot = accounts.active.value
+        val server = store.currentAccount()?.server
+        runCatching { PushSetup.forget(context, store) }
+        runCatching { server?.let { DeviceCalendar(context).removeCalendarsExcept(emptySet(), it) } }
+        accounts.remove(slot)
+        val next = accounts.list().firstOrNull()
+        if (next != null) {
+            switchTo(next.first)
+        } else {
+            SyncWorker.cancel(context)
+            loadAccounts()
+            _theme.value = null
+            _connect.value = ConnectState(error = error, server = server ?: "")
+            _screen.value = Screen.Connect
         }
     }
 
@@ -129,15 +207,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             access?.let { applyAccess(it) }
             SyncWorker.schedule(context)
             SyncWorker.now(context)
-            runCatching { PushSetup.refresh(context) }
+            for (s in accounts.allStores()) runCatching { PushSetup.refresh(context, s) }
             _canSend.value = runCatching { Api(account.server, account.token).senders().senders.isNotEmpty() }.getOrDefault(false)
         } catch (e: ApiException) {
             if (e.status == 401) {
                 // Gerät abgemeldet (im Browser, Passwort geändert, lange nicht genutzt)
-                runCatching { PushSetup.forget(context) }
-                store.clear()
-                _connect.value = ConnectState(error = e.message, server = account.server)
-                _screen.value = Screen.Connect
+                dropActive(e.message)
             } else {
                 _screen.value = Screen.Main(account, null, null, offline = true)
             }
@@ -220,9 +295,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val paired = action(api)
                 if (paired != null) {
-                    store.save(server, paired)
+                    val slot = accounts.slotFor(server)
+                    val target = accounts.store(slot)
+                    target.currentAccount()?.let { old ->
+                        // Dieselbe Instanz neu verbunden: altes Gerät abmelden
+                        runCatching { PushSetup.disable(context, target) }
+                        runCatching { Api(old.server, old.token).logout(old.deviceId) }
+                    }
+                    target.save(server, paired)
+                    accounts.setActive(slot)
                     _connect.value = ConnectState()
-                    refresh(store.account.first() ?: return@launch)
+                    _theme.value = null
+                    loadAccounts()
+                    refresh(target.currentAccount() ?: return@launch)
                 } else {
                     _connect.value = _connect.value.copy(busy = false)
                 }
@@ -232,31 +317,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Dieses Konto vom Gerät abmelden; andere Konten bleiben. */
     fun logout() {
         val main = screen.value as? Screen.Main ?: return
         viewModelScope.launch {
             // Auch ohne Netz lokal abmelden; der Server lässt den Schlüssel sonst nach 180 Tagen verfallen
-            runCatching { PushSetup.disable(context, main.account.server, main.account.token) }
+            runCatching { PushSetup.disable(context, store) }
             runCatching { Api(main.account.server, main.account.token).logout(main.account.deviceId) }
-            SyncWorker.cancel(context)
-            runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet()) }
-            store.clear()
-            _theme.value = null
-            _connect.value = ConnectState()
-            _screen.value = Screen.Connect
+            dropActive(null)
         }
     }
 
     /** Geräteschlüssel ungültig geworden (z. B. im Browser abgemeldet). */
     fun deviceRevoked(message: String?) {
-        viewModelScope.launch {
-            runCatching { PushSetup.forget(context) }
-            SyncWorker.cancel(context)
-            runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet()) }
-            store.clear()
-            _connect.value = ConnectState(error = message)
-            _screen.value = Screen.Connect
-        }
+        viewModelScope.launch { dropActive(message) }
     }
 
     private val appVersion: String get() = BuildConfig.VERSION_CODE.toString()

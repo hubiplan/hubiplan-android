@@ -2,6 +2,7 @@ package de.hubiplan.app.push
 
 import android.content.Context
 import de.hubiplan.app.HubiplanApp
+import de.hubiplan.app.data.AccountStore
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.PushWay
@@ -9,28 +10,31 @@ import de.hubiplan.app.sync.Notifications
 import de.hubiplan.app.sync.SyncWorker
 import kotlinx.coroutines.flow.first
 
-/** Push einrichten, Endpunkt an HUBIplan melden und Nachrichten anzeigen. */
+/**
+ * Push einrichten, Endpunkt an HUBIplan melden und Nachrichten anzeigen. Jedes Konto (je
+ * Instanz) meldet sich einzeln an, mit eigener Kennung beim Verteiler und eigenen Schlüsseln;
+ * daran erkennt die App, für welches Konto eine Nachricht ist.
+ */
 object PushSetup {
 
-    private fun store(context: Context) = (context.applicationContext as HubiplanApp).store
+    private fun accounts(context: Context) = (context.applicationContext as HubiplanApp).accounts
 
     /**
      * Bei der Verteiler-App [distributor] anmelden; der Endpunkt kommt per Broadcast zurück.
      * [GooglePush.ID] (nur Play-Fassung): über Google und das Push-Gateway der Instanz.
      */
-    suspend fun enable(context: Context, distributor: String) {
-        val store = store(context)
+    suspend fun enable(context: Context, store: AccountStore, distributor: String) {
         val account = store.account.first() ?: return
         val previous = store.settings.first().push.distributor
         if (previous != null && previous != distributor) {
-            leave(context, previous)
+            leave(context, store, previous)
             store.setPushDistributor(null)
         }
         store.setPushOff(false)
         val ways = runCatching { Api(account.server).instance().push }.getOrNull()
         if (distributor == GooglePush.ID) {
             store.setPushDistributor(distributor)
-            enableGoogle(context, ways)
+            enableGoogle(context, store, ways)
             return
         }
         val vapid = ways?.firstOrNull { it.kind == "unifiedpush" }?.vapidPublicKey
@@ -38,8 +42,7 @@ object PushSetup {
         UnifiedPush.register(context, distributor, store.pushToken(), vapid)
     }
 
-    private suspend fun enableGoogle(context: Context, ways: List<PushWay>?, fcmToken: String? = null) {
-        val store = store(context)
+    private suspend fun enableGoogle(context: Context, store: AccountStore, ways: List<PushWay>?, fcmToken: String? = null) {
         if (ways == null) {
             store.setPushEndpoint(null, "HUBIplan ist gerade nicht erreichbar.")
             return
@@ -54,91 +57,97 @@ object PushSetup {
             store.setPushEndpoint(null, "Google-Push ist auf diesem Gerät nicht verfügbar.")
             return
         }
-        onNewEndpoint(context, store.pushToken(), GooglePush.endpoint(gateway, token), kind = "fcm")
+        register(store, GooglePush.endpoint(gateway, token), kind = "fcm")
     }
 
-    /** Beim bisherigen Weg abmelden (Verteiler-App bzw. Google-Kennung löschen). */
-    private suspend fun leave(context: Context, distributor: String) {
+    /** Beim bisherigen Weg abmelden (Verteiler-App bzw. Google-Kennung, wenn kein anderes Konto sie nutzt). */
+    private suspend fun leave(context: Context, store: AccountStore, distributor: String) {
         if (distributor == GooglePush.ID) {
-            GooglePush.delete(context)
+            val others = accounts(context).allStores().filter { it.slot != store.slot }
+                .any { it.settings.first().push.distributor == GooglePush.ID }
+            if (!others) GooglePush.delete(context)
         } else {
-            store(context).storedPushToken()?.let { UnifiedPush.unregister(context, distributor, it) }
+            store.storedPushToken()?.let { UnifiedPush.unregister(context, distributor, it) }
         }
     }
 
     /** Push abschalten: beim Verteiler und bei HUBIplan abmelden (dann nur Abruf). */
-    suspend fun disable(context: Context, server: String? = null, deviceToken: String? = null) {
-        val store = store(context)
-        store.settings.first().push.distributor?.let { leave(context, it) }
-        val account = store.account.first()
-        val api = when {
-            server != null && deviceToken != null -> Api(server, deviceToken)
-            account != null -> Api(account.server, account.token)
-            else -> null
-        }
-        runCatching { api?.unregisterPush() }
+    suspend fun disable(context: Context, store: AccountStore) {
+        store.settings.first().push.distributor?.let { leave(context, store, it) }
+        store.account.first()?.let { account -> runCatching { Api(account.server, account.token).unregisterPush() } }
         store.setPushDistributor(null)
     }
 
     /** Selbst abgeschaltet: merken, damit die Play-Fassung nicht von allein Google einrichtet. */
-    suspend fun turnOff(context: Context) {
-        disable(context)
-        store(context).setPushOff(true)
+    suspend fun turnOff(context: Context, store: AccountStore) {
+        disable(context, store)
+        store.setPushOff(true)
     }
 
     /** Nach dem Start: bei der Verteiler-App erneut anmelden (sie bestätigt den Endpunkt). */
-    suspend fun refresh(context: Context) {
-        val push = store(context).settings.first().push
+    suspend fun refresh(context: Context, store: AccountStore) {
+        val push = store.settings.first().push
         val distributor = push.distributor
         if (distributor == null) {
             // Play-Fassung ohne UnifiedPush-App: von allein über Google, außer selbst abgeschaltet
             if (!push.off && GooglePush.available(context) && UnifiedPush.distributors(context).isEmpty()) {
-                enable(context, GooglePush.ID)
+                enable(context, store, GooglePush.ID)
             }
             return
         }
         if (distributor == GooglePush.ID) {
-            if (GooglePush.available(context)) enable(context, distributor) else disable(context)
+            if (GooglePush.available(context)) enable(context, store, distributor) else disable(context, store)
             return
         }
         if (UnifiedPush.distributors(context).none { it.packageName == distributor }) {
             // Verteiler-App deinstalliert: nur noch Abruf
-            disable(context)
+            disable(context, store)
         } else {
-            enable(context, distributor)
+            enable(context, store, distributor)
         }
     }
 
     /** Gerät abgemeldet: nur beim Verteiler abmelden (HUBIplan kennt das Gerät nicht mehr). */
-    suspend fun forget(context: Context) {
-        val store = store(context)
+    suspend fun forget(context: Context, store: AccountStore) {
         val distributor = store.settings.first().push.distributor ?: return
-        leave(context, distributor)
+        leave(context, store, distributor)
     }
 
-    /** Google hat dem Gerät eine neue Kennung gegeben: Endpunkt neu melden. */
+    /** Konto, zu dem eine Kennung beim Verteiler gehört. */
+    private suspend fun storeFor(context: Context, token: String?): AccountStore? {
+        if (token == null) return null
+        return accounts(context).allStores().firstOrNull { it.storedPushToken() == token }
+    }
+
+    /** Google hat dem Gerät eine neue Kennung gegeben: Endpunkt bei allen Konten mit Google neu melden. */
     suspend fun onGoogleToken(context: Context, fcmToken: String) {
-        val store = store(context)
-        if (store.settings.first().push.distributor != GooglePush.ID) return
-        val account = store.account.first() ?: return
-        enableGoogle(context, runCatching { Api(account.server).instance().push }.getOrNull(), fcmToken)
+        for (store in accounts(context).allStores()) {
+            if (store.settings.first().push.distributor != GooglePush.ID) continue
+            val account = store.account.first() ?: continue
+            enableGoogle(context, store, runCatching { Api(account.server).instance().push }.getOrNull(), fcmToken)
+        }
     }
 
-    /** Nachricht über Google (Play-Fassung): derselbe verschlüsselte Web-Push wie bei UnifiedPush. */
+    /**
+     * Nachricht über Google (Play-Fassung): derselbe verschlüsselte Web-Push wie bei UnifiedPush.
+     * Welches Konto gemeint ist, zeigt der Schlüssel, mit dem sie sich entschlüsseln lässt.
+     */
     suspend fun onGoogleMessage(context: Context, bytes: ByteArray) {
-        val store = store(context)
-        if (store.settings.first().push.distributor != GooglePush.ID) return
-        val message = try {
-            PushMessage.parse(String(WebPushCrypto.decrypt(bytes, store.pushKeys())))
-        } catch (e: PushDecryptException) {
-            null
-        } ?: return
-        handle(context, message)
+        for (store in accounts(context).allStores()) {
+            if (store.settings.first().push.distributor != GooglePush.ID) continue
+            val message = decrypt(store, bytes) ?: continue
+            handle(context, store, message)
+            return
+        }
     }
 
-    suspend fun onNewEndpoint(context: Context, token: String?, endpoint: String?, kind: String = "unifiedpush") {
-        val store = store(context)
-        if (token == null || endpoint == null || token != store.storedPushToken()) return
+    suspend fun onNewEndpoint(context: Context, token: String?, endpoint: String?) {
+        val store = storeFor(context, token) ?: return
+        if (endpoint == null) return
+        register(store, endpoint, kind = "unifiedpush")
+    }
+
+    private suspend fun register(store: AccountStore, endpoint: String, kind: String) {
         val account = store.account.first() ?: return
         val keys = store.pushKeys()
         try {
@@ -150,46 +159,45 @@ object PushSetup {
     }
 
     suspend fun onFailed(context: Context, token: String?, reason: String?) {
-        val store = store(context)
-        if (token == null || token != store.storedPushToken()) return
+        val store = storeFor(context, token) ?: return
         store.setPushEndpoint(null, "Die Push-App hat die Anmeldung abgelehnt" + (reason?.let { " ($it)" } ?: "") + ".")
     }
 
     suspend fun onUnregistered(context: Context, token: String?) {
-        val store = store(context)
-        if (token == null || token != store.storedPushToken()) return
+        val store = storeFor(context, token) ?: return
         val account = store.account.first()
         runCatching { account?.let { Api(it.server, it.token).unregisterPush() } }
         store.setPushDistributor(null)
     }
 
     suspend fun onMessage(context: Context, token: String?, bytes: ByteArray?, id: String?) {
-        val store = store(context)
-        if (token == null || bytes == null || token != store.storedPushToken()) return
+        val store = storeFor(context, token) ?: return
+        if (bytes == null || token == null) return
         store.settings.first().push.distributor?.let { UnifiedPush.acknowledge(context, it, token, id) }
-        val message = try {
-            PushMessage.parse(String(WebPushCrypto.decrypt(bytes, store.pushKeys())))
-        } catch (e: PushDecryptException) {
-            // Nicht von HUBIplan oder für einen alten Schlüssel: verwerfen
-            null
-        } ?: return
-        handle(context, message)
+        // Nicht von HUBIplan oder für einen alten Schlüssel: verwerfen
+        val message = decrypt(store, bytes) ?: return
+        handle(context, store, message)
     }
 
-    suspend fun handle(context: Context, message: PushMessage) {
-        val store = store(context)
+    private suspend fun decrypt(store: AccountStore, bytes: ByteArray): PushMessage? = try {
+        PushMessage.parse(String(WebPushCrypto.decrypt(bytes, store.pushKeys())))
+    } catch (e: PushDecryptException) {
+        null
+    }
+
+    suspend fun handle(context: Context, store: AccountStore, message: PushMessage) {
         when (message.type) {
             "circular" -> {
                 val access = message.access ?: return
                 val id = message.id ?: return
                 val key = circularKey(access, id)
                 if (key in store.notifiedKeys()) return
-                Notifications.showCircular(context, access, id, message.title, message.text, message.from, message.kind == "short")
+                Notifications.showCircular(context, store.slot, access, id, message.title, message.text, message.from, message.kind == "short")
                 store.addNotified(setOf(key))
             }
             "info" -> {
                 val access = message.access ?: return
-                Notifications.showInfo(context, access, message.title, message.text)
+                Notifications.showInfo(context, store.slot, access, message.title, message.text)
             }
             else -> SyncWorker.now(context)
         }

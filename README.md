@@ -18,8 +18,8 @@ Sie ergänzt den Mitgliederbereich im Browser:
 - Eigenes Profil ansehen, Änderungen der Kontaktdaten melden (der Verein prüft sie)
 - Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen; mit Einwilligung,
   der Verein gibt es frei. Foto und Einwilligung lassen sich in der App widerrufen.
-
-Geplant: mehrere HUBIplan-Instanzen in einer App.
+- Mehrere Konten, wenn du in Vereinen mit verschiedenen HUBIplan-Adressen bist (Wechsel
+  unter „Konto“); jedes Konto mit eigenem Geräteschlüssel, eigenen Kalendern und eigenem Push
 
 ## Verbinden
 

@@ -51,11 +51,17 @@ class MainActivity : ComponentActivity() {
         openFrom(intent)
     }
 
-    /** Aus einer Benachrichtigung: Mitteilung öffnen. */
+    /** Aus einer Benachrichtigung: Mitteilung öffnen bzw. zum Konto der Benachrichtigung wechseln. */
     private fun openFrom(intent: Intent?) {
+        val slot = intent?.getIntExtra(Notifications.EXTRA_SLOT, -1) ?: -1
         val access = intent?.getIntExtra(Notifications.EXTRA_ACCESS, -1) ?: -1
         val circular = intent?.getIntExtra(Notifications.EXTRA_CIRCULAR, -1) ?: -1
-        if (access > 0 && circular > 0) vm.openCircular(access, circular)
+        if (access > 0 && circular > 0) {
+            vm.openCircular(slot.coerceAtLeast(0), access, circular)
+        } else if (slot >= 0) {
+            vm.switchAccount(slot)
+        }
         intent?.removeExtra(Notifications.EXTRA_CIRCULAR)
+        intent?.removeExtra(Notifications.EXTRA_SLOT)
     }
 }

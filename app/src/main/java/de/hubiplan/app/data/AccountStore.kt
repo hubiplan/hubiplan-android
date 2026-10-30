@@ -11,7 +11,9 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -21,7 +23,7 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-/** Angemeldetes Konto auf diesem Gerät. Später mehrere (mehrere Instanzen, Schritt A7). */
+/** Angemeldetes Konto auf diesem Gerät (je Instanz eines, siehe [Accounts]). */
 data class Account(
     val server: String,
     val token: String,
@@ -31,7 +33,15 @@ data class Account(
     val selectedAccess: Int?,
 )
 
-private val Context.dataStore by preferencesDataStore(name = "konto")
+// Je Datei darf es nur einen DataStore geben: einmal je Platz anlegen
+private val dataStores = mutableMapOf<String, DataStore<Preferences>>()
+
+private fun Context.accountDataStore(slot: Int): DataStore<Preferences> = synchronized(dataStores) {
+    val name = if (slot == 0) "konto" else "konto-$slot"
+    dataStores.getOrPut(name) {
+        PreferenceDataStoreFactory.create(produceFile = { applicationContext.preferencesDataStoreFile(name) })
+    }
+}
 
 private object Keys {
     val server = stringPreferencesKey("server")
@@ -81,16 +91,19 @@ const val DEFAULT_REMINDER_MINUTES = 24 * 60
  * Speichert das Konto. Der Geräteschlüssel liegt nur verschlüsselt vor; der Schlüssel
  * dazu steckt im Android-Keystore und lässt sich nicht aus dem Gerät herauslesen.
  */
-class AccountStore(private val context: Context) {
+class AccountStore(private val context: Context, val slot: Int = 0) {
+    private val dataStore = context.accountDataStore(slot)
 
-    val account: Flow<Account?> = context.dataStore.data.map { it.toAccount() }
+    suspend fun currentAccount(): Account? = account.first()
+
+    val account: Flow<Account?> = dataStore.data.map { it.toAccount() }
 
     /** Zuletzt geladene Vereinsfarben (für den Start ohne Netz). */
-    val cachedTheme: Flow<Theme?> = context.dataStore.data.map { prefs ->
+    val cachedTheme: Flow<Theme?> = dataStore.data.map { prefs ->
         prefs[Keys.theme]?.let { runCatching { json.decodeFromString(Theme.serializer(), it) }.getOrNull() }
     }
 
-    val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
+    val settings: Flow<AppSettings> = dataStore.data.map { p ->
         AppSettings(
             calendarOn = p[Keys.calendarOn] ?: false,
             reminderMinutes = (p[Keys.reminderMinutes] ?: DEFAULT_REMINDER_MINUTES).takeIf { it >= 0 },
@@ -102,24 +115,24 @@ class AccountStore(private val context: Context) {
 
     /** Schlüssel für Web-Push; beim ersten Gebrauch erzeugt, verschlüsselt gespeichert. */
     suspend fun pushKeys(): de.hubiplan.app.push.PushKeys {
-        val stored = context.dataStore.data.first()[Keys.pushKeys]?.let { decrypt(it) }
+        val stored = dataStore.data.first()[Keys.pushKeys]?.let { decrypt(it) }
         stored?.let { de.hubiplan.app.push.PushKeys.parse(it) }?.let { return it }
         val keys = de.hubiplan.app.push.PushKeys.generate()
-        context.dataStore.edit { it[Keys.pushKeys] = encrypt(keys.serialize()) }
+        dataStore.edit { it[Keys.pushKeys] = encrypt(keys.serialize()) }
         return keys
     }
 
     /** Kennung dieser App beim Verteiler (zufällig, je Anmeldung neu). */
     suspend fun pushToken(): String {
-        context.dataStore.data.first()[Keys.pushToken]?.let { return it }
+        dataStore.data.first()[Keys.pushToken]?.let { return it }
         val token = java.util.UUID.randomUUID().toString()
-        context.dataStore.edit { it[Keys.pushToken] = token }
+        dataStore.edit { it[Keys.pushToken] = token }
         return token
     }
 
-    suspend fun storedPushToken(): String? = context.dataStore.data.first()[Keys.pushToken]
+    suspend fun storedPushToken(): String? = dataStore.data.first()[Keys.pushToken]
 
-    suspend fun setPushDistributor(pkg: String?) = context.dataStore.edit {
+    suspend fun setPushDistributor(pkg: String?) = dataStore.edit {
         if (pkg == null) {
             it.remove(Keys.pushDistributor)
             it.remove(Keys.pushEndpoint)
@@ -130,25 +143,25 @@ class AccountStore(private val context: Context) {
         it.remove(Keys.pushError)
     }
 
-    suspend fun setPushOff(off: Boolean) = context.dataStore.edit { it[Keys.pushOff] = off }
+    suspend fun setPushOff(off: Boolean) = dataStore.edit { it[Keys.pushOff] = off }
 
-    suspend fun setPushEndpoint(endpoint: String?, error: String? = null) = context.dataStore.edit {
+    suspend fun setPushEndpoint(endpoint: String?, error: String? = null) = dataStore.edit {
         if (endpoint == null) it.remove(Keys.pushEndpoint) else it[Keys.pushEndpoint] = endpoint
         if (error == null) it.remove(Keys.pushError) else it[Keys.pushError] = error
     }
 
-    suspend fun setCalendarOn(on: Boolean) = context.dataStore.edit { it[Keys.calendarOn] = on }
+    suspend fun setCalendarOn(on: Boolean) = dataStore.edit { it[Keys.calendarOn] = on }
 
-    suspend fun setReminderMinutes(minutes: Int?) = context.dataStore.edit { it[Keys.reminderMinutes] = minutes ?: -1 }
+    suspend fun setReminderMinutes(minutes: Int?) = dataStore.edit { it[Keys.reminderMinutes] = minutes ?: -1 }
 
-    suspend fun setRsvpHints(on: Boolean) = context.dataStore.edit { it[Keys.rsvpHints] = on }
+    suspend fun setRsvpHints(on: Boolean) = dataStore.edit { it[Keys.rsvpHints] = on }
 
-    suspend fun markSynced(at: Long) = context.dataStore.edit { it[Keys.lastSync] = at }
+    suspend fun markSynced(at: Long) = dataStore.edit { it[Keys.lastSync] = at }
 
     /** Hinweise „Rückmeldung fehlt“ nur einmal je Termin. */
-    suspend fun notifiedKeys(): Set<String> = context.dataStore.data.map { it[Keys.notified] ?: emptySet() }.first()
+    suspend fun notifiedKeys(): Set<String> = dataStore.data.map { it[Keys.notified] ?: emptySet() }.first()
 
-    suspend fun addNotified(keys: Set<String>) = context.dataStore.edit {
+    suspend fun addNotified(keys: Set<String>) = dataStore.edit {
         // Höchstens 400 behalten; die neuen immer (die Menge selbst hat keine Reihenfolge)
         val old = (it[Keys.notified] ?: emptySet()) - keys
         it[Keys.notified] = keys + old.take((400 - keys.size).coerceAtLeast(0))
@@ -168,7 +181,7 @@ class AccountStore(private val context: Context) {
     }
 
     suspend fun save(server: String, paired: Paired) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.server] = server
             it[Keys.token] = encrypt(paired.token)
             it[Keys.deviceId] = paired.device.id
@@ -179,7 +192,7 @@ class AccountStore(private val context: Context) {
     }
 
     suspend fun selectAccess(id: Int, theme: Theme?) {
-        context.dataStore.edit {
+        dataStore.edit {
             it[Keys.selectedAccess] = id
             if (theme != null) it[Keys.theme] = json.encodeToString(Theme.serializer(), theme)
         }
@@ -187,7 +200,7 @@ class AccountStore(private val context: Context) {
 
     /** Abmelden: alles auf dem Gerät löschen. */
     suspend fun clear() {
-        context.dataStore.edit { it.clear() }
+        dataStore.edit { it.clear() }
     }
 
     private fun key(): SecretKey {

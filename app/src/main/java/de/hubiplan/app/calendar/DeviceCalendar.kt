@@ -132,11 +132,15 @@ class DeviceCalendar(private val context: Context) {
         )
     }
 
-    /** Kalender von Einheiten entfernen, die es nicht mehr gibt (oder alle beim Abmelden). */
-    fun removeCalendarsExcept(keep: Set<String>) {
+    /**
+     * Kalender von Einheiten entfernen, die es nicht mehr gibt (oder alle beim Abmelden).
+     * Mit [server] nur die Kalender dieser Instanz (die anderen Konten bleiben).
+     */
+    fun removeCalendarsExcept(keep: Set<String>, server: String? = null) {
         if (!hasPermission()) return
+        val prefix = server?.let { serverPrefix(it) }
         for ((name, id) in calendars()) {
-            if (name !in keep) {
+            if (name !in keep && (prefix == null || name.startsWith(prefix))) {
                 resolver.delete(asSyncAdapter(ContentUris.withAppendedId(Calendars.CONTENT_URI, id)), null, null)
             }
         }
@@ -146,7 +150,8 @@ class DeviceCalendar(private val context: Context) {
         const val ACCOUNT_NAME = "HUBIplan"
 
         /** Interne Kennung des Kalenders einer Einheit auf einer Instanz. */
-        fun calendarName(server: String, accessId: Int): String =
-            "hubiplan:" + server.removePrefix("https://") + ":" + accessId
+        fun calendarName(server: String, accessId: Int): String = serverPrefix(server) + accessId
+
+        private fun serverPrefix(server: String) = "hubiplan:" + server.removePrefix("https://") + ":"
     }
 }
