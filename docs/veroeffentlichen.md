@@ -29,7 +29,7 @@ demselben Schlüssel signiert sein. Fingerabdruck (SHA-256) neben der Datei ange
 ## Google Play (Variante `play`)
 
 Voraussetzungen von Google (Stand 10/2026): `targetSdk` mindestens 36 (Android 16) für neue Apps
-und Updates; `minSdk` bleibt 26. Ein Weg zum Löschen von Konto und Daten in der App (Konto ›
+und Updates; die App zielt schon auf 37 (Android 17, AGP 9, Gradle 9). `minSdk` bleibt 26. Ein Weg zum Löschen von Konto und Daten in der App (Konto ›
 „Konto und Daten löschen“) und als Webseite des Herausgebers. Prüferzugang auf dem Testserver mit
 erfundenen Daten. Ausführliche Anleitung: `anleitungen/play-store-veroeffentlichung.md` im
 Projektordner.
