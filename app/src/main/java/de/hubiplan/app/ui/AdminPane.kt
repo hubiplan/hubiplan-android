@@ -183,7 +183,12 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
     }
 }
 
-private enum class Section(val label: String) { TASKS("Aufgaben"), MEMBERS("Mitglieder"), OCCASIONS("Anlässe") }
+private enum class Section(val label: String, val needsMembers: Boolean) {
+    TASKS("Aufgaben", false),
+    MEMBERS("Mitglieder", true),
+    EVENTS("Termine", false),
+    OCCASIONS("Anlässe", true),
+}
 
 @Composable
 private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main, vm: AppViewModel) {
@@ -199,6 +204,9 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var member by rememberSaveable(unit.id) { mutableStateOf<Int?>(null) }
     var requests by rememberSaveable(unit.id) { mutableStateOf(false) }
     var admitting by rememberSaveable(unit.id) { mutableStateOf(false) }
+    var eventId by rememberSaveable(unit.id) { mutableStateOf<Int?>(null) }
+    var eventStart by rememberSaveable(unit.id) { mutableStateOf<String?>(null) }
+    var creatingEvent by rememberSaveable(unit.id) { mutableStateOf<Boolean?>(null) }
     var reload by remember { mutableIntStateOf(0) }
     var card by remember { mutableStateOf<CardCheck?>(null) }
     var cardError by remember { mutableStateOf<String?>(null) }
@@ -237,16 +245,16 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             UnitPicker(units, unit) { unitId = it.id }
-            if (hasMembers && member == null && !requests && !admitting) {
+            if (member == null && !requests && !admitting && eventId == null && creatingEvent == null) {
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Section.entries.forEach { s ->
+                    Section.entries.filter { hasMembers || !it.needsMembers }.forEach { s ->
                         FilterChip(selected = section == s, onClick = { section = s }, label = { Text(s.label) })
                     }
-                    TextButton(onClick = {
+                    if (hasMembers) TextButton(onClick = {
                         scanner.launch(
                             ScanOptions()
                                 .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
@@ -260,7 +268,19 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             HorizontalDivider()
             cardError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) }
             val open = member
+            val openEvent = eventId
+            val rsvpAllowed = creatingEvent
             when {
+                rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { creatingEvent = null }) { id, text, changeSet ->
+                    creatingEvent = null
+                    eventId = id
+                    eventStart = null
+                    onChanged(text, changeSet)
+                }
+                openEvent != null -> EventScreen(client, openEvent, eventStart, errors, onBack = {
+                    eventId = null
+                    eventStart = null
+                }, onChanged = onChanged, reload = reload)
                 admitting -> AdmitScreen(client, errors, onBack = { admitting = false }) { id, text ->
                     admitting = false
                     member = id
@@ -281,11 +301,19 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     },
                 ) { member = it }
                 section == Section.OCCASIONS && hasMembers -> OccasionsSection(client, errors) { member = it }
+                section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
+                    eventId = o.eventId
+                    eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
+                }
                 else -> TaskList(client, errors, until, vm, reload) { task ->
                     when {
                         task.kind == "change_request" -> requests = true
                         task.kind == "photo" && task.membership != null -> member = task.membership
-                        // Termine und Wechselanfragen: bis B3 im Browser
+                        task.kind == "event" && task.ref != null -> {
+                            eventId = task.ref
+                            eventStart = null
+                        }
+                        // Wechselanfragen: im Browser
                         else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(main.account.server + task.link)))
                     }
                 }

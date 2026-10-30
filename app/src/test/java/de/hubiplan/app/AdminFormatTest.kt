@@ -15,7 +15,14 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import de.hubiplan.app.ui.masterDataChanges
 import de.hubiplan.app.ui.parseGermanDate
+import de.hubiplan.app.ui.eventTimes
+import de.hubiplan.app.ui.parseTime
+import de.hubiplan.app.ui.responseSummary
+import de.hubiplan.app.ui.sameInstant
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -104,5 +111,37 @@ class AdminFormatTest {
     @Test
     fun ibanInGruppen() {
         assertEquals("DE89 3704 0044 0532 0130 00", formatIban("DE89370400440532013000"))
+    }
+
+    @Test
+    fun terminZeiten() {
+        val berlin = ZoneId.of("Europe/Berlin")
+        assertEquals("19:30", parseTime("19.30").toString())
+        assertNull(parseTime("25:00"))
+        assertEquals(
+            "2026-12-01T19:00:00+01:00" to "2026-12-01T21:00:00+01:00",
+            eventTimes("1.12.2026", "19:00", "", false, berlin),
+        )
+        // Ende vor Beginn: am nächsten Tag
+        assertEquals("2026-06-14T01:00:00+02:00", eventTimes("13.06.2026", "20:00", "1:00", false, berlin)?.second)
+        assertEquals(
+            "2026-06-13T00:00:00+02:00" to "2026-06-14T00:00:00+02:00",
+            eventTimes("13.06.2026", "", "", true, berlin),
+        )
+        assertNull(eventTimes("31.02.2026", "19:00", "", false, berlin))
+        assertNull(eventTimes("13.06.2026", "abends", "", false, berlin))
+    }
+
+    @Test
+    fun rueckmeldungenInWorten() {
+        assertEquals("12 Zusagen (15 Personen) · 1 Absage · 20 offen", responseSummary(12, 1, 15, 20))
+        assertEquals("1 Zusage · 0 Absagen", responseSummary(1, 0, 1, null))
+    }
+
+    @Test
+    fun zeitpunktVergleichen() {
+        assertTrue(sameInstant("2026-06-13T12:00:00Z", "2026-06-13T14:00:00+02:00"))
+        assertFalse(sameInstant("2026-06-13T12:00:00Z", "2026-06-13T12:00:00+02:00"))
+        assertFalse(sameInstant(null, "2026-06-13T12:00:00Z"))
     }
 }

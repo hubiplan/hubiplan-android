@@ -64,3 +64,60 @@ fun displayValue(key: String, value: String?): String = when {
 /** Beginn und Ende des Zeitraums für Geburtstage und Jubiläen: heute bis in [days] Tagen. */
 fun upcomingRange(today: LocalDate, days: Long = 30): Pair<String, String> =
     today.toString() to today.plusDays(days).toString()
+
+// --- B3: Termine ---
+
+private val TIME = java.time.format.DateTimeFormatter.ofPattern("H:mm").withResolverStyle(ResolverStyle.STRICT)
+
+/** „19:30“ oder „9.30“ → 19:30; ungültig → null. */
+fun parseTime(text: String): java.time.LocalTime? =
+    runCatching { java.time.LocalTime.parse(text.trim().replace('.', ':'), TIME) }.getOrNull()
+
+/**
+ * Beginn und Ende eines neuen Termins als ISO mit Zeitzone. Ganztägig: Beginn 0:00, Ende 0:00 am
+ * Tag danach (wie im Browser). Ohne Endzeit: zwei Stunden. Ende vor Beginn: am nächsten Tag.
+ * Ungültige Eingaben → null.
+ */
+fun eventTimes(
+    date: String,
+    start: String,
+    end: String,
+    allDay: Boolean,
+    zone: java.time.ZoneId = java.time.ZoneId.systemDefault(),
+): Pair<String, String>? {
+    val day = parseGermanDate(date)?.let(LocalDate::parse) ?: return null
+    val fmt = java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
+    if (allDay) {
+        return day.atStartOfDay(zone).format(fmt) to day.plusDays(1).atStartOfDay(zone).format(fmt)
+    }
+    val from = parseTime(start) ?: return null
+    val begin = day.atTime(from).atZone(zone)
+    val finish = if (end.isBlank()) {
+        begin.plusHours(2)
+    } else {
+        val to = parseTime(end) ?: return null
+        val sameDay = day.atTime(to).atZone(zone)
+        if (sameDay.isAfter(begin)) sameDay else sameDay.plusDays(1)
+    }
+    return begin.format(fmt) to finish.format(fmt)
+}
+
+/** Stand der Rückmeldungen in Worten: „12 Zusagen (15 Personen) · 3 Absagen · 20 offen“. */
+fun responseSummary(yes: Int, no: Int, persons: Int, open: Int?): String {
+    val parts = mutableListOf(
+        (if (yes == 1) "1 Zusage" else "$yes Zusagen") + if (persons != yes) " ($persons Personen)" else "",
+        if (no == 1) "1 Absage" else "$no Absagen",
+    )
+    open?.let { parts += "$it offen" }
+    return parts.joinToString(" · ")
+}
+
+/** Gleicher Zeitpunkt, auch bei anderer Schreibweise der Zone. */
+fun sameInstant(a: String?, b: String?): Boolean {
+    if (a == null || b == null) return false
+    val x = runCatching { java.time.OffsetDateTime.parse(a).toInstant() }.getOrNull()
+    val y = runCatching { java.time.OffsetDateTime.parse(b).toInstant() }.getOrNull()
+    return if (x != null && y != null) x == y else a == b
+}
+
+val VISIBILITIES = listOf("members" to "Mitglieder", "board" to "nur Vorstand", "public" to "nach außen öffentlich")

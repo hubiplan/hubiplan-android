@@ -127,6 +127,46 @@ class AdminClient(private val api: Api, val unitId: Int, private val onUse: () -
     suspend fun admit(values: JsonObject, key: String): MemberDetail =
         json.decodeFromString(use().admin("POST", "${base}members/admit/", values.toString(), mapOf("Idempotency-Key" to key)).text)
 
+    // --- B3: Termine ---
+
+    suspend fun events(from: String, to: String): AdminEventList =
+        json.decodeFromString(get("events/?from=$from&to=$to"))
+
+    suspend fun event(id: Int): AdminEvent = json.decodeFromString(get("events/$id/"))
+
+    suspend fun createEvent(values: JsonObject): Changed<AdminEvent> = changeAs("POST", "events/", values)
+
+    /** Ganzen Termin absagen oder die Absage zurücknehmen; [notify]: Eingeladene per Mail. */
+    suspend fun cancelEvent(id: Int, cancelled: Boolean, note: String, notify: Boolean): Changed<AdminEvent> =
+        changeAs("PATCH", "events/$id/", obj("is_cancelled" to cancelled, "cancel_note" to note, "notify" to notify))
+
+    /** Einen Termin einer Serie absagen ([cancelled]) oder wieder wie in der Serie. */
+    suspend fun cancelOccurrence(id: Int, originalStart: String, cancelled: Boolean, note: String): Changed<AdminEvent> =
+        if (cancelled) {
+            changeAs("PUT", "events/$id/occurrence/", obj("original_start" to originalStart, "is_cancelled" to true, "note" to note))
+        } else {
+            changeAs("DELETE", "events/$id/occurrence/", obj("original_start" to originalStart))
+        }
+
+    suspend fun responses(id: Int): AdminResponses = json.decodeFromString(get("events/$id/responses/"))
+
+    suspend fun setResponse(id: Int, membership: Int, status: String, guests: Int, note: String): Changed<Unit> =
+        changeUnit(
+            "PUT",
+            "events/$id/responses/",
+            obj("membership_id" to membership, "status" to status, "guests" to guests, "note" to note),
+        )
+
+    suspend fun deleteResponse(id: Int, membership: Int): Changed<Unit> {
+        val r = use().admin("DELETE", "${base}events/$id/responses/$membership/")
+        return Changed(Unit, r.changeSet.takeIf { r.undoable }, r.label)
+    }
+
+    private suspend inline fun <reified T> changeAs(method: String, path: String, body: JsonObject): Changed<T> {
+        val r = use().admin(method, base + path, body.toString())
+        return Changed(json.decodeFromString(r.text), r.changeSet.takeIf { r.undoable }, r.label)
+    }
+
     private suspend fun changeUnit(method: String, path: String, body: JsonObject): Changed<Unit> {
         val r = use().admin(method, base + path, body.toString())
         return Changed(Unit, r.changeSet.takeIf { r.undoable }, r.label)

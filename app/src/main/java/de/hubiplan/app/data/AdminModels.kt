@@ -194,3 +194,100 @@ data class DuplicateItem(
     @SerialName("birth_date") val birthDate: String? = null,
     @SerialName("already_member_here") val alreadyMemberHere: Boolean = false,
 )
+
+// --- B3: Termine der Einheit und Rückmeldungen ---
+
+@Serializable
+data class AdminOccurrence(
+    val key: String = "",
+    @SerialName("event_id") val eventId: Int,
+    val title: String = "",
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    @SerialName("original_start") val originalStart: String? = null,
+    @SerialName("all_day") val allDay: Boolean = false,
+    val location: String = "",
+    @SerialName("is_cancelled") val isCancelled: Boolean = false,
+    @SerialName("is_series") val isSeries: Boolean = false,
+    val owner: String = "",
+    @SerialName("can_edit") val canEdit: Boolean = false,
+    @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = false,
+)
+
+@Serializable
+data class AdminEventList(
+    val items: List<AdminOccurrence> = emptyList(),
+    @SerialName("can_manage") val canManage: Boolean = false,
+    @SerialName("rsvp_allowed") val rsvpAllowed: Boolean = false,
+)
+
+@Serializable
+data class EventException(
+    @SerialName("original_start") val originalStart: String,
+    @SerialName("is_cancelled") val isCancelled: Boolean = false,
+    val note: String = "",
+)
+
+@Serializable
+data class RsvpCounts(val yes: Int = 0, val no: Int = 0, val guests: Int = 0, val persons: Int = 0, val open: Int? = null)
+
+@Serializable
+data class AdminRsvp(
+    val enabled: Boolean = false,
+    val deadline: String? = null,
+    val capacity: Int? = null,
+    @SerialName("guests_allowed") val guestsAllowed: Boolean = false,
+    @SerialName("max_guests") val maxGuests: Int = 0,
+    val free: Int? = null,
+    @SerialName("can_view_list") val canViewList: Boolean = false,
+    @SerialName("can_enter") val canEnter: Boolean = false,
+    val summary: RsvpCounts? = null,
+)
+
+@Serializable
+data class AdminEvent(
+    val id: Int,
+    val title: String = "",
+    val description: String = "",
+    val location: String = "",
+    @SerialName("all_day") val allDay: Boolean = false,
+    @SerialName("starts_at") val startsAt: String,
+    @SerialName("ends_at") val endsAt: String,
+    @SerialName("visibility_label") val visibilityLabel: String = "",
+    val repeat: String = "none",
+    @SerialName("repeat_label") val repeatLabel: String = "",
+    @SerialName("is_cancelled") val isCancelled: Boolean = false,
+    @SerialName("cancel_note") val cancelNote: String = "",
+    val owner: String = "",
+    @SerialName("can_edit") val canEdit: Boolean = false,
+    val exceptions: List<EventException> = emptyList(),
+    val rsvp: AdminRsvp = AdminRsvp(),
+) {
+    val isSeries: Boolean get() = repeat != "none"
+}
+
+@Serializable
+data class ResponseRow(
+    @SerialName("membership_id") val membershipId: Int,
+    val name: String = "",
+    val departments: String = "",
+    val status: String? = null,
+    val guests: Int = 0,
+    val note: String = "",
+    val source: String? = null,
+)
+
+@Serializable
+data class OpenRow(
+    @SerialName("membership_id") val membershipId: Int,
+    val name: String = "",
+    val departments: String = "",
+)
+
+@Serializable
+data class AdminResponses(
+    val summary: RsvpCounts = RsvpCounts(),
+    val capacity: Int? = null,
+    val items: List<ResponseRow> = emptyList(),
+    val open: List<OpenRow> = emptyList(),
+)

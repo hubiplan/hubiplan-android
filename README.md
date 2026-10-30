@@ -24,7 +24,8 @@ Sie ergänzt den Mitgliederbereich im Browser:
   Mitgliedsart, Untereinheit, Beitrag, Austritt, Wiedereintritt, Ehrungen, Zusatzfelder,
   Bankverbindung) mit Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen;
   Änderungsmeldungen und Fotos freigeben; Mitgliedsausweis per QR-Code prüfen; Geburtstage und
-  Jubiläen (Termine und Kasse folgen)
+  Jubiläen; Termine der Einheit mit Zu- und Absagen, für Mitglieder eintragen (z. B. nach einem
+  Anruf), einfache Termine anlegen und absagen (Kasse folgt)
 - Mehrere Konten, wenn du in Vereinen mit verschiedenen HUBIplan-Adressen bist (Wechsel
   unter „Konto“); jedes Konto mit eigenem Geräteschlüssel, eigenen Kalendern und eigenem Push
 
