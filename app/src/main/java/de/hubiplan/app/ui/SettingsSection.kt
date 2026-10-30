@@ -108,6 +108,18 @@ fun SettingsSection(vm: AppViewModel) {
             "Etwa einen Tag vor dem Anmeldeschluss, mit den Knöpfen Zusage und Absage.",
             style = MaterialTheme.typography.bodySmall,
         )
+        var lockedContent by remember { mutableStateOf(Notifications.contentWhenLocked(context)) }
+        SwitchRow(
+            label = "Inhalt auch auf dem gesperrten Bildschirm zeigen",
+            checked = lockedContent,
+        ) { on ->
+            Notifications.setContentWhenLocked(context, on)
+            lockedContent = on
+        }
+        Text(
+            "Aus: Auf dem gesperrten Telefon steht nur „Neue Mitteilung“, Absender und Text erst nach dem Entsperren.",
+            style = MaterialTheme.typography.bodySmall,
+        )
         settings.lastSync?.let {
             Text(
                 "Zuletzt abgeglichen: " + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)),

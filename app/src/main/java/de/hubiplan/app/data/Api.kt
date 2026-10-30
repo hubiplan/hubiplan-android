@@ -33,6 +33,9 @@ val json = Json {
 
 private val JSON_TYPE = "application/json".toMediaType()
 
+/** Geräteschlüssel neben dem Vorstandsschlüssel (Härtung H3). */
+const val DEVICE_HEADER = "X-Hubiplan-Device"
+
 private val http: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
@@ -47,9 +50,11 @@ sealed interface LoginStep {
 
 /**
  * Zugriff auf eine HUBIplan-Instanz. [token] ist der Geräteschlüssel (hpd_…),
- * fehlt er, sind nur die öffentlichen Aufrufe möglich.
+ * fehlt er, sind nur die öffentlichen Aufrufe möglich. Für die Verwaltung ist [token] der
+ * Vorstandsschlüssel (hpa_…) und [deviceToken] der Geräteschlüssel desselben Geräts: der Server
+ * nimmt den Vorstandsschlüssel nur zusammen mit ihm an (Kopf `X-Hubiplan-Device`).
  */
-class Api(val server: String, private val token: String? = null) {
+class Api(val server: String, private val token: String? = null, private val deviceToken: String? = null) {
 
     private suspend fun call(
         method: String,
@@ -61,6 +66,7 @@ class Api(val server: String, private val token: String? = null) {
             .url(server + path)
             .header("Accept", "application/json")
         token?.let { builder.header("Authorization", "Bearer $it") }
+        deviceToken?.let { builder.header(DEVICE_HEADER, it) }
         headers.forEach { (k, v) -> builder.header(k, v) }
         val requestBody = body?.toRequestBody(JSON_TYPE)
         builder.method(method, requestBody ?: if (method == "GET" || method == "DELETE") null else "".toRequestBody(JSON_TYPE))
@@ -247,6 +253,7 @@ class Api(val server: String, private val token: String? = null) {
         withContext(Dispatchers.IO) {
             val builder = Request.Builder().url(server + path).header("Accept", "application/json")
             token?.let { builder.header("Authorization", "Bearer $it") }
+            deviceToken?.let { builder.header(DEVICE_HEADER, it) }
             headers.forEach { (k, v) -> builder.header(k, v) }
             builder.method(method, body)
             try {
@@ -302,6 +309,7 @@ class Api(val server: String, private val token: String? = null) {
         val request = Request.Builder().url("$server/api/portal/$accessId/photo/")
             .header("Accept", "application/json")
             .apply { token?.let { header("Authorization", "Bearer $it") } }
+            .apply { deviceToken?.let { header(DEVICE_HEADER, it) } }
             .post(form)
             .build()
         try {
@@ -321,6 +329,7 @@ class Api(val server: String, private val token: String? = null) {
     suspend fun image(path: String): ByteArray? = withContext(Dispatchers.IO) {
         val request = Request.Builder().url(server + path)
             .apply { token?.let { header("Authorization", "Bearer $it") } }
+            .apply { deviceToken?.let { header(DEVICE_HEADER, it) } }
             .build()
         try {
             http.newCall(request).execute().use { resp -> if (resp.isSuccessful) resp.body?.bytes() else null }

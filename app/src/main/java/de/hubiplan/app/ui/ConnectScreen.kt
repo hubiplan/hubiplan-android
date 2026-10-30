@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
@@ -38,6 +39,23 @@ import com.journeyapps.barcodescanner.ScanOptions
 fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let(vm::scanned)
+    }
+    state.pendingPairing?.let { link ->
+        AlertDialog(
+            onDismissRequest = vm::cancelPairing,
+            title = { Text("Mit dieser Adresse verbinden?") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(link.server.removePrefix("https://"), style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Verbinde die App nur, wenn das die Adresse deines Vereins ist und du den QR-Code " +
+                            "selbst gerade im Browser erzeugt hast.",
+                    )
+                }
+            },
+            confirmButton = { Button(onClick = vm::confirmPairing) { Text("Ja, verbinden") } },
+            dismissButton = { TextButton(onClick = vm::cancelPairing) { Text("Abbrechen") } },
+        )
     }
     Surface(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.TopCenter) {

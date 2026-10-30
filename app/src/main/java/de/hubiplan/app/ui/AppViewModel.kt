@@ -46,6 +46,8 @@ data class ConnectState(
     val pendingSession: String? = null,
     // Weiteres Konto verbinden (zurück zum bisherigen möglich)
     val adding: Boolean = false,
+    // Gescannter QR-Code, wartet auf „Ja, verbinden“ (Adresse sichtbar, Härtung H3)
+    val pendingPairing: PairingLink? = null,
 )
 
 /** Verwaltung in der App (Schritt A8). [token] ist der entsperrte Vorstandsschlüssel im Speicher. */
@@ -152,7 +154,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val main = screen.value as? Screen.Main ?: return null
         val token = _admin.value.token ?: return null
         adminUsedAt = System.currentTimeMillis()
-        return Api(main.account.server, token)
+        return Api(main.account.server, token, main.account.token)
     }
 
     /** Verwaltung wird gerade benutzt (für die Gerätesperre nach 5 Minuten Pause). */
@@ -357,7 +359,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             )
             return
         }
+        // Erst nachfragen: ein untergeschobener QR-Code einer fremden Adresse fällt so auf
+        _connect.value = _connect.value.copy(pendingPairing = link, error = null)
+    }
+
+    fun confirmPairing() {
+        val link = _connect.value.pendingPairing ?: return
+        _connect.value = _connect.value.copy(pendingPairing = null)
         run(link.server) { api -> api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion) }
+    }
+
+    fun cancelPairing() {
+        _connect.value = _connect.value.copy(pendingPairing = null)
     }
 
     fun login(serverInput: String, email: String, password: String) {

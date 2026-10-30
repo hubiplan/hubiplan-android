@@ -37,6 +37,31 @@ object Notifications {
         )
     }
 
+    private const val PREFS = "hinweise"
+    private const val KEY_CONTENT_LOCKED = "inhalt_gesperrt"
+
+    /**
+     * Inhalt auch auf dem gesperrten Bildschirm zeigen? Standard nein (Härtung H3): dort steht dann
+     * nur „Neue Mitteilung in HUBIplan“, der Inhalt erst nach dem Entsperren. Gilt für das ganze Gerät.
+     */
+    fun contentWhenLocked(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(KEY_CONTENT_LOCKED, false)
+
+    fun setContentWhenLocked(context: Context, on: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(KEY_CONTENT_LOCKED, on).apply()
+    }
+
+    /** Sperrbildschirm: privat mit neutraler Fassung, außer das Mitglied will den Inhalt sehen. */
+    private fun NotificationCompat.Builder.lockScreen(context: Context, channel: String, neutral: String): NotificationCompat.Builder {
+        if (contentWhenLocked(context)) return setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+        val public = NotificationCompat.Builder(context, channel)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle("HUBIplan")
+            .setContentText(neutral)
+            .build()
+        return setVisibility(NotificationCompat.VISIBILITY_PRIVATE).setPublicVersion(public)
+    }
+
     fun allowed(context: Context): Boolean =
         Build.VERSION.SDK_INT < 33 ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
@@ -72,6 +97,7 @@ object Notifications {
             .setAutoCancel(true)
             .addAction(action("yes", "Zusage", id * 2))
             .addAction(action("no", "Absage", id * 2 + 1))
+            .lockScreen(context, CHANNEL_RSVP, "Rückmeldung fehlt")
             .build()
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
@@ -105,6 +131,7 @@ object Notifications {
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
             .setContentIntent(open)
             .setAutoCancel(true)
+            .lockScreen(context, CHANNEL_MESSAGES, "Neue Mitteilung")
             .build()
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
@@ -119,6 +146,7 @@ object Notifications {
             .setContentTitle(title)
             .setContentText(text)
             .setAutoCancel(true)
+            .lockScreen(context, CHANNEL_RSVP, "Neuer Hinweis")
             .build()
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
@@ -145,6 +173,7 @@ object Notifications {
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(open)
             .setAutoCancel(true)
+            .lockScreen(context, CHANNEL_MESSAGES, "Neuer Hinweis")
             .build()
         try {
             NotificationManagerCompat.from(context).notify(id, notification)
