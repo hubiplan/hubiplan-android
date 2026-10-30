@@ -121,3 +121,22 @@ fun sameInstant(a: String?, b: String?): Boolean {
 }
 
 val VISIBILITIES = listOf("members" to "Mitglieder", "board" to "nur Vorstand", "public" to "nach außen öffentlich")
+
+// --- B4: Kasse ---
+
+/** „23,40“, „23.4“ oder „1.234,50“ → „23.40“ (positiv, höchstens zwei Nachkommastellen); sonst null. */
+fun parseAmount(text: String): String? {
+    var t = text.trim().removeSuffix("€").trim().replace(" ", "")
+    if (t.isEmpty()) return null
+    if (t.contains(',')) t = t.replace(".", "").replace(',', '.')
+    val value = t.toBigDecimalOrNull() ?: return null
+    if (value.signum() <= 0 || value.scale() > 2 || value > java.math.BigDecimal("99999999.99")) return null
+    return value.setScale(2).toPlainString()
+}
+
+/** „1234.5“ → „1.234,50 €“ */
+fun formatMoney(amount: String?): String {
+    val value = amount?.toBigDecimalOrNull() ?: return ""
+    val symbols = java.text.DecimalFormatSymbols(java.util.Locale.GERMANY)
+    return java.text.DecimalFormat("#,##0.00", symbols).format(value) + " €"
+}

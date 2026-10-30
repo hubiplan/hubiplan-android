@@ -17,15 +17,41 @@ data class Instance(
 
 /** Einheit mit Verwaltungsrechten (Schritt A8). */
 @Serializable
-data class AdminUnit(val id: Int, val name: String, val type: String = "", val permissions: List<String> = emptyList())
+data class AdminUnit(
+    val id: Int,
+    val name: String,
+    val type: String = "",
+    val permissions: List<String> = emptyList(),
+    /** "u": Einheit mit Rollen dort · "d": Untereinheit mit Rollen nur dort (Zugführung, B4) */
+    val scope: String = "u",
+) {
+    val key: String get() = "$scope:$id"
+    val isDepartment: Boolean get() = scope == "d"
+}
+
+/** Untereinheit mit Rollen nur dort (z. B. Zugführung), Schritt B4. */
+@Serializable
+data class AdminDepartment(
+    val id: Int,
+    val name: String,
+    @SerialName("club_name") val clubName: String = "",
+    val events: Boolean = true,
+    val permissions: List<String> = emptyList(),
+) {
+    fun asUnit(): AdminUnit = AdminUnit(id, name, "department", permissions, "d")
+}
 
 @Serializable
 data class AdminOverview(
     val units: List<AdminUnit> = emptyList(),
+    val departments: List<AdminDepartment> = emptyList(),
     @SerialName("two_factor") val twoFactor: Boolean = false,
     val unlocked: Boolean = false,
     val until: String? = null,
-)
+) {
+    /** Einheiten und Untereinheiten (Zugführung) zusammen, für die Auswahl. */
+    val allUnits: List<AdminUnit> get() = units + departments.map { it.asUnit() }
+}
 
 @Serializable
 data class AdminUnlock(val token: String, val until: String? = null)

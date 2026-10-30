@@ -16,8 +16,8 @@ android {
         // Android 8.0: Benachrichtigungskanäle, einheitliche Hintergrundregeln (Konzept, Frage 12)
         minSdk = 26
         targetSdk = 37
-        versionCode = 13
-        versionName = "0.11.2"
+        versionCode = 14
+        versionName = "0.12.1"
     }
 
     // Signatur der Veröffentlichung aus keystore.properties (nur auf dem Rechner des Herausgebers):

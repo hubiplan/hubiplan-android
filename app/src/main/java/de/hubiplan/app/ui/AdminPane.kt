@@ -64,6 +64,7 @@ import de.hubiplan.app.data.AdminUnit
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CardCheck
+import de.hubiplan.app.data.DraftStore
 import kotlinx.coroutines.launch
 
 /**
@@ -117,7 +118,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
                     DeviceUnlock.ask(context, "Verwaltung öffnen", onSuccess = vm::openAdmin, onError = {})
                 }
             }
-            else -> AdminHome(overview.units, overview.until, main, vm)
+            else -> AdminHome(overview.allUnits, overview.until, main, vm)
         }
     }
 }
@@ -183,11 +184,32 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
     }
 }
 
-private enum class Section(val label: String, val needsMembers: Boolean) {
-    TASKS("Aufgaben", false),
-    MEMBERS("Mitglieder", true),
-    EVENTS("Termine", false),
-    OCCASIONS("Anlässe", true),
+private enum class Section(val label: String) {
+    TASKS("Aufgaben"),
+    MEMBERS("Mitglieder"),
+    EVENTS("Termine"),
+    FINANCE("Kasse"),
+    OCCASIONS("Anlässe"),
+}
+
+/** Bereiche je nach Rechten; Untereinheiten (Zugführung) haben Mitglieder und Termine. */
+private fun sectionsFor(unit: AdminUnit): List<Section> {
+    val p = unit.permissions
+    if (unit.isDepartment) {
+        return listOfNotNull(
+            Section.TASKS,
+            Section.MEMBERS.takeIf { p.any { it.startsWith("dept.members.") } },
+            Section.EVENTS,
+        )
+    }
+    val members = p.any { it.startsWith("members.") }
+    return listOfNotNull(
+        Section.TASKS,
+        Section.MEMBERS.takeIf { members },
+        Section.EVENTS,
+        Section.FINANCE.takeIf { FINANCE_VIEW in p || FINANCE_EDIT in p },
+        Section.OCCASIONS.takeIf { members },
+    )
 }
 
 @Composable
@@ -195,18 +217,25 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var unitId by rememberSaveable { mutableStateOf(units.first().id) }
-    val unit = units.firstOrNull { it.id == unitId } ?: units.first()
-    val client = remember(unit.id) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::touchAdmin) } } ?: return
+    var unitKey by rememberSaveable { mutableStateOf(units.first().key) }
+    val unit = units.firstOrNull { it.key == unitKey } ?: units.first()
+    val client = remember(unit.key) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::touchAdmin, unit.scope) } } ?: return
     val errors = remember { AdminErrors(onLocked = vm::adminRejected) }
-    val hasMembers = unit.permissions.any { it.startsWith("members.") }
-    var section by rememberSaveable(unit.id) { mutableStateOf(Section.TASKS) }
-    var member by rememberSaveable(unit.id) { mutableStateOf<Int?>(null) }
-    var requests by rememberSaveable(unit.id) { mutableStateOf(false) }
-    var admitting by rememberSaveable(unit.id) { mutableStateOf(false) }
-    var eventId by rememberSaveable(unit.id) { mutableStateOf<Int?>(null) }
-    var eventStart by rememberSaveable(unit.id) { mutableStateOf<String?>(null) }
-    var creatingEvent by rememberSaveable(unit.id) { mutableStateOf<Boolean?>(null) }
+    val sections = sectionsFor(unit)
+    val hasMembers = !unit.isDepartment && unit.permissions.any { it.startsWith("members.") }
+    // Entwürfe der Kasse: je Konto (Server und Gerät)
+    val drafts = remember(main.account.server, main.account.deviceId) {
+        DraftStore(context, "${main.account.server}-${main.account.deviceId}")
+    }
+    var section by rememberSaveable(unit.key) { mutableStateOf(Section.TASKS) }
+    var member by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
+    var requests by rememberSaveable(unit.key) { mutableStateOf(false) }
+    var admitting by rememberSaveable(unit.key) { mutableStateOf(false) }
+    var eventId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
+    var eventStart by rememberSaveable(unit.key) { mutableStateOf<String?>(null) }
+    var creatingEvent by rememberSaveable(unit.key) { mutableStateOf<Boolean?>(null) }
+    var bookingId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
+    var newBooking by rememberSaveable(unit.key) { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     var card by remember { mutableStateOf<CardCheck?>(null) }
     var cardError by remember { mutableStateOf<String?>(null) }
@@ -244,14 +273,14 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            UnitPicker(units, unit) { unitId = it.id }
-            if (member == null && !requests && !admitting && eventId == null && creatingEvent == null) {
+            UnitPicker(units, unit) { unitKey = it.key }
+            if (member == null && !requests && !admitting && eventId == null && creatingEvent == null && bookingId == null && !newBooking) {
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Section.entries.filter { hasMembers || !it.needsMembers }.forEach { s ->
+                    sections.forEach { s ->
                         FilterChip(selected = section == s, onClick = { section = s }, label = { Text(s.label) })
                     }
                     if (hasMembers) TextButton(onClick = {
@@ -270,7 +299,14 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             val open = member
             val openEvent = eventId
             val rsvpAllowed = creatingEvent
+            val openBooking = bookingId
             when {
+                newBooking -> BookingForm(client, unit.name, drafts, errors, onBack = { newBooking = false }) { text ->
+                    newBooking = false
+                    reload++
+                    onChanged(text, null)
+                }
+                openBooking != null -> BookingScreen(client, openBooking, FINANCE_EDIT in unit.permissions, errors, onBack = { bookingId = null }, onChanged = onChanged)
                 rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { creatingEvent = null }) { id, text, changeSet ->
                     creatingEvent = null
                     eventId = id
@@ -286,21 +322,32 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     member = id
                     onChanged(text, null)
                 }
+                open != null && unit.isDepartment -> DeptMemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
                 open != null -> MemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
                 requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
                     requests = false
                     member = it
                 }, onChanged = onChanged)
-                section == Section.MEMBERS && hasMembers -> MemberList(
+                section == Section.MEMBERS && section in sections -> MemberList(
                     client,
                     errors,
-                    onAdmit = if (MEMBERS_EDIT in unit.permissions) {
+                    onAdmit = if (!unit.isDepartment && MEMBERS_EDIT in unit.permissions) {
                         { admitting = true }
                     } else {
                         null
                     },
                 ) { member = it }
                 section == Section.OCCASIONS && hasMembers -> OccasionsSection(client, errors) { member = it }
+                section == Section.FINANCE && section in sections -> FinanceSection(
+                    client,
+                    canEdit = FINANCE_EDIT in unit.permissions,
+                    store = drafts,
+                    errors = errors,
+                    reload = reload,
+                    onNew = { newBooking = true },
+                    onOpen = { bookingId = it },
+                    onChanged = onChanged,
+                )
                 section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
                     eventId = o.eventId
                     eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
@@ -348,6 +395,11 @@ private fun TaskList(
     var reload by remember { mutableIntStateOf(0) }
     LaunchedEffect(client.unitId, reload, reloadKey) {
         val api = vm.adminApi() ?: return@LaunchedEffect
+        // Untereinheit (Zugführung): keine Aufgabenliste, nur Mitglieder und Termine
+        if (client.scope == "d") {
+            tasks = emptyList()
+            return@LaunchedEffect
+        }
         try {
             tasks = api.adminTasks(client.unitId).items
             error = null

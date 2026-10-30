@@ -1,2 +1,3 @@
-* Für Android 17 vorbereitet
-* Technische Aktualisierung der Bausteine, keine sichtbaren Änderungen
+* Verwaltung: Kasse mit Kontoständen und Buchungen, neue Buchung mit Belegfoto (verkleinert, ohne Ortsangaben), Beleg nachreichen
+* Ohne Netz bleibt die Buchung verschlüsselt als Entwurf auf dem Telefon und wird später gesendet, nie doppelt
+* Zugführung: eigener Zug in der Verwaltung mit Mitgliedern (Kontaktdaten bearbeiten) und Terminen

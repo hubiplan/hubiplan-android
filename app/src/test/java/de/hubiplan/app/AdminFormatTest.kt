@@ -20,6 +20,11 @@ import de.hubiplan.app.ui.parseTime
 import de.hubiplan.app.ui.responseSummary
 import de.hubiplan.app.ui.sameInstant
 import java.time.ZoneId
+import de.hubiplan.app.data.BookingDraft
+import de.hubiplan.app.data.decodeDraft
+import de.hubiplan.app.data.encodeDraft
+import de.hubiplan.app.ui.formatMoney
+import de.hubiplan.app.ui.parseAmount
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
@@ -143,5 +148,27 @@ class AdminFormatTest {
         assertTrue(sameInstant("2026-06-13T12:00:00Z", "2026-06-13T14:00:00+02:00"))
         assertFalse(sameInstant("2026-06-13T12:00:00Z", "2026-06-13T12:00:00+02:00"))
         assertFalse(sameInstant(null, "2026-06-13T12:00:00Z"))
+    }
+
+    @Test
+    fun betraege() {
+        assertEquals("23.40", parseAmount("23,40"))
+        assertEquals("23.40", parseAmount(" 23.4 € "))
+        assertEquals("1234.50", parseAmount("1.234,50"))
+        assertNull(parseAmount("0"))
+        assertNull(parseAmount("-5"))
+        assertNull(parseAmount("1,234"))
+        assertNull(parseAmount("zehn"))
+        assertEquals("1.234,50 €", formatMoney("1234.5"))
+        assertEquals("", formatMoney(null))
+    }
+
+    @Test
+    fun entwurfHinUndZurueck() {
+        val draft = BookingDraft(
+            key = "0f8e", unitId = 3, date = "2026-06-13", kind = "expense", amount = "23.40",
+            account = 7, category = null, text = "Getränke", photo = "AAEC",
+        )
+        assertEquals(draft, decodeDraft(encodeDraft(draft)))
     }
 }

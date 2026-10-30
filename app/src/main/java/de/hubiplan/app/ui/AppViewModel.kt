@@ -56,7 +56,7 @@ data class AdminState(
     val busy: Boolean = false,
     val error: String? = null,
 ) {
-    val visible: Boolean get() = overview?.units?.isNotEmpty() == true
+    val visible: Boolean get() = overview?.allUnits?.isNotEmpty() == true
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
