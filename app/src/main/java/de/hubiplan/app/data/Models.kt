@@ -134,3 +134,24 @@ data class CircularItem(
     // Versandweg: app, mail, letter, portal
     val channel: String = "",
 )
+
+/** Einheit, an deren Mitglieder dieses Konto Kurzmitteilungen senden darf. */
+@Serializable
+data class Sender(
+    val key: String,
+    val name: String,
+    val type: String,
+    val id: Int,
+    val club: String = "",
+)
+
+@Serializable
+data class Senders(val senders: List<Sender> = emptyList(), @SerialName("max_body") val maxBody: Int = 500)
+
+/** Antwort auf Vorschau (counts) bzw. Senden (sent). */
+@Serializable
+data class SendResult(
+    val counts: Map<String, Int> = emptyMap(),
+    val sent: Map<String, Int> = emptyMap(),
+    val id: Int? = null,
+)
