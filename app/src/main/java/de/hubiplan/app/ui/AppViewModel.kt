@@ -233,6 +233,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setPushDistributor(pkg: String?) {
         viewModelScope.launch {
             if (pkg == null) PushSetup.turnOff(context, store) else PushSetup.enable(context, store, pkg)
+            // Ohne Push öfter abgleichen (UnifiedPush meldet seinen Endpunkt später; der Abgleich prüft erneut)
+            SyncWorker.schedule(context)
         }
     }
 

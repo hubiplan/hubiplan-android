@@ -27,7 +27,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Abgleich im Hintergrund: Termine aller Einheiten in den Gerätekalender schreiben und
- * Hinweise „Rückmeldung fehlt“ zeigen. Läuft alle 6 Stunden und nach Änderungen.
+ * Hinweise „Rückmeldung fehlt“ zeigen, verpasste Mitteilungen anzeigen. Läuft alle 6 Stunden,
+ * ohne Push alle 15 Minuten (kürzer erlaubt Android nicht), und nach Änderungen.
  */
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -37,6 +38,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         for (store in (applicationContext as HubiplanApp).accounts.allStores()) {
             if (syncAccount(store)) retry = true
         }
+        // Push kann inzwischen an- oder abgeschaltet sein: Abstand anpassen
+        schedule(applicationContext)
         return if (retry) Result.retry() else Result.success()
     }
 
@@ -152,13 +155,24 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         private val network = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
 
-        /** Regelmäßigen Abgleich einplanen (beim Start der App). */
-        fun schedule(context: Context) {
+        /** Abstand des Abgleichs: mit Push für alle Konten selten, sonst so oft wie Android erlaubt. */
+        fun intervalMinutes(allPush: Boolean): Long = if (allPush) 6 * 60L else 15L
+
+        /** Regelmäßigen Abgleich einplanen (beim Start der App und nach jedem Abgleich). */
+        suspend fun schedule(context: Context) {
+            val stores = (context.applicationContext as HubiplanApp).accounts.allStores()
+            val allPush = stores.isNotEmpty() && stores.all { it.settings.first().push.active }
+            val minutes = intervalMinutes(allPush)
+            val prefs = context.getSharedPreferences("abgleich", Context.MODE_PRIVATE)
+            // Nur bei geändertem Abstand neu einplanen, sonst verschiebt sich der nächste Lauf
+            val policy = if (prefs.getLong("minuten", -1L) == minutes) ExistingPeriodicWorkPolicy.KEEP
+            else ExistingPeriodicWorkPolicy.UPDATE
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 PERIODIC,
-                ExistingPeriodicWorkPolicy.KEEP,
-                PeriodicWorkRequestBuilder<SyncWorker>(6, TimeUnit.HOURS).setConstraints(network).build(),
+                policy,
+                PeriodicWorkRequestBuilder<SyncWorker>(minutes, TimeUnit.MINUTES).setConstraints(network).build(),
             )
+            prefs.edit().putLong("minuten", minutes).apply()
         }
 
         /** Sofort abgleichen (nach Anmeldung, Rückmeldung, geänderter Einstellung). */
@@ -173,6 +187,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         fun cancel(context: Context) {
             WorkManager.getInstance(context).cancelUniqueWork(PERIODIC)
             WorkManager.getInstance(context).cancelUniqueWork(NOW)
+            context.getSharedPreferences("abgleich", Context.MODE_PRIVATE).edit().remove("minuten").apply()
         }
     }
 }
