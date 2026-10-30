@@ -47,7 +47,8 @@ object PushSetup {
             store.setPushEndpoint(null, "HUBIplan ist gerade nicht erreichbar.")
             return
         }
-        val gateway = ways.firstOrNull { it.kind == "fcm" }?.gateway
+        val fcmWay = ways.firstOrNull { it.kind == "fcm" }
+        val gateway = fcmWay?.gateway
         if (gateway.isNullOrBlank()) {
             store.setPushEndpoint(null, "Dein Verein bietet Push über Google nicht an. Eine UnifiedPush-App wie „ntfy“ geht immer.")
             return
@@ -57,7 +58,9 @@ object PushSetup {
             store.setPushEndpoint(null, "Google-Push ist auf diesem Gerät nicht verfügbar.")
             return
         }
-        register(store, GooglePush.endpoint(gateway, token), kind = "fcm")
+        // An den VAPID-Schlüssel der Instanz binden (Gateway nimmt nur deren Nachrichten an)
+        val vapid = fcmWay.vapidPublicKey ?: ways.firstOrNull { it.kind == "unifiedpush" }?.vapidPublicKey
+        register(store, GatewayEndpoint.of(gateway, token, vapid), kind = "fcm")
     }
 
     /** Beim bisherigen Weg abmelden (Verteiler-App bzw. Google-Kennung, wenn kein anderes Konto sie nutzt). */

@@ -71,6 +71,4 @@ object GooglePush {
             }
         }
     }
-
-    fun endpoint(gateway: String, token: String) = gateway.trimEnd('/') + "/fcm/" + token
 }

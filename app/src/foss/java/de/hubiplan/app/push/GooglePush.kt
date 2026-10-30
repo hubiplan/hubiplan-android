@@ -14,6 +14,4 @@ object GooglePush {
     suspend fun token(context: Context): String? = null
 
     suspend fun delete(context: Context) {}
-
-    fun endpoint(gateway: String, token: String) = gateway.trimEnd('/') + "/fcm/" + token
 }
