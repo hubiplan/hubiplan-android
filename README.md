@@ -22,7 +22,7 @@ sich jederzeit unter „Mein Konto“ abmelden lässt.
 
 ## Bauen
 
-Voraussetzungen: JDK 17, Android-SDK (Plattform 35), `ANDROID_HOME` gesetzt.
+Voraussetzungen: JDK 17 oder neuer (in WSL Debian: 21), Android-SDK (Plattform 35), `ANDROID_HOME` gesetzt.
 
 ```
 scripts/test.sh            # Unit-Tests und Debug-APK (Variante foss)

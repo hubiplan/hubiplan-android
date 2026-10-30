@@ -133,9 +133,10 @@ fun ListDetail(
     emptyDetail: String,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        if (maxWidth >= TWO_PANE_MIN_WIDTH) {
+        val boxWidth = maxWidth
+        if (boxWidth >= TWO_PANE_MIN_WIDTH) {
             Row(Modifier.fillMaxSize()) {
-                Box(Modifier.width(maxWidth * 0.4f).fillMaxHeight()) { list() }
+                Box(Modifier.width(boxWidth * 0.4f).fillMaxHeight()) { list() }
                 VerticalDivider()
                 Box(Modifier.fillMaxSize()) {
                     if (hasDetail) detail() else Message(emptyDetail)
