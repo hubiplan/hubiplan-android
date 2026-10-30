@@ -38,6 +38,9 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             TextButton(onClick = { open("${main.account.server}/impressum$key") }) { Text("Impressum") }
             Text("Angemeldet als Mitglied von ${a.title}", style = MaterialTheme.typography.bodySmall)
         }
+        androidx.compose.material3.HorizontalDivider()
+        SettingsSection(vm)
+        androidx.compose.material3.HorizontalDivider()
         OutlinedButton(onClick = vm::logout) { Text("Von diesem Gerät abmelden") }
         Text(
             "HUBIplan-App ${BuildConfig.VERSION_NAME} · freie Software unter der GNU AGPL 3.0 oder neuer",

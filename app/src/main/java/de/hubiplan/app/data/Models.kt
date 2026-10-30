@@ -76,6 +76,7 @@ data class Occurrence(
     val owner: String = "",
     @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = false,
     @SerialName("my_response") val myResponse: String? = null,
+    @SerialName("rsvp_deadline") val rsvpDeadline: String? = null,
 )
 
 @Serializable

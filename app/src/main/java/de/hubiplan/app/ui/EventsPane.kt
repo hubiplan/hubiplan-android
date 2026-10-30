@@ -155,6 +155,7 @@ private fun EventDetailView(
             try {
                 event = action()
                 onChanged()
+                vm.syncSoon()
             } catch (e: ApiException) {
                 if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
             } finally {

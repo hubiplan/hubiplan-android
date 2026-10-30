@@ -14,8 +14,8 @@ android {
         // Android 8.0: Benachrichtigungskanäle, einheitliche Hintergrundregeln (Konzept, Frage 12)
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     // foss: F-Droid und APK, ohne Google-Bibliotheken · play: Google Play (später mit FCM)
@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.zxing.embedded)
+    implementation(libs.androidx.work)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
 }
