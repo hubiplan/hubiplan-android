@@ -3,4 +3,6 @@
 <paths>
     <cache-path name="fotos" path="fotos/" />
     <cache-path name="quittungen" path="quittungen/" />
+    <!-- Export alter, nicht gesendeter Belege vor dem Löschen (Fachfrage FQ24), beim Start gelöscht -->
+    <cache-path name="export" path="export/" />
 </paths>

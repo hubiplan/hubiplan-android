@@ -5,6 +5,13 @@ import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
 import de.hubiplan.app.tr
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Lokale Daten eines Kontos (Entwürfe, Quittungen, Ausweise) eindeutig getrennt
@@ -69,6 +76,14 @@ object LocalAccountData {
     /** Nach dieser Zeit fragt die App, ob alte Belege aus der Quarantäne gelöscht werden dürfen. */
     const val STALE_DAYS = 90L
 
+    /**
+     * Spätestens nach dieser Zeit löscht die App sie auch ohne Zustimmung (Fachfrage FQ24,
+     * Audit 02.11.): 30 Tage nach der ersten Rückfrage, in der man sie exportieren kann.
+     */
+    const val FINAL_DAYS = 120L
+
+    private const val DAY_MS = 24L * 60 * 60 * 1000
+
     private data class Owner(val server: String, val email: String, val alias: String, val since: Long)
 
     private fun owner(dir: File): Owner? = runCatching {
@@ -112,6 +127,97 @@ object LocalAccountData {
         val inUse = quarantine.listFiles().orEmpty().mapNotNull { owner(it)?.alias }.toSet()
         (freed - inUse).forEach { DraftCrypto.deleteKey(it) }
         return moved
+    }
+
+    private fun since(box: File) = owner(box)?.since ?: box.lastModified()
+
+    private fun entries(box: File) = box.listFiles().orEmpty().filter { it.name != OWNER && !it.name.endsWith(".tmp") }
+
+    /** Ergebnis von [sweep]: endgültig gelöscht nach [FINAL_DAYS] bzw. weil unlesbar. */
+    data class Sweep(val expired: Int, val unreadable: Int)
+
+    /**
+     * Beim Start (Fachfrage FQ24): Vorgänge älter als [FINAL_DAYS] Tage endgültig löschen, und
+     * solche, die sich nie mehr öffnen lassen (Schlüssel weg, z. B. nach dem Entfernen der
+     * Bildschirmsperre), sofort. Die App sagt danach, was weg ist.
+     */
+    fun sweep(context: Context, now: Long = System.currentTimeMillis()): Sweep {
+        val quarantine = File(context.filesDir, QUARANTINE)
+        val freed = mutableSetOf<String>()
+        var expired = 0
+        var unreadable = 0
+        for (box in quarantine.listFiles().orEmpty()) {
+            val who = owner(box)
+            val count = entries(box).size
+            val old = since(box) < now - FINAL_DAYS * DAY_MS
+            val lost = !old && unreadableBox(box, who?.alias ?: DraftCrypto.LEGACY_ALIAS)
+            if (!old && !lost) continue
+            if (box.deleteRecursively()) {
+                if (old) expired += count else unreadable += count
+                who?.alias?.let { freed += it }
+            }
+        }
+        val inUse = quarantine.listFiles().orEmpty().mapNotNull { owner(it)?.alias }.toSet()
+        (freed - inUse).forEach { DraftCrypto.deleteKey(it) }
+        File(context.cacheDir, EXPORT).deleteRecursively()
+        return Sweep(expired, unreadable)
+    }
+
+    /** Unlesbar nur, wenn der Schlüssel fehlt oder nicht zur Datei passt, nie bei gesperrtem Telefon. */
+    private fun unreadableBox(box: File, alias: String): Boolean {
+        if (!DraftCrypto.hasKey(alias)) return true
+        val first = entries(box).firstOrNull() ?: return false
+        return try {
+            DraftCrypto.open(alias, first.readBytes())
+            false
+        } catch (e: Exception) {
+            DraftCrypto.isPermanent(e)
+        }
+    }
+
+    /** Wann die ältesten Vorgänge der Rückfrage endgültig gelöscht werden (null: keine alten). */
+    fun finalDeletion(context: Context, now: Long = System.currentTimeMillis()): Long? =
+        File(context.filesDir, QUARANTINE).listFiles().orEmpty()
+            .map(::since)
+            .filter { it < now - STALE_DAYS * DAY_MS }
+            .minOrNull()
+            ?.let { it + FINAL_DAYS * DAY_MS }
+
+    /** Ordner im Cache für den Export (geteilt über FileProvider, beim nächsten Start gelöscht). */
+    const val EXPORT = "export"
+
+    /**
+     * Alte Vorgänge (älter als [STALE_DAYS]) entschlüsselt als JSON-Datei, um sie zu teilen
+     * oder zu speichern, bevor sie gelöscht werden (Fachfrage FQ24). Rückgabe: Datei und Zahl
+     * der Vorgänge darin; null, wenn sich nichts öffnen ließ.
+     */
+    fun exportStale(context: Context, now: Long = System.currentTimeMillis()): Pair<File, Int>? {
+        val items = mutableListOf<JsonElement>()
+        for (box in File(context.filesDir, QUARANTINE).listFiles().orEmpty()) {
+            if (since(box) >= now - STALE_DAYS * DAY_MS) continue
+            val who = owner(box)
+            val alias = who?.alias ?: DraftCrypto.LEGACY_ALIAS
+            for (file in entries(box)) {
+                val plain = runCatching { String(DraftCrypto.open(alias, file.readBytes())) }.getOrNull() ?: continue
+                val content = runCatching { Json.parseToJsonElement(plain) }.getOrElse { JsonPrimitive(plain) }
+                items += buildJsonObject {
+                    put("art", box.name.substringBefore("-k-").substringBefore("-"))
+                    put("server", who?.server ?: "")
+                    put("konto", who?.email ?: "")
+                    put("inhalt", content)
+                }
+            }
+        }
+        if (items.isEmpty()) return null
+        val doc = buildJsonObject {
+            put("hinweis", tr("Nicht gesendete Vorgänge aus HUBIplan. Enthält Namen und Beträge; nach der Übergabe an den Verein bitte löschen."))
+            put("exportiert", java.time.Instant.ofEpochMilli(now).toString())
+            put("vorgaenge", JsonArray(items))
+        }
+        val dir = File(context.cacheDir, EXPORT).apply { deleteRecursively(); mkdirs() }
+        val file = File(dir, "hubiplan-belege.json")
+        file.writeText(Json { prettyPrint = true }.encodeToString(JsonObject.serializer(), doc))
+        return file to items.size
     }
 
     /** Vorgänge in der Quarantäne, die älter als [STALE_DAYS] Tage sind. */
