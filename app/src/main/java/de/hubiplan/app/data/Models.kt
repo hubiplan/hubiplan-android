@@ -24,6 +24,8 @@ data class AdminUnit(
     val permissions: List<String> = emptyList(),
     /** "u": Einheit mit Rollen dort · "d": Untereinheit mit Rollen nur dort (Zugführung, B4) */
     val scope: String = "u",
+    /** Rechte als Bereiche mit Stufen (Server ab November 2026): neue Codes gelten */
+    val stufen: Boolean = false,
 ) {
     val key: String get() = "$scope:$id"
     val isDepartment: Boolean get() = scope == "d"
@@ -37,8 +39,9 @@ data class AdminDepartment(
     @SerialName("club_name") val clubName: String = "",
     val events: Boolean = true,
     val permissions: List<String> = emptyList(),
+    val stufen: Boolean = false,
 ) {
-    fun asUnit(): AdminUnit = AdminUnit(id, name, "department", permissions, "d")
+    fun asUnit(): AdminUnit = AdminUnit(id, name, "department", permissions, "d", stufen)
 }
 
 @Serializable

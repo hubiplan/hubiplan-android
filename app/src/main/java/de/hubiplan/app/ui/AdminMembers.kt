@@ -319,7 +319,7 @@ fun MemberScreen(
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(tr("Neues Foto vom Mitglied"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                     RemoteImage(pending.url, client::image, tr("Neues Foto"), Modifier.width(140.dp).height(180.dp))
-                    if (PHOTOS_MANAGE in permissions) {
+                    if (canEditPhotos(permissions)) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Button(onClick = {
                                 launchChange {
