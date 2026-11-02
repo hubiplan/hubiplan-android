@@ -37,7 +37,7 @@ fun MyResultsSection(access: PortalAccess, vm: AppViewModel) {
         try {
             data = api.myResults(access.id)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
         }
     }
     Text(tr("Meine Ergebnisse"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())

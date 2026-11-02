@@ -62,7 +62,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
         try {
             items = api.circulars(access.id)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
         }
     }
 
@@ -139,7 +139,7 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         try {
             item = api.circular(access.id, id)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
         }
     }
     Column(

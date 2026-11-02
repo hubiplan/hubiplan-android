@@ -1,7 +1,6 @@
 package de.hubiplan.app.ui
 
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.view.WindowManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -90,7 +89,7 @@ fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?) {
             }
             offline = false
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else offline = true
+            if (e.status == 401) vm.deviceRevoked(e) else offline = true
         }
     }
 
@@ -249,7 +248,7 @@ private fun BigCardDialog(stored: StoredCard, onClose: () -> Unit) {
 }
 
 private fun decodeBitmap(bytes: ByteArray?): Bitmap? =
-    bytes?.let { runCatching { BitmapFactory.decodeByteArray(it, 0, it.size) }.getOrNull() }
+    de.hubiplan.app.data.SafeBitmap.decode(bytes, 1600)
 
 @Composable
 private fun rememberQr(content: String, size: Int): Bitmap? = remember(content, size) {

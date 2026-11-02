@@ -2,7 +2,6 @@ package de.hubiplan.app.ui
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -97,7 +96,7 @@ fun RemoteImage(path: String?, load: suspend (String) -> ByteArray?, description
     var bitmap by remember(path) { mutableStateOf<Bitmap?>(null) }
     LaunchedEffect(path) {
         bitmap = path?.let { p ->
-            load(p)?.let { bytes -> withContext(Dispatchers.Default) { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) } }
+            load(p)?.let { bytes -> withContext(Dispatchers.Default) { de.hubiplan.app.data.SafeBitmap.decode(bytes, 1600) } }
         }
     }
     bitmap?.let { Image(it.asImageBitmap(), contentDescription = description, contentScale = ContentScale.Crop, modifier = modifier) }

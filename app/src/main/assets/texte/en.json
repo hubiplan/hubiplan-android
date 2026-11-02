@@ -569,5 +569,7 @@
  "Du hast zugesagt.": "You have accepted.",
  "Rückmeldung offen – Zu- oder Absage in der HUBIplan-App.": "Response open – accept or decline in the HUBIplan app.",
  "Aus HUBIplan ({unitTitle})": "From HUBIplan ({unitTitle})",
- "Kalender konnte nicht angelegt werden.": "Calendar could not be created."
+ "Kalender konnte nicht angelegt werden.": "Calendar could not be created.",
+ "Die Antwort des Servers war unverständlich. Bitte später erneut versuchen.": "The server's response could not be understood. Please try again later.",
+ "Die Antwort des Servers ist zu groß.": "The server's response is too large."
 }

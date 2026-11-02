@@ -3,7 +3,6 @@ package de.hubiplan.app.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -81,7 +80,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     var attempt by remember { mutableIntStateOf(0) }
 
     fun fail(e: ApiException) {
-        if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+        if (e.status == 401) vm.deviceRevoked(e) else error = e.message
     }
 
     LaunchedEffect(access.id, reload, attempt) {
@@ -92,7 +91,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
             val state = api.photo(access.id)
             photo = state
             val path = (state.pending ?: state.approved)?.url
-            image = path?.let { p -> api.image(p)?.let { withContext(Dispatchers.Default) { BitmapFactory.decodeByteArray(it, 0, it.size) } } }
+            image = path?.let { p -> api.image(p)?.let { withContext(Dispatchers.Default) { de.hubiplan.app.data.SafeBitmap.decode(it, 1600) } } }
         } catch (e: ApiException) {
             fail(e)
         }
