@@ -108,6 +108,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _staleQuarantine = MutableStateFlow(0)
     val staleQuarantine: StateFlow<Int> = _staleQuarantine
 
+    /** Wann die App die alten Belege endgültig löscht (Fachfrage FQ24). */
+    private val _staleDeadline = MutableStateFlow<Long?>(null)
+    val staleDeadline: StateFlow<Long?> = _staleDeadline
+
+    /** Beim Start endgültig gelöscht: nach der Frist bzw. weil unlesbar (Hinweis). */
+    private val _swept = MutableStateFlow<LocalAccountData.Sweep?>(null)
+    val swept: StateFlow<LocalAccountData.Sweep?> = _swept
+
+    fun dismissSwept() {
+        _swept.value = null
+    }
+
     fun dismissRestored() {
         _restored.value = 0
     }
@@ -434,8 +446,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // Lokale Daten aus dem alten Ordnerschema übernehmen (AND-S02)
             val keys = accounts.list().map { (_, a) -> LocalAccountData.key(a.server, a.deviceId) }
             withContext(Dispatchers.IO) { runCatching { LocalAccountData.migrate(context, keys) } }
+            // Fachfrage FQ24: nach 120 Tagen und Unlesbares endgültig löschen, dann fragen
+            val sweep = withContext(Dispatchers.IO) { runCatching { LocalAccountData.sweep(context) }.getOrNull() }
+            if (sweep != null && (sweep.expired > 0 || sweep.unreadable > 0)) _swept.value = sweep
             _staleQuarantine.value = withContext(Dispatchers.IO) {
                 runCatching { LocalAccountData.staleCount(context) }.getOrDefault(0)
+            }
+            _staleDeadline.value = withContext(Dispatchers.IO) {
+                runCatching { LocalAccountData.finalDeletion(context) }.getOrNull()
             }
             _theme.value = store.cachedTheme.first()
             loadAccounts()

@@ -1,6 +1,7 @@
 package de.hubiplan.app
 
 import de.hubiplan.app.data.ApiException
+import de.hubiplan.app.data.LocalAccountData
 import de.hubiplan.app.data.MAX_JSON_BYTES
 import de.hubiplan.app.data.RenewChallenge
 import de.hubiplan.app.data.SafeBitmap
@@ -102,5 +103,12 @@ class Audit0211Test {
         assertNotEquals(a, apiOrigin("https://b.example", "hpd_eins"))
         assertNotEquals(a, apiOrigin("https://a.example", "hpd_zwei"))
         assertTrue(!a.contains("hpd_eins"))
+    }
+
+    @Test
+    fun fq24_fristen_fuer_alte_belege() {
+        // Rückfrage mit Export nach 90 Tagen, endgültig gelöscht 30 Tage danach
+        assertEquals(90L, LocalAccountData.STALE_DAYS)
+        assertEquals(120L, LocalAccountData.FINAL_DAYS)
     }
 }

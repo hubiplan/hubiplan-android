@@ -96,6 +96,16 @@ internal object DraftCrypto {
         return open(LEGACY_ALIAS, data)
     }
 
+    /** Gibt es den Schlüssel noch? (Ohne ihn anzulegen, anders als [key].) */
+    fun hasKey(alias: String): Boolean = runCatching { store().containsAlias(alias) }.getOrDefault(true)
+
+    /**
+     * Fehler, der nicht vorübergeht: Schlüssel ungültig oder passt nicht zur Datei. Ein
+     * gesperrtes Telefon zählt nicht dazu (Fachfrage FQ24).
+     */
+    fun isPermanent(e: Throwable): Boolean =
+        e is android.security.keystore.KeyPermanentlyInvalidatedException || e is javax.crypto.AEADBadTagException
+
     fun deleteKey(alias: String) {
         runCatching { store().deleteEntry(alias) }
     }
