@@ -15,6 +15,9 @@ Feste Regeln von Ralf (gelten wie im Hauptprojekt `hubiplan`):
 - Sprache in Oberfläche, Doku und Commits: Deutsch.
 - **Neue Texte in der App gleich auch auf Englisch**: `tr(…)`/`trn(…)` und Eintrag in
   `app/src/main/assets/texte/en.json`; `TexteTest` schlägt sonst fehl.
+- **Jeder PR füllt „Für die Änderungshinweise“** der PR-Vorlage aus (Deutsch und Englisch).
+  App-Versionen bleiben `versionName` (SemVer, im Store ab 1.0.0) + `versionCode`; Tags `v0.x.y`
+  nur auf Ralfs Wort (Releases siehe `hubiplan/docs/releases.md`).
 - Variante `foss` ohne jede Google-Bibliothek (F-Droid); Google-Dienste nur in `play`.
 - Die App spricht nur mit der HUBIplan-Instanz des Mitglieds (`/api/app/v1/`, `/api/portal/…`),
   Beschreibung in `hubiplan/docs/app.md`; Konzept `konzepte/android-app.md` im Projektordner.
