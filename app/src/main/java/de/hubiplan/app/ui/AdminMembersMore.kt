@@ -615,12 +615,12 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
         val body = buildMap<String, Any?> {
             put("member_type", type!!.id)
             put("entry_date", entry)
-            if (person != null) put("person", person) else {
-                put("first_name", values["first_name"]!!.trim())
-                put("last_name", values["last_name"]!!.trim())
-                put("birth_date", birth)
-                put("gender", values["gender"])
-            }
+            // Name und Geburtsdatum gehen immer mit: bei einer gefundenen Person prüft der
+            // Server damit den Treffer (die ID allein reicht nicht)
+            put("first_name", values["first_name"]!!.trim())
+            put("last_name", values["last_name"]!!.trim())
+            put("birth_date", birth)
+            if (person != null) put("person", person) else put("gender", values["gender"])
             for (k in listOf("email", "phone", "street", "postal_code", "city")) put(k, values[k]!!.trim())
             unit?.let { put("department_ids", kotlinx.serialization.json.JsonArray(listOf(JsonPrimitive(it.id)))) }
         }
