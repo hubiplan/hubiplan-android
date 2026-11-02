@@ -56,7 +56,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
             maxBody = data.maxBody
             if (senderKey == null) senderKey = data.senders.firstOrNull()?.key
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
         }
     }
     val sender = senders?.firstOrNull { it.key == senderKey }
@@ -76,7 +76,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                     preview = result.counts
                 }
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+                if (e.status == 401) vm.deviceRevoked(e) else error = e.message
             } finally {
                 busy = false
             }

@@ -16,6 +16,7 @@ import de.hubiplan.app.data.AdminOverview
 import de.hubiplan.app.data.AdminVault
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
+import de.hubiplan.app.data.apiOrigin
 import de.hubiplan.app.data.ClubLogo
 import de.hubiplan.app.data.AppSettings
 import de.hubiplan.app.data.DeviceKeys
@@ -74,9 +75,14 @@ data class AdminState(
     val error: String? = null,
     // Härtung H7: Vorstandsanfragen mit diesem Schlüsselpaar unterschreiben
     val keyAlias: String? = null,
+    // Konto, zu dem dieser Zustand gehört (Audit 02.11., WA-S02); siehe [accountKey]
+    val owner: String? = null,
 ) {
     val visible: Boolean get() = overview?.allUnits?.isNotEmpty() == true
 }
+
+/** Kennung eines Kontos für den Verwaltungszustand: Server und Gerät. */
+fun accountKey(account: Account): String = "${account.server}#${account.deviceId}"
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModel(app: Application) : AndroidViewModel(app) {
@@ -137,7 +143,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val admin: StateFlow<AdminState> = _admin
     private var adminUsedAt = 0L
 
-    private suspend fun loadAdmin(account: Account, target: AccountStore = store, stillCurrent: () -> Boolean = { true }) {
+    /**
+     * Konto, für das eine Verwaltungsaktion gestartet wurde (Audit 02.11., WA-S02). Antworten,
+     * die nach einem Kontowechsel, Abmelden oder Neuverbinden ankommen, schreiben weder in den
+     * Speicher noch in den Zustand eines anderen Kontos.
+     */
+    private inner class AdminTarget(val slot: Int, val account: Account, val store: AccountStore) {
+        private val generation = adminGeneration
+
+        suspend fun current(): Boolean {
+            if (generation != adminGeneration || accounts.active.value != slot) return false
+            val now = store.currentAccount() ?: return false
+            return now.server == account.server && now.deviceId == account.deviceId
+        }
+    }
+
+    // Steigt bei jedem Kontowechsel und Entfernen des aktiven Kontos
+    private var adminGeneration = 0
+
+    private fun adminTarget(): AdminTarget? {
+        val main = screen.value as? Screen.Main ?: return null
+        val slot = accounts.active.value
+        return AdminTarget(slot, main.account, accounts.store(slot))
+    }
+
+    /** Verwaltungszustand verwerfen: anderes Konto gewählt oder Konto entfernt. */
+    private fun resetAdmin() {
+        adminGeneration++
+        _admin.value = AdminState()
+    }
+
+    private suspend fun loadAdmin(account: Account, target: AccountStore, stillCurrent: suspend () -> Boolean) {
         val overview = runCatching { Api(account.server, account.token).adminOverview() }.getOrNull()
         if (!stillCurrent()) return
         val sealed = target.sealedAdminToken()
@@ -149,21 +185,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             overview = overview,
             sealed = overview?.unlocked == true && sealed != null,
             keyAlias = signedAlias,
+            owner = accountKey(account),
         )
     }
 
+    private suspend fun loadAdmin(target: AdminTarget) = loadAdmin(target.account, target.store) { target.current() }
+
     /** Nach Fingerabdruck/PIN: Vorstandsschlüssel aus dem Tresor holen. */
     fun openAdmin() {
+        val target = adminTarget() ?: return
         viewModelScope.launch {
-            val sealed = store.sealedAdminToken() ?: return@launch
+            val sealed = target.store.sealedAdminToken() ?: return@launch
             try {
                 val token = AdminVault.open(sealed)
+                if (!target.current() || _admin.value.owner != accountKey(target.account)) return@launch
                 adminUsedAt = SystemClock.elapsedRealtime()
                 _admin.value = _admin.value.copy(token = token, error = null)
             } catch (e: AdminVault.LockedException) {
+                if (!target.current()) return@launch
                 _admin.value = _admin.value.copy(error = tr("Bitte mit Fingerabdruck oder Geräte-PIN entsperren."))
             } catch (e: AdminVault.GoneException) {
-                store.setSealedAdminToken(null)
+                target.store.setSealedAdminToken(null)
+                if (!target.current()) return@launch
                 _admin.value = _admin.value.copy(sealed = false, error = tr("Bitte die Verwaltung neu freischalten."))
             }
         }
@@ -171,12 +214,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Freischalten mit Passwort und Code (direkt nach Fingerabdruck/PIN aufrufen). */
     fun unlockAdmin(password: String, code: String) {
-        val main = screen.value as? Screen.Main ?: return
+        val target = adminTarget() ?: return
+        val account = target.account
         _admin.value = _admin.value.copy(busy = true, error = null)
         viewModelScope.launch {
             try {
                 // Härtung H7: neues Vorstands-Schlüsselpaar, nur bei entsperrtem Telefon nutzbar
-                val alias = main.account.keyAlias?.let(DeviceKeys::adminAlias)
+                val alias = account.keyAlias?.let(DeviceKeys::adminAlias)
                 val adminKey = alias?.let {
                     withContext(Dispatchers.Default) {
                         runCatching {
@@ -184,23 +228,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         }.getOrNull()
                     }
                 } ?: ""
-                val result = Api(main.account.server, main.account.token).unlockAdmin(password, code.trim(), adminKey)
+                val result = Api(account.server, account.token).unlockAdmin(password, code.trim(), adminKey)
+                if (!target.current()) {
+                    // Inzwischen anderes Konto: den neuen Schlüssel nicht aufbewahren, sondern
+                    // bei seiner eigenen Instanz gleich wieder sperren (WA-S02)
+                    runCatching { Api(account.server, account.token).lockAdmin() }
+                    return@launch
+                }
                 try {
-                    store.setSealedAdminToken(AdminVault.seal(result.token), signed = result.signed && adminKey.isNotEmpty())
+                    target.store.setSealedAdminToken(AdminVault.seal(result.token), signed = result.signed && adminKey.isNotEmpty())
                 } catch (e: Exception) {
                     // Ohne Tresor (keine Bildschirmsperre) nicht speichern und gleich wieder sperren
-                    runCatching { Api(main.account.server, main.account.token).lockAdmin() }
-                    _admin.value = _admin.value.copy(
-                        busy = false,
-                        error = tr("Für die Verwaltung braucht das Telefon eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
-                    )
+                    runCatching { Api(account.server, account.token).lockAdmin() }
+                    if (target.current()) {
+                        _admin.value = _admin.value.copy(
+                            busy = false,
+                            error = tr("Für die Verwaltung braucht das Telefon eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
+                        )
+                    }
                     return@launch
                 }
                 adminUsedAt = SystemClock.elapsedRealtime()
-                loadAdmin(main.account)
-                _admin.value = _admin.value.copy(token = result.token)
+                loadAdmin(target)
+                if (target.current()) _admin.value = _admin.value.copy(token = result.token)
             } catch (e: ApiException) {
-                _admin.value = _admin.value.copy(busy = false, error = e.message)
+                if (target.current()) _admin.value = _admin.value.copy(busy = false, error = e.message)
             }
         }
     }
@@ -220,8 +272,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun adminApi(): Api? {
         val main = screen.value as? Screen.Main ?: return null
         checkAdminIdle()
-        val token = _admin.value.token ?: return null
-        return Api(main.account.server, token, main.account.token, _admin.value.keyAlias)
+        val state = _admin.value
+        val token = state.token ?: return null
+        // Vorstandsschlüssel nur mit Server und Gerät des Kontos, dem er gehört (WA-S02)
+        if (state.owner != accountKey(main.account)) return null
+        return Api(main.account.server, token, main.account.token, state.keyAlias)
     }
 
     /**
@@ -269,20 +324,22 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Server meldet 401 für die Verwaltung: abgelaufen oder im Browser gesperrt. */
     fun adminRejected() {
-        val main = screen.value as? Screen.Main ?: return
+        val target = adminTarget() ?: return
         viewModelScope.launch {
-            store.setSealedAdminToken(null)
-            loadAdmin(main.account)
+            if (!target.current()) return@launch
+            target.store.setSealedAdminToken(null)
+            loadAdmin(target)
         }
     }
 
     /** Verwaltung auf diesem Gerät sperren (Gerät bleibt angemeldet). */
     fun lockAdmin() {
-        val main = screen.value as? Screen.Main ?: return
+        val target = adminTarget() ?: return
         viewModelScope.launch {
-            runCatching { Api(main.account.server, main.account.token).lockAdmin() }
-            store.setSealedAdminToken(null)
-            loadAdmin(main.account)
+            runCatching { Api(target.account.server, target.account.token).lockAdmin() }
+            // Gesperrt ist der Schlüssel dieses Kontos, auch wenn inzwischen gewechselt wurde
+            target.store.setSealedAdminToken(null)
+            if (target.current()) loadAdmin(target)
         }
     }
 
@@ -394,7 +451,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun switchTo(slot: Int) {
         accounts.setActive(slot)
         _canSend.value = false
-        _admin.value = AdminState()
+        resetAdmin()
         _theme.value = store.cachedTheme.first()
         _logo.value = null
         _shortcutOffer.value = false
@@ -455,7 +512,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         // Noch wartende Zu-/Absagen dieses Kontos verwerfen (C-F02)
         current?.let { runCatching { de.hubiplan.app.sync.RsvpActionReceiver.cancelFor(context, it) } }
-        if (wasActive) _admin.value = AdminState()
+        if (wasActive) resetAdmin()
         runCatching { PushSetup.forget(context, slotStore) }
         runCatching { server?.let { DeviceCalendar(context).removeCalendarsExcept(emptySet(), it) } }
         accounts.remove(slot)
@@ -508,7 +565,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val canSend = runCatching { Api(account.server, account.token).senders().senders.isNotEmpty() }.getOrDefault(false)
             if (!current()) return
             _canSend.value = canSend
-            loadAdmin(account, target, current)
+            loadAdmin(account, target) { current() }
             // Härtung H7: Schlüsselpaar nachmelden, Geräteschlüssel erneuern, wenn fällig
             runCatching { KeyMaintenance(context, accounts).maintain(target, me.device) }
         } catch (e: ApiException) {
@@ -791,9 +848,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Geräteschlüssel ungültig geworden (z. B. im Browser abgemeldet). */
-    fun deviceRevoked(message: String?) {
-        viewModelScope.launch { dropActive(message) }
+    /**
+     * Geräteschlüssel ungültig geworden (z. B. im Browser abgemeldet). Entfernt wird nur das Konto,
+     * dessen Anfrage abgelehnt wurde; kommt die Antwort erst nach einem Kontowechsel an, bleibt
+     * das neue Konto unberührt (Audit 02.11., WA-V01).
+     */
+    fun deviceRevoked(e: ApiException) {
+        val slot = accounts.active.value
+        viewModelScope.launch {
+            val active = accounts.store(slot).currentAccount() ?: return@launch
+            if (e.origin != null && e.origin != apiOrigin(active.server, active.token)) return@launch
+            dropSlot(slot, active, e.message)
+        }
     }
 
     private val appVersion: String get() = BuildConfig.VERSION_CODE.toString()

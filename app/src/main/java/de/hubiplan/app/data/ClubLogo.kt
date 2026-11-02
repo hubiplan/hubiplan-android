@@ -33,7 +33,7 @@ object ClubLogo {
 
     /** Heruntergeladenes Bild verkleinert speichern; null oder Unlesbares entfernt das Wappen. */
     fun save(context: Context, account: Account, accessId: Int, url: String?, bytes: ByteArray?) {
-        val bitmap = bytes?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }?.let(::shrink)
+        val bitmap = SafeBitmap.decode(bytes, MAX_EDGE)?.let(::shrink)
         if (url == null || bitmap == null) {
             image(context, account, accessId).delete()
             if (url == null) source(context, account, accessId).delete()

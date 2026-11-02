@@ -61,7 +61,7 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
             val today = LocalDate.now()
             items = api.events(access.id, today.toString(), today.plusDays(DAYS_AHEAD).toString())
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
         }
     }
 
@@ -156,7 +156,7 @@ private fun EventDetailView(
         try {
             event = api.event(access.id, eventId)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
         }
     }
 
@@ -169,7 +169,7 @@ private fun EventDetailView(
                 onChanged()
                 vm.syncSoon()
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e.message) else error = e.message
+                if (e.status == 401) vm.deviceRevoked(e) else error = e.message
             } finally {
                 busy = false
             }

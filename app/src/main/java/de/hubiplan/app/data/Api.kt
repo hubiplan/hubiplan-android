@@ -21,8 +21,20 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import de.hubiplan.app.tr
 
-/** Fehler mit Meldung für das Mitglied. [status] 401 mit Geräteschlüssel: neu verbinden. */
-class ApiException(val status: Int, message: String, val body: String = "") : Exception(message)
+/**
+ * Fehler mit Meldung für das Mitglied. [status] 401 mit Geräteschlüssel: neu verbinden.
+ * [origin]: Konto der abgelehnten Anfrage (siehe [apiOrigin]), damit eine verspätete Ablehnung
+ * nicht ein inzwischen gewähltes anderes Konto entfernt (Audit 02.11., WA-V01).
+ */
+class ApiException(
+    val status: Int,
+    message: String,
+    val body: String = "",
+    val origin: String? = null,
+) : Exception(message)
+
+/** Kennung von Server und Schlüssel einer Anfrage, ohne den Schlüssel selbst. */
+fun apiOrigin(server: String, token: String?): String = "$server#${token?.hashCode()}"
 
 /** Antwort der Verwaltung mit Änderungspaket (für „Rückgängig“). */
 data class AdminResponse(val text: String, val changeSet: String?, val undoable: Boolean, val label: String?)
@@ -32,6 +44,50 @@ val json = Json {
     explicitNulls = false
     coerceInputValues = true
 }
+
+/** Größte JSON-Antwort, die die App liest (Audit 02.11., WA-S01). */
+const val MAX_JSON_BYTES = 8L * 1024 * 1024
+
+/** Größtes Bild oder PDF, das die App lädt (Belege, Quittungen, Fotos, Wappen). */
+const val MAX_FILE_BYTES = 25L * 1024 * 1024
+
+private val PROTOCOL_ERROR: String
+    get() = tr("Die Antwort des Servers war unverständlich. Bitte später erneut versuchen.")
+
+/** Antwort war 2xx, passt aber nicht zum erwarteten Aufbau (Audit 02.11., WA-F01). */
+fun protocolError(): ApiException = ApiException(502, PROTOCOL_ERROR)
+
+/**
+ * JSON einer Serverantwort lesen. Kaputtes JSON, falsche Feldtypen oder fehlende Pflichtfelder
+ * werden zu [ApiException], die die Oberflächen schon als Fehler anzeigen, statt die App zu
+ * beenden (Audit 02.11., WA-F01). Der Antworttext kommt nicht in die Meldung.
+ */
+inline fun <reified T> decodeApi(text: String): T = try {
+    json.decodeFromString<T>(text)
+} catch (e: IllegalArgumentException) {
+    // SerializationException ist eine IllegalArgumentException
+    throw protocolError()
+}
+
+fun <T> decodeApi(serializer: kotlinx.serialization.KSerializer<T>, text: String): T = try {
+    json.decodeFromString(serializer, text)
+} catch (e: IllegalArgumentException) {
+    throw protocolError()
+}
+
+/** Antwortkörper lesen, höchstens [limit] Bytes (auch bei chunked oder gzip, Audit 02.11., WA-S01). */
+internal fun readLimited(body: okhttp3.ResponseBody?, limit: Long): ByteArray {
+    body ?: return ByteArray(0)
+    if (body.contentLength() > limit) throw tooLarge()
+    val source = body.source()
+    val buffer = okio.Buffer()
+    while (buffer.size <= limit) {
+        if (source.read(buffer, 64L * 1024) == -1L) return buffer.readByteArray()
+    }
+    throw tooLarge()
+}
+
+private fun tooLarge() = ApiException(502, tr("Die Antwort des Servers ist zu groß."))
 
 private val JSON_TYPE = "application/json".toMediaType()
 
@@ -57,6 +113,8 @@ fun errorCode(text: String): String? = try {
 private val http: OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(15, TimeUnit.SECONDS)
     .readTimeout(30, TimeUnit.SECONDS)
+    // Gesamtzeit je Anfrage, auch wenn der Server tröpfchenweise sendet (WA-S01)
+    .callTimeout(2, TimeUnit.MINUTES)
     .followRedirects(false)
     .build()
 
@@ -133,12 +191,13 @@ class Api(
         headers: Map<String, String> = emptyMap(),
         accept: Boolean = true,
         retry: Boolean = true,
+        limit: Long = MAX_JSON_BYTES,
     ): Raw = withContext(Dispatchers.IO) {
         val bytes = body?.let { b -> okio.Buffer().also { b.writeTo(it) }.readByteArray() }
         val used = deviceKeyToken()
         val raw = try {
             http.newCall(request(method, path, bytes, body?.contentType(), headers, accept)).execute().use { resp ->
-                Raw(resp.code, resp.body?.bytes() ?: ByteArray(0), resp.headers)
+                Raw(resp.code, readLimited(resp.body, limit), resp.headers)
             }
         } catch (e: IOException) {
             throw ApiException(0, OFFLINE)
@@ -149,7 +208,7 @@ class Api(
             if (!retry || DeviceTokens.renew(server, used) == null) {
                 throw ApiException(0, tr("Der Geräteschlüssel ließ sich gerade nicht erneuern. Bitte später erneut versuchen."))
             }
-            return@withContext send(method, path, body?.let { bytes!!.toRequestBody(it.contentType()) }, headers, accept, retry = false)
+            return@withContext send(method, path, body?.let { bytes!!.toRequestBody(it.contentType()) }, headers, accept, retry = false, limit = limit)
         }
         raw
     }
@@ -172,13 +231,13 @@ class Api(
     ): String {
         val (status, text) = call(method, path, body, headers)
         if (status in 200..299) return text
-        throw ApiException(status, errorMessage(status, text))
+        throw ApiException(status, errorMessage(status, text), origin = apiOrigin(server, token))
     }
 
-    suspend fun instance(): Instance = json.decodeFromString(expect("GET", "/api/app/v1/instance/"))
+    suspend fun instance(): Instance = decodeApi(expect("GET", "/api/app/v1/instance/"))
 
     suspend fun pair(code: String = "", loginLink: String = "", deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
-        json.decodeFromString(
+        decodeApi(
             expect(
                 "POST",
                 "/api/app/v1/pair/",
@@ -234,7 +293,7 @@ class Api(
     }
 
     suspend fun createDevice(sessionToken: String, deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
-        json.decodeFromString(
+        decodeApi(
             expect(
                 "POST",
                 "/api/app/v1/devices/",
@@ -246,21 +305,21 @@ class Api(
             ),
         )
 
-    suspend fun me(): Me = json.decodeFromString(expect("GET", "/api/app/v1/me/"))
+    suspend fun me(): Me = decodeApi(expect("GET", "/api/app/v1/me/"))
 
     /** Sprache des Kontos (gilt auch im Browser) und wählbare Sprachen. */
-    suspend fun language(): LanguageState = json.decodeFromString(expect("GET", "/api/app/v1/me/language/"))
+    suspend fun language(): LanguageState = decodeApi(expect("GET", "/api/app/v1/me/language/"))
 
-    suspend fun setLanguage(code: String): LanguageState = json.decodeFromString(
+    suspend fun setLanguage(code: String): LanguageState = decodeApi(
         expect("PATCH", "/api/app/v1/me/language/", json.encodeToString(JsonObject.serializer(), jsonObjectOf("language" to code))),
     )
 
     // --- Geräteschlüssel erneuern (Härtung H7) ---
 
     suspend fun renewChallenge(): String =
-        json.decodeFromString<RenewChallenge>(expect("POST", "/api/app/v1/devices/current/renew/")).challenge
+        decodeApi<RenewChallenge>(expect("POST", "/api/app/v1/devices/current/renew/")).challenge
 
-    suspend fun renew(challenge: String, signature: String): Renewed = json.decodeFromString(
+    suspend fun renew(challenge: String, signature: String): Renewed = decodeApi(
         expect(
             "POST",
             "/api/app/v1/devices/current/renew/",
@@ -269,7 +328,7 @@ class Api(
     )
 
     /** Schlüsselpaar einer älteren Verbindung nachmelden. */
-    suspend fun registerDeviceKey(publicKey: String): DeviceInfo = json.decodeFromString(
+    suspend fun registerDeviceKey(publicKey: String): DeviceInfo = decodeApi(
         expect("PUT", "/api/app/v1/devices/current/key/", """{"device_key":${quote(publicKey)}}"""),
     )
 
@@ -278,13 +337,13 @@ class Api(
     }
 
     suspend fun events(accessId: Int, from: String, to: String): List<Occurrence> =
-        json.decodeFromString<EventList>(expect("GET", "/api/portal/$accessId/events/?from=$from&to=$to")).items
+        decodeApi<EventList>(expect("GET", "/api/portal/$accessId/events/?from=$from&to=$to")).items
 
     suspend fun event(accessId: Int, eventId: Int): EventDetail =
-        json.decodeFromString(expect("GET", "/api/portal/$accessId/events/$eventId/"))
+        decodeApi(expect("GET", "/api/portal/$accessId/events/$eventId/"))
 
     suspend fun respond(accessId: Int, eventId: Int, status: String, guests: Int = 0, note: String = ""): EventDetail =
-        json.decodeFromString(
+        decodeApi(
             expect(
                 "PUT",
                 "/api/portal/$accessId/events/$eventId/response/",
@@ -293,7 +352,7 @@ class Api(
         )
 
     suspend fun withdraw(accessId: Int, eventId: Int): EventDetail =
-        json.decodeFromString(expect("DELETE", "/api/portal/$accessId/events/$eventId/response/"))
+        decodeApi(expect("DELETE", "/api/portal/$accessId/events/$eventId/response/"))
 
     /** Push-Endpunkt dieses Geräts melden (UnifiedPush). */
     suspend fun registerPush(endpoint: String, p256dh: String, auth: String, kind: String = "unifiedpush") {
@@ -309,10 +368,10 @@ class Api(
 
     // --- Verwaltung (Schritt A8) ---
 
-    suspend fun adminOverview(): AdminOverview = json.decodeFromString(expect("GET", "/api/app/v1/admin/"))
+    suspend fun adminOverview(): AdminOverview = decodeApi(expect("GET", "/api/app/v1/admin/"))
 
     /** Mit Passwort und Zwei-Faktor-Code freischalten; liefert den Vorstandsschlüssel. */
-    suspend fun unlockAdmin(password: String, code: String, adminKey: String = ""): AdminUnlock = json.decodeFromString(
+    suspend fun unlockAdmin(password: String, code: String, adminKey: String = ""): AdminUnlock = decodeApi(
         expect(
             "POST",
             "/api/app/v1/admin/unlock/",
@@ -326,7 +385,7 @@ class Api(
 
     /** Mit dem Vorstandsschlüssel als [token]. */
     suspend fun adminTasks(unitId: Int): AdminTasks =
-        json.decodeFromString(expect("GET", "/api/app/v1/admin/u/$unitId/tasks/"))
+        decodeApi(expect("GET", "/api/app/v1/admin/u/$unitId/tasks/"))
 
     /**
      * Anfrage der Verwaltung (Schritt B2) unter `/api/app/v1/admin/u/<Einheit>/`. Liefert den
@@ -367,7 +426,7 @@ class Api(
     ): AdminResponse {
         val resp = send(method, path, body, headers)
         val text = resp.text
-        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text), text)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, text), text, apiOrigin(server, token))
         return AdminResponse(
             text,
             resp.headers["X-Change-Set"],
@@ -380,11 +439,11 @@ class Api(
         expect("DELETE", "/api/app/v1/devices/current/push/")
     }
 
-    suspend fun senders(): Senders = json.decodeFromString(expect("GET", "/api/app/v1/send/"))
+    suspend fun senders(): Senders = decodeApi(expect("GET", "/api/app/v1/send/"))
 
     /** Kurzmitteilung: [confirm] false zählt nur die Empfänger, true sendet. */
     suspend fun sendShort(sender: Sender, subject: String, body: String, confirm: Boolean): SendResult =
-        json.decodeFromString(
+        decodeApi(
             expect(
                 "POST",
                 "/api/app/v1/send/${sender.type}/${sender.id}/",
@@ -392,19 +451,24 @@ class Api(
             ),
         )
 
-    suspend fun profile(accessId: Int): Profile = json.decodeFromString(expect("GET", "/api/portal/$accessId/"))
+    suspend fun profile(accessId: Int): Profile = decodeApi(expect("GET", "/api/portal/$accessId/"))
 
     /** Änderung melden; Felder wie im Browser (email, phone, street, postal_code, city, …). */
     suspend fun reportChange(accessId: Int, values: Map<String, String>, message: String): Boolean {
         val body = JsonObject((values + ("message" to message)).mapValues { JsonPrimitive(it.value) })
         val text = expect("POST", "/api/portal/$accessId/change-requests/", json.encodeToString(JsonObject.serializer(), body))
         // true: wartet auf den Vorstand · false: sofort übernommen
-        return json.parseToJsonElement(text).jsonObject["request"].let { it != null && it !is kotlinx.serialization.json.JsonNull }
+        val root = try {
+            json.parseToJsonElement(text) as? JsonObject
+        } catch (e: IllegalArgumentException) {
+            null
+        } ?: throw protocolError()
+        return root["request"].let { it != null && it !is kotlinx.serialization.json.JsonNull }
     }
 
-    suspend fun card(accessId: Int): CardState = json.decodeFromString(expect("GET", "/api/portal/$accessId/card/"))
+    suspend fun card(accessId: Int): CardState = decodeApi(expect("GET", "/api/portal/$accessId/card/"))
 
-    suspend fun photo(accessId: Int): PhotoState = json.decodeFromString(expect("GET", "/api/portal/$accessId/photo/"))
+    suspend fun photo(accessId: Int): PhotoState = decodeApi(expect("GET", "/api/portal/$accessId/photo/"))
 
     /** Foto hochladen (JPEG, auf dem Gerät verkleinert und ohne EXIF) mit Einwilligung. */
     suspend fun uploadPhoto(accessId: Int, jpeg: ByteArray): PhotoState {
@@ -413,28 +477,28 @@ class Api(
             .addFormDataPart("file", "foto.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
             .build()
         val resp = send("POST", "/api/portal/$accessId/photo/", form)
-        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text))
-        return json.decodeFromString(PhotoState.serializer(), resp.text)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), origin = apiOrigin(server, token))
+        return decodeApi(PhotoState.serializer(), resp.text)
     }
 
-    suspend fun deletePhoto(accessId: Int): PhotoState = json.decodeFromString(expect("DELETE", "/api/portal/$accessId/photo/"))
+    suspend fun deletePhoto(accessId: Int): PhotoState = decodeApi(expect("DELETE", "/api/portal/$accessId/photo/"))
 
     /** Bild mit Geräteschlüssel laden (Pfad aus der Schnittstelle). */
     suspend fun image(path: String): ByteArray? = try {
-        send("GET", path, accept = false).takeIf { it.code in 200..299 }?.body
+        send("GET", path, accept = false, limit = MAX_FILE_BYTES).takeIf { it.code in 200..299 }?.body
     } catch (e: ApiException) {
         null
     }
 
     /** „Meine Ergebnisse“ (Wettbewerbe Schritt 5). */
     suspend fun myResults(accessId: Int): MyResults =
-        json.decodeFromString(expect("GET", "/api/portal/$accessId/results/"))
+        decodeApi(expect("GET", "/api/portal/$accessId/results/"))
 
     suspend fun circulars(accessId: Int): List<CircularItem> =
-        json.decodeFromString(expect("GET", "/api/portal/$accessId/circulars/"))
+        decodeApi(expect("GET", "/api/portal/$accessId/circulars/"))
 
     suspend fun circular(accessId: Int, id: Int): CircularItem =
-        json.decodeFromString(expect("GET", "/api/portal/$accessId/circulars/$id/"))
+        decodeApi(expect("GET", "/api/portal/$accessId/circulars/$id/"))
 }
 
 private fun quote(value: String): String =
