@@ -117,7 +117,7 @@ fun DeptMemberScreen(
                 )
             }
         }
-        if (DEPT_MEMBERS_EDIT in permissions) OutlinedButton(onClick = { editing = true }) { Text(tr("Kontaktdaten bearbeiten")) }
+        if (canEditDeptMembers(permissions)) OutlinedButton(onClick = { editing = true }) { Text(tr("Kontaktdaten bearbeiten")) }
         Text(tr("Mitgliedsart, Austritt und Beiträge regelt der Verein."), style = MaterialTheme.typography.bodySmall)
     }
     val d = detail

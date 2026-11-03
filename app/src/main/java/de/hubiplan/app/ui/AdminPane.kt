@@ -206,15 +206,15 @@ private fun sectionsFor(unit: AdminUnit): List<Section> {
     if (unit.isDepartment) {
         return listOfNotNull(
             Section.TASKS,
-            Section.MEMBERS.takeIf { p.any { it.startsWith("dept.members.") } },
-            Section.EVENTS,
+            Section.MEMBERS.takeIf { showsMembers(unit) },
+            Section.EVENTS.takeIf { showsEvents(unit) },
         )
     }
-    val members = p.any { it.startsWith("members.") }
+    val members = showsMembers(unit)
     return listOfNotNull(
         Section.TASKS,
         Section.MEMBERS.takeIf { members },
-        Section.EVENTS,
+        Section.EVENTS.takeIf { showsEvents(unit) },
         Section.FINANCE.takeIf { FINANCE_VIEW in p || FINANCE_EDIT in p },
         Section.BILLING.takeIf { BILLING_VIEW in p || BILLING_EDIT in p },
         Section.OCCASIONS.takeIf { members },
@@ -231,7 +231,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val client = remember(unit.key) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::useAdmin, unit.scope, "${main.account.server}-${main.account.deviceId}") } } ?: return
     val errors = remember { AdminErrors(onLocked = vm::adminRejected) }
     val sections = sectionsFor(unit)
-    val hasMembers = !unit.isDepartment && unit.permissions.any { it.startsWith("members.") }
+    val hasMembers = !unit.isDepartment && showsMembers(unit)
     // Entwürfe der Kasse: je Konto (Server und Gerät)
     val drafts = remember(main.account.server, main.account.deviceId) {
         DraftStore(context, "${main.account.server}-${main.account.deviceId}")
