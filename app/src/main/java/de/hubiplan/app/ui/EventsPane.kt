@@ -123,9 +123,9 @@ private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) 
             if (occ.rsvpEnabled) {
                 Text(
                     when (occ.myResponse) {
-                        "yes" -> "✓ Zusage"
-                        "no" -> "✗ Absage"
-                        else -> "offen"
+                        "yes" -> tr("✓ Zusage")
+                        "no" -> tr("✗ Absage")
+                        else -> tr("offen")
                     },
                     color = if (occ.myResponse == null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
                 )

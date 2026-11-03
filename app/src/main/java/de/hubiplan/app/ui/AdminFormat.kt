@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.ResolverStyle
 import de.hubiplan.app.tr
+import de.hubiplan.app.trn
 
 private val GERMAN_DATE = DateTimeFormatter.ofPattern("d.M.uuuu").withResolverStyle(ResolverStyle.STRICT)
 
@@ -110,10 +111,10 @@ fun eventTimes(
 /** Stand der Rückmeldungen in Worten: „12 Zusagen (15 Personen) · 3 Absagen · 20 offen“. */
 fun responseSummary(yes: Int, no: Int, persons: Int, open: Int?): String {
     val parts = mutableListOf(
-        (if (yes == 1) "1 Zusage" else "$yes Zusagen") + if (persons != yes) " ($persons Personen)" else "",
-        if (no == 1) "1 Absage" else "$no Absagen",
+        trn("1 Zusage", "{n} Zusagen", yes) + if (persons != yes) " " + tr("({n} Personen)", "n" to persons) else "",
+        trn("1 Absage", "{n} Absagen", no),
     )
-    open?.let { parts += "$it offen" }
+    open?.let { parts += tr("{n} offen", "n" to it) }
     return parts.joinToString(" · ")
 }
 

@@ -584,5 +584,15 @@
  "Exportieren": "Export",
  "Belege exportieren": "Export vouchers",
  "Keine App zum Teilen gefunden.": "No app found for sharing.",
- "Nicht gesendete Vorgänge aus HUBIplan. Enthält Namen und Beträge; nach der Übergabe an den Verein bitte löschen.": "Unsent transactions from HUBIplan. Contains names and amounts; please delete after handing them to the club."
+ "Nicht gesendete Vorgänge aus HUBIplan. Enthält Namen und Beträge; nach der Übergabe an den Verein bitte löschen.": "Unsent transactions from HUBIplan. Contains names and amounts; please delete after handing them to the club.",
+ "✓ Zusage": "✓ Attending",
+ "✗ Absage": "✗ Not attending",
+ "offen": "open",
+ "bezahlt": "paid",
+ "1 Zusage": "1 attending",
+ "{n} Zusagen": "{n} attending",
+ "({n} Personen)": "({n} people)",
+ "1 Absage": "1 not attending",
+ "{n} Absagen": "{n} not attending",
+ "{n} offen": "{n} open"
 }
