@@ -6,9 +6,27 @@ Vorbereitung für F-Droid.
 
 ## Versionen
 
-`versionCode` steigt mit jeder Veröffentlichung um 1, `versionName` folgt dem Schritt
-(0.6.0 = A6). Zu jedem `versionCode` gehört `fastlane/metadata/android/de-DE/changelogs/<versionCode>.txt`
-(höchstens 500 Zeichen).
+`versionCode` steigt mit jeder Veröffentlichung um 1, `versionName` ist SemVer (im Store ab
+1.0.0). Zu jedem `versionCode` gehören `fastlane/metadata/android/de-DE/changelogs/<versionCode>.txt`
+und `…/en-US/changelogs/<versionCode>.txt` (je höchstens 500 Zeichen). Jede Version, die
+erscheint, bekommt den Tag `v<versionName>` und ein GitHub-Release, aber nur auf Ralfs Wort.
+
+Ablauf in WSL (gh dort als `GH=gh.exe`):
+
+1. `scripts/release.sh entwurf --version 0.32.0` setzt `versionName`, erhöht `versionCode` um 1
+   und schreibt die Hinweise aller PRs seit dem letzten Tag (Abschnitt „Für die
+   Änderungshinweise“ der PR-Vorlage) in beide Changelogs. Solange es noch keinen Tag gibt:
+   `--seit <Commit>`. PRs mit „Braucht HUBIplan“ zählt es auf; diese gehören in die
+   Verträglichkeitstabelle in `hubiplan/docs/versionen.md`.
+2. Changelogs lesen und kürzen, als PR „App 0.32.0“ squashen und mergen.
+3. Auf Ralfs PC bauen und testen (`scripts/test.sh`), APK/AAB aus diesem Stand bauen.
+4. Auf Ralfs Wort `scripts/release.sh taggen`: prüft Form und Reihenfolge der Version, dass
+   der Stand das neueste Release enthält und dass beide Changelogs da sind und passen, zeigt die
+   Notizen und legt nach Rückfrage Tag und GitHub-Release an. F-Droid baut aus dem Tag; APK und
+   AAB lädt Ralf hoch.
+
+Die App fragt `features` in `/api/app/v1/instance/` ab und blendet aus, was eine ältere
+HUBIplan-Instanz noch nicht kann (`hubiplan/docs/versionen.md`).
 
 ## F-Droid (Variante `foss`)
 
