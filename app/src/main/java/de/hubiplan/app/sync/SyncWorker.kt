@@ -15,6 +15,7 @@ import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.calendar.needsRsvpReminder
 import de.hubiplan.app.calendar.toCalendarEntry
 import de.hubiplan.app.data.AccountStore
+import de.hubiplan.app.data.Account
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.ui.DEFAULT_PRIMARY
@@ -56,7 +57,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // Härtung H7: Geräteschlüssel erneuern, wenn fällig
             runCatching {
                 de.hubiplan.app.data.KeyMaintenance(applicationContext, (applicationContext as HubiplanApp).accounts)
-                    .maintain(store, me.device)
+                    .maintain(store, me.device, account)
             }
             val today = LocalDate.now()
             val keep = mutableSetOf<String>()
@@ -67,35 +68,42 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                     val name = DeviceCalendar.calendarName(account.server, access.id)
                     keep += name
                     val color = (parseHexColor(access.theme?.primary) ?: DEFAULT_PRIMARY).toInt()
-                    val id = calendar.ensureCalendar(name, access.title, color)
-                    calendar.sync(id, items.map { it.toCalendarEntry(access.title, settings.reminderMinutes) })
+                    store.ifCurrent(account) {
+                        val id = calendar.ensureCalendar(name, access.title, color)
+                        calendar.sync(id, items.map { it.toCalendarEntry(access.title, settings.reminderMinutes) })
+                    }
                 }
                 val now = OffsetDateTime.now()
                 items.filter { it.needsRsvpReminder(now) }.forEach { hints += Triple(access.id, it, access.title) }
             }
-            missedPushes(store, api, me.portal.map { it.id }, firstSync = settings.lastSync == null)
-            if (settings.calendarOn) calendar.removeCalendarsExcept(keep, account.server)
-            if (settings.rsvpHints) showHints(store, hints)
-            store.markSynced(System.currentTimeMillis())
+            missedPushes(store, account, api, me.portal.map { it.id }, firstSync = settings.lastSync == null)
+            store.ifCurrent(account) {
+                if (settings.calendarOn) calendar.removeCalendarsExcept(keep, account.server)
+                store.markSynced(System.currentTimeMillis())
+            }
+            if (settings.rsvpHints) showHints(store, account, hints)
             false
         } catch (e: ApiException) {
             when (e.status) {
                 401 -> {
-                    // Gerät abgemeldet: Kalender und Konto entfernen, die App fragt beim Öffnen neu
-                    calendar.removeCalendarsExcept(emptySet(), account.server)
-                    // Keine verwaisten Ordner (Audit 31.10., C-D01): Ausweise löschen, ungesendete
-                    // Buchungen/Quittungen verschlüsselt in die Quarantäne statt sie zu vernichten
-                    runCatching {
-                        de.hubiplan.app.data.LocalAccountData.retire(
-                            applicationContext,
-                            de.hubiplan.app.data.LocalAccountData.key(account.server, account.deviceId),
-                            account.server,
-                            account.email,
-                        )
+                    var pushCleanup: (suspend () -> Unit)? = null
+                    val removed = (applicationContext as HubiplanApp).accounts.remove(store.slot, account) {
+                        // Gerät abgemeldet: Kalender und Konto entfernen, die App fragt beim Öffnen neu
+                        calendar.removeCalendarsExcept(emptySet(), account.server)
+                        // Keine verwaisten Ordner (Audit 31.10., C-D01): Ausweise löschen, ungesendete
+                        // Buchungen/Quittungen verschlüsselt in die Quarantäne statt sie zu vernichten
+                        runCatching {
+                            de.hubiplan.app.data.LocalAccountData.retire(
+                                applicationContext,
+                                de.hubiplan.app.data.LocalAccountData.key(account.server, account.deviceId),
+                                account.server,
+                                account.email,
+                            )
+                        }
+                        runCatching { RsvpActionReceiver.cancelFor(applicationContext, account) }
+                        pushCleanup = de.hubiplan.app.push.PushSetup.detach(applicationContext, store)
                     }
-                    runCatching { RsvpActionReceiver.cancelFor(applicationContext, account) }
-                    runCatching { de.hubiplan.app.push.PushSetup.forget(applicationContext, store) }
-                    (applicationContext as HubiplanApp).accounts.remove(store.slot)
+                    if (removed) runCatching { pushCleanup?.invoke() }
                     false
                 }
                 0, in 500..599 -> true
@@ -103,7 +111,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
         } catch (e: SecurityException) {
             // Kalendererlaubnis entzogen
-            store.setCalendarOn(false)
+            store.ifCurrent(account) { store.setCalendarOn(false) }
             false
         }
     }
@@ -115,6 +123,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
      */
     private suspend fun missedPushes(
         store: de.hubiplan.app.data.AccountStore,
+        account: Account,
         api: Api,
         accessIds: List<Int>,
         firstSync: Boolean,
@@ -122,7 +131,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val done = store.notifiedKeys()
         val since = OffsetDateTime.now().minusDays(3)
         val seen = mutableSetOf<String>()
-        val account = store.currentAccount()
         for (accessId in accessIds) {
             val items = runCatching { api.circulars(accessId) }.getOrNull() ?: continue
             for (c in items.filter { it.channel == "app" }.take(20)) {
@@ -131,26 +139,29 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val sent = c.sentAt?.let { runCatching { OffsetDateTime.parse(it) }.getOrNull() }
                 if (!firstSync && sent != null && sent.isAfter(since)) {
                     val logo = de.hubiplan.app.data.ClubLogo.load(applicationContext, account, accessId)
-                    Notifications.showCircular(applicationContext, store.slot, accessId, c.id, c.subject, "", c.sender, false, logo)
+                    store.ifCurrent(account) {
+                        Notifications.showCircular(applicationContext, store.slot, RsvpActionReceiver.accountId(account), accessId, c.id, c.subject, "", c.sender, false, logo)
+                    }
                 }
                 seen += key
             }
         }
-        if (seen.isNotEmpty()) store.addNotified(seen)
+        if (seen.isNotEmpty()) store.ifCurrent(account) { store.addNotified(seen) }
     }
 
     private suspend fun showHints(
         store: de.hubiplan.app.data.AccountStore,
+        account: Account,
         hints: List<Triple<Int, de.hubiplan.app.data.Occurrence, String>>,
     ) {
         val done = store.notifiedKeys()
         val shown = mutableSetOf<String>()
-        val account = store.currentAccount() ?: return
         val accountId = RsvpActionReceiver.accountId(account)
         for ((accessId, occ, unit) in hints) {
             val key = "$accessId:${occ.key}"
             if (key in done) continue
-            Notifications.showRsvpMissing(
+            val logo = de.hubiplan.app.data.ClubLogo.load(applicationContext, account, accessId)
+            store.ifCurrent(account) { Notifications.showRsvpMissing(
                 applicationContext,
                 store.slot,
                 accountId,
@@ -158,11 +169,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 occ.eventId,
                 occ.title,
                 tr("{x1} · {unit}. Anmeldeschluss ist bald.", "x1" to formatWhen(occ.startsAt, occ.endsAt, occ.allDay), "unit" to unit),
-                de.hubiplan.app.data.ClubLogo.load(applicationContext, account, accessId),
-            )
+                logo,
+            ) }
             shown += key
         }
-        if (shown.isNotEmpty()) store.addNotified(shown)
+        if (shown.isNotEmpty()) store.ifCurrent(account) { store.addNotified(shown) }
     }
 
     companion object {

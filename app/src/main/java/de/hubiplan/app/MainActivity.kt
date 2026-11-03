@@ -95,20 +95,21 @@ class MainActivity : FragmentActivity() {
 
     /** Aus einer Benachrichtigung oder Verknüpfung: Mitteilung öffnen bzw. zum passenden Konto wechseln. */
     private fun openFrom(intent: Intent?) {
-        val slot = intent?.getIntExtra(Notifications.EXTRA_SLOT, -1) ?: -1
         val access = intent?.getIntExtra(Notifications.EXTRA_ACCESS, -1) ?: -1
         val circular = intent?.getIntExtra(Notifications.EXTRA_CIRCULAR, -1) ?: -1
         val shortcut = intent?.getStringExtra(Notifications.EXTRA_SHORTCUT_ACCOUNT)
-        if (shortcut != null && access > 0) {
+        val account = intent?.getStringExtra(Notifications.EXTRA_ACCOUNT)
+        if (account != null) {
+            vm.openNotification(account, access, circular)
+        } else if (shortcut != null && access > 0) {
             // Verknüpfung auf dem Startbildschirm: Konto und Einheit dieser Verknüpfung
             vm.openShortcut(shortcut, access)
-        } else if (access > 0 && circular > 0) {
-            vm.openCircular(slot.coerceAtLeast(0), access, circular)
-        } else if (slot >= 0) {
-            vm.switchAccount(slot)
         }
+        // Alte Hinweise ohne Kontokennung öffnen nur die App. Ein Platz allein
+        // beweist nicht, dass dort noch die ursprüngliche Verbindung liegt.
         intent?.removeExtra(Notifications.EXTRA_CIRCULAR)
         intent?.removeExtra(Notifications.EXTRA_SLOT)
         intent?.removeExtra(Notifications.EXTRA_SHORTCUT_ACCOUNT)
+        intent?.removeExtra(Notifications.EXTRA_ACCOUNT)
     }
 }

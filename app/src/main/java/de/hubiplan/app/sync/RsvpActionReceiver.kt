@@ -30,7 +30,7 @@ class RsvpActionReceiver : BroadcastReceiver() {
         val notification = intent.getIntExtra(EXTRA_NOTIFICATION, 0)
         val accountId = intent.getStringExtra(EXTRA_ACCOUNT) ?: return
         if (access < 0 || event < 0) return
-        NotificationManagerCompat.from(context).cancel(notification)
+        NotificationManagerCompat.from(context).cancel(Notifications.tag(accountId), notification)
         // Gemerkt und gesendet, sobald Netz da ist. Die Arbeit gehört zu genau diesem Konto
         // (nicht zum Platz, der nach dem Abmelden neu vergeben wird; Gesamtaudit 31.10.b, C-F02)
         WorkManager.getInstance(context).enqueueUniqueWork(
@@ -73,6 +73,7 @@ class RsvpActionReceiver : BroadcastReceiver() {
 
         fun intent(context: Context, slot: Int, accountId: String, accessId: Int, eventId: Int, status: String, notificationId: Int): Intent =
             Intent(context, RsvpActionReceiver::class.java)
+                .setData(Notifications.openUri(accountId, "action-$status", accessId, eventId))
                 .setAction("de.hubiplan.app.RUECKMELDUNG.$status")
                 .putExtra(EXTRA_SLOT, slot)
                 .putExtra(EXTRA_ACCOUNT, accountId)
@@ -97,18 +98,23 @@ class RsvpWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val notification = inputData.getInt(RsvpActionReceiver.EXTRA_NOTIFICATION, 0)
         return try {
             val detail = Api(account.server, account.token).respond(access, event, status)
+            store.ifCurrent(account) {
             Notifications.showText(
                 applicationContext,
+                expected,
                 notification,
                 if (status == "yes") tr("Zusage gesendet") else tr("Absage gesendet"),
                 detail.title,
             )
             SyncWorker.now(applicationContext)
+            }
             Result.success()
         } catch (e: ApiException) {
             if (e.status == 0 || e.status >= 500) return Result.retry()
             // Frist vorbei, ausgebucht, nicht eingeladen: Grund zeigen
-            Notifications.showText(applicationContext, notification, tr("Rückmeldung nicht möglich"), e.message ?: "")
+            store.ifCurrent(account) {
+                Notifications.showText(applicationContext, expected, notification, tr("Rückmeldung nicht möglich"), e.message ?: "")
+            }
             Result.failure()
         }
     }

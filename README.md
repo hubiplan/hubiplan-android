@@ -168,6 +168,25 @@ Sicherheitslücken bitte **nicht** als öffentliches Issue melden, sondern vertr
 [GitHub](https://github.com/hubiplan/hubiplan-android/security/advisories/new). Einzelheiten:
 [SECURITY.md](SECURITY.md).
 
+Benachrichtigungen gehören zu genau einer Server-/Geräteverbindung. Beim Abmelden oder
+erneuten Verbinden werden ihre Hinweise entfernt; ein alter Hinweis öffnet kein neu
+belegtes Konto. Beim ersten Start dieser Fassung werden ältere, noch nicht zugeordnete
+HUBIplan-Hinweise einmal entfernt. Hinweise anderer Konten bleiben bei späteren
+Abmeldungen erhalten. Eine neue Verbindung erhält eigene Einstellungen.
+
+Verspätete Hintergrundantworten dürfen nach dem Abmelden oder erneuten Verbinden weder
+das neue Konto entfernen noch Kalender, Hinweise oder den letzten Abgleich verändern.
+Lokale Seiteneffekte werden mit dem Kontowechsel serialisiert; Netzwerkabrufe laufen
+außerhalb dieser kurzen Sperren.
+
+English: Notifications target a specific server/device identity and are cleared when that
+connection is removed or replaced. Old notifications cannot open a reused account slot.
+Legacy unassigned HUBIplan notifications are cleared once after upgrading. Later logout
+only clears that account's notifications. A new connection starts with its own settings.
+Late background responses cannot remove a replacement account or update its calendar,
+notifications or sync timestamp. Local effects are serialized with account replacement;
+network calls run outside those locks.
+
 ## Lizenz
 
 Copyright © 2026 Ralf Philipsen (Philipsen EDV)

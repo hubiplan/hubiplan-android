@@ -405,6 +405,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         main.me?.portal?.firstOrNull { it.id == accessId }?.let { if (main.access?.id != it.id) selectAccess(it) }
     }
 
+    /** Ein alter Hinweis darf keinen neu belegten Speicherplatz öffnen. */
+    fun openNotification(accountId: String, accessId: Int, circularId: Int) {
+        viewModelScope.launch {
+            val (slot, account) = accounts.list().firstOrNull { (_, account) ->
+                de.hubiplan.app.sync.RsvpActionReceiver.accountId(account) == accountId
+            } ?: return@launch
+            accounts.store(slot).ifCurrent(account) {
+                if (accessId > 0) accounts.store(slot).selectAccess(accessId, null)
+                accounts.setActive(slot)
+            } ?: return@launch
+            refresh(account)
+            if (accounts.store(slot).currentAccount()?.generation == account.generation &&
+                accounts.active.value == slot && accessId > 0 && circularId > 0
+            ) _openRequest.value = accessId to circularId
+        }
+    }
+
     fun openHandled() {
         _openRequest.value = null
     }
@@ -501,8 +518,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Konto ist weg (abgemeldet, ungültig): zum nächsten wechseln oder Verbinden zeigen. */
-    private suspend fun dropActive(error: String?) = dropSlot(accounts.active.value, null, error)
-
     /**
      * Konto auf [slot] entfernen. Mit [expected] nur, wenn dort noch genau dieses Konto liegt:
      * Eine verspätete Abmeldung von A darf nie das inzwischen gewählte Konto B löschen
@@ -510,31 +525,35 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      */
     private suspend fun dropSlot(slot: Int, expected: Account?, error: String?) {
         val slotStore = accounts.store(slot)
-        val current = slotStore.currentAccount()
+        val current = slotStore.currentAccount() ?: return
         if (expected != null &&
-            (current == null || current.server != expected.server || current.deviceId != expected.deviceId)
+            current.generation != expected.generation
         ) {
             return
         }
         val wasActive = accounts.active.value == slot
-        val server = current?.server
-        // Selbst abgemeldet (nach der Rückfrage „senden oder verwerfen“): alle lokalen Daten
-        // und Schlüssel löschen (AND-S02). Vom Server abgemeldet: ungesendete Belege in die
-        // Quarantäne, sie kommen nach erneuter Anmeldung zurück (Fachfrage 16, Audit 31.10.)
-        current?.let { runCatching { ClubShortcut.forget(context, it) } }
-        current?.let {
-            val key = LocalAccountData.key(it.server, it.deviceId)
-            runCatching {
-                if (error == null) LocalAccountData.forget(context, key)
-                else LocalAccountData.retire(context, key, it.server, it.email)
+        val server = current.server
+        var pushCleanup: (suspend () -> Unit)? = null
+        val removed = accounts.remove(slot, current) {
+            // Selbst abgemeldet (nach der Rückfrage „senden oder verwerfen“): alle lokalen Daten
+            // und Schlüssel löschen (AND-S02). Vom Server abgemeldet: ungesendete Belege in die
+            // Quarantäne, sie kommen nach erneuter Anmeldung zurück (Fachfrage 16, Audit 31.10.)
+            runCatching { ClubShortcut.forget(context, current) }
+            current.let {
+                val key = LocalAccountData.key(it.server, it.deviceId)
+                runCatching {
+                    if (error == null) LocalAccountData.forget(context, key)
+                    else LocalAccountData.retire(context, key, it.server, it.email)
+                }
             }
+            // Noch wartende Zu-/Absagen dieses Kontos verwerfen (C-F02)
+            runCatching { de.hubiplan.app.sync.RsvpActionReceiver.cancelFor(context, current) }
+            if (wasActive) resetAdmin()
+            pushCleanup = PushSetup.detach(context, slotStore)
+            runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet(), server) }
         }
-        // Noch wartende Zu-/Absagen dieses Kontos verwerfen (C-F02)
-        current?.let { runCatching { de.hubiplan.app.sync.RsvpActionReceiver.cancelFor(context, it) } }
-        if (wasActive) resetAdmin()
-        runCatching { PushSetup.forget(context, slotStore) }
-        runCatching { server?.let { DeviceCalendar(context).removeCalendarsExcept(emptySet(), it) } }
-        accounts.remove(slot)
+        if (!removed) return
+        runCatching { pushCleanup?.invoke() }
         if (!wasActive) {
             loadAccounts()
             return
@@ -548,7 +567,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _theme.value = null
             _logo.value = null
             _shortcutOffer.value = false
-            _connect.value = ConnectState(error = error, server = server ?: "")
+            _connect.value = ConnectState(error = error, server = server)
             _screen.value = Screen.Connect
         }
     }
@@ -564,19 +583,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private var refreshGeneration = 0
 
     private suspend fun refresh(account: Account) {
-        val generation = ++refreshGeneration
         val target = store // Konto dieser Aktualisierung, auch wenn inzwischen gewechselt wird
-        val current = { generation == refreshGeneration }
-        _screen.value = Screen.Main(account, null, null, offline = false)
+        val generation = target.ifCurrent(account) {
+            ++refreshGeneration
+            _screen.value = Screen.Main(account, null, null, offline = false)
+            refreshGeneration
+        } ?: return
+        val current: suspend () -> Boolean = {
+            generation == refreshGeneration && accounts.active.value == target.slot &&
+                target.currentAccount()?.generation == account.generation
+        }
         try {
             val me = Api(account.server, account.token).me()
             if (!current()) return
             val access = me.portal.firstOrNull { it.id == account.selectedAccess } ?: me.portal.firstOrNull()
-            _screen.value = Screen.Main(account, me, access, offline = false)
-            access?.let { applyAccess(it, target) }
-            updateLogos(account, me.portal)
+            target.ifCurrent(account) {
+                if (generation != refreshGeneration || accounts.active.value != target.slot) return@ifCurrent
+                _screen.value = Screen.Main(account, me, access, offline = false)
+                access?.let { applyAccess(it, target) }
+            } ?: return
+            updateLogos(account, me.portal, target)
             if (!current()) return
-            access?.let { showLogo(account, it) }
+            target.ifCurrent(account) { access?.let { showLogo(account, it) } }
             SyncWorker.schedule(context)
             SyncWorker.now(context)
             syncLanguage()
@@ -586,15 +614,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _canSend.value = canSend
             loadAdmin(account, target) { current() }
             // Härtung H7: Schlüsselpaar nachmelden, Geräteschlüssel erneuern, wenn fällig
-            runCatching { KeyMaintenance(context, accounts).maintain(target, me.device) }
+            runCatching { KeyMaintenance(context, accounts).maintain(target, me.device, account) }
         } catch (e: ApiException) {
             if (e.status == 401) {
                 // Gerät abgemeldet (im Browser, Passwort geändert, lange nicht genutzt). Nur
                 // dieses Konto entfernen, nie ein inzwischen gewähltes anderes.
-                val active = store.currentAccount()
-                if (current() && active?.server == account.server && active.deviceId == account.deviceId) {
-                    dropActive(e.message)
-                }
+                if (current()) dropSlot(target.slot, account, e.message)
             } else if (current()) {
                 _screen.value = Screen.Main(account, null, null, offline = true)
             }
@@ -615,7 +640,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Wappen aller Zugänge dieses Kontos laden, wenn neu oder geändert; Verknüpfungen anpassen. */
-    private suspend fun updateLogos(account: Account, accesses: List<PortalAccess>) {
+    private suspend fun updateLogos(account: Account, accesses: List<PortalAccess>, target: AccountStore) {
         val api = Api(account.server, account.token)
         withContext(Dispatchers.IO) {
             for (a in accesses) {
@@ -624,9 +649,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val bytes = url?.let { api.image(it) }
                 // Nicht erreichbar: beim nächsten Mal erneut versuchen
                 if (url != null && bytes == null) continue
-                runCatching { ClubLogo.save(context, account, a.id, url, bytes) }
+                target.ifCurrent(account) { runCatching { ClubLogo.save(context, account, a.id, url, bytes) } }
             }
-            runCatching { ClubShortcut.refresh(context, account, accesses) }
+            target.ifCurrent(account) { runCatching { ClubShortcut.refresh(context, account, accesses) } }
         }
     }
 
