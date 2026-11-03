@@ -20,8 +20,7 @@ class KeyMaintenance(private val context: Context, private val accounts: Account
             val challenge = api.renewChallenge()
             val signature = DeviceKeys.sign(alias, SignedFormat.renewMessage(account.deviceId, challenge))
             val renewed = api.renew(challenge, signature)
-            store.setToken(renewed.token)
-            renewed.token
+            store.ifCurrent(account) { store.setToken(renewed.token); renewed.token }
         } catch (e: ApiException) {
             null
         } catch (e: DeviceKeys.Unavailable) {
@@ -30,15 +29,16 @@ class KeyMaintenance(private val context: Context, private val accounts: Account
     }
 
     /** Nach `me/`: Schlüsselpaar nachmelden oder Geräteschlüssel erneuern, wenn fällig. */
-    suspend fun maintain(store: AccountStore, device: DeviceInfo) {
-        val account = store.currentAccount() ?: return
+    suspend fun maintain(store: AccountStore, device: DeviceInfo, expected: Account? = null) {
+        val account = expected ?: store.currentAccount() ?: return
         if (device.key == false && account.keyAlias == null) {
             val alias = DeviceKeys.newAlias()
             val public = runCatching {
                 DeviceKeys.create(alias, admin = false, strongBox = DeviceKeys.hasStrongBox(context.packageManager))
             }.getOrNull() ?: return
             val ok = runCatching { Api(account.server, account.token).registerDeviceKey(public).key == true }.getOrDefault(false)
-            if (ok) store.setKeyAlias(alias) else DeviceKeys.delete(alias)
+            val saved = if (ok) store.ifCurrent(account) { store.setKeyAlias(alias); true } == true else false
+            if (!saved) DeviceKeys.delete(alias)
         } else if (device.renewDue && account.keyAlias != null) {
             DeviceTokens.renewIfDue(account.server, account.token)
         }

@@ -33,10 +33,12 @@ data class Account(
     val selectedAccess: Int?,
     // Härtung H7: Name des Geräteschlüsselpaars im Keystore (null: ältere Verbindung)
     val keyAlias: String? = null,
+    val generation: String = "",
 )
 
 // Je Datei darf es nur einen DataStore geben: einmal je Platz anlegen
 private val dataStores = mutableMapOf<String, DataStore<Preferences>>()
+private val generations = mutableMapOf<Int, AccountGeneration>()
 
 private fun Context.accountDataStore(slot: Int): DataStore<Preferences> = synchronized(dataStores) {
     val name = if (slot == 0) "konto" else "konto-$slot"
@@ -46,6 +48,7 @@ private fun Context.accountDataStore(slot: Int): DataStore<Preferences> = synchr
 }
 
 private object Keys {
+    val generation = stringPreferencesKey("generation")
     val server = stringPreferencesKey("server")
     val token = stringPreferencesKey("token")
     val deviceId = intPreferencesKey("device_id")
@@ -98,8 +101,16 @@ const val DEFAULT_REMINDER_MINUTES = 24 * 60
  * Speichert das Konto. Der Geräteschlüssel liegt nur verschlüsselt vor; der Schlüssel
  * dazu steckt im Android-Keystore und lässt sich nicht aus dem Gerät herauslesen.
  */
-class AccountStore(private val context: Context, val slot: Int = 0) {
+class AccountStore(private val context: Context, val slot: Int = 0) : AccountMutationScope {
     private val dataStore = context.accountDataStore(slot)
+    private val generation = synchronized(generations) { generations.getOrPut(slot) { AccountGeneration() } }
+
+    override suspend fun <T> ifCurrent(expected: Account, action: suspend () -> T): T? =
+        generation.ifCurrent(expected.generation, { currentAccount()?.generation }, action)
+
+    /** Abmelden und lokale Nebenwirkungen gehören zu derselben Kontogeneration. */
+    suspend fun clearIfCurrent(expected: Account, before: suspend () -> Unit): Boolean =
+        ifCurrent(expected) { before(); clearUnlocked(); true } ?: false
 
     suspend fun currentAccount(): Account? = account.first()
 
@@ -207,15 +218,23 @@ class AccountStore(private val context: Context, val slot: Int = 0) {
             display = this[Keys.display] ?: "",
             selectedAccess = this[Keys.selectedAccess],
             keyAlias = this[Keys.keyAlias],
+            generation = this[Keys.generation] ?: "$server:${this[Keys.deviceId]}:$token",
         )
     }
 
-    suspend fun save(server: String, paired: Paired, keyAlias: String? = null) {
+    suspend fun save(server: String, paired: Paired, keyAlias: String? = null) = generation.change {
+        currentAccount()?.let {
+            de.hubiplan.app.sync.Notifications.cancelFor(context, it)
+            de.hubiplan.app.sync.RsvpActionReceiver.cancelFor(context, it)
+            runCatching { de.hubiplan.app.calendar.DeviceCalendar(context).removeCalendarsExcept(emptySet(), it.server) }
+        }
         val old = dataStore.data.first()[Keys.keyAlias]
         if (old != null && old != keyAlias) forgetKeys(old)
         // Ältere Instanz ohne Schlüsselpaare: das eben erzeugte wieder löschen
         if (keyAlias != null && paired.device.key != true) forgetKeys(keyAlias)
         dataStore.edit {
+            it.clear()
+            it[Keys.generation] = java.util.UUID.randomUUID().toString()
             if (keyAlias != null && paired.device.key == true) it[Keys.keyAlias] = keyAlias else it.remove(Keys.keyAlias)
             it.remove(Keys.adminToken)
             it.remove(Keys.adminSigned)
@@ -236,7 +255,10 @@ class AccountStore(private val context: Context, val slot: Int = 0) {
     }
 
     /** Abmelden: alles auf dem Gerät löschen. */
-    suspend fun clear() {
+    suspend fun clear() = generation.change { clearUnlocked() }
+
+    private suspend fun clearUnlocked() {
+        currentAccount()?.let { de.hubiplan.app.sync.Notifications.cancelFor(context, it) }
         dataStore.data.first()[Keys.keyAlias]?.let { forgetKeys(it) }
         dataStore.edit { it.clear() }
     }

@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.Build
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -23,6 +24,21 @@ object Notifications {
     const val EXTRA_ACCESS = "zugang"
     const val EXTRA_CIRCULAR = "mitteilung"
     const val EXTRA_SLOT = "konto"
+    const val EXTRA_ACCOUNT = "hinweis_konto"
+
+    fun tag(accountId: String) = "hubiplan-konto-$accountId"
+
+    fun cancelFor(context: Context, account: de.hubiplan.app.data.Account) {
+        val manager = context.getSystemService(NotificationManager::class.java)
+        val accountTag = tag(RsvpActionReceiver.accountId(account))
+        for (notification in manager.activeNotifications) {
+            if (notification.tag == accountTag) manager.cancel(accountTag, notification.id)
+        }
+    }
+
+    fun openUri(accountId: String, kind: String, access: Int, item: Int): Uri =
+        Uri.Builder().scheme("hubiplan-hinweis").authority(accountId)
+            .appendPath(kind).appendPath(access.toString()).appendPath(item.toString()).build()
     /** Verknüpfung auf dem Startbildschirm: Prüfsumme des Kontos (Platz kann sich ändern). */
     const val EXTRA_SHORTCUT_ACCOUNT = "verknuepfung_konto"
 
@@ -38,6 +54,17 @@ object Notifications {
                 description = tr("Hinweis vor dem Anmeldeschluss, wenn du noch nicht zu- oder abgesagt hast")
             },
         )
+        // Vor Kontotags erzeugte Hinweise haben keine überprüfbare Kontozuordnung.
+        // Einmalig nur unsere beiden Kanäle bereinigen, keine fremden Hinweise.
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("kontotags_migriert", false)) {
+            for (notification in manager.activeNotifications) {
+                if (notification.tag == null && notification.notification.channelId in setOf(CHANNEL_RSVP, CHANNEL_MESSAGES)) {
+                    manager.cancel(notification.id)
+                }
+            }
+            prefs.edit().putBoolean("kontotags_migriert", true).apply()
+        }
     }
 
     private const val PREFS = "hinweise"
@@ -86,6 +113,8 @@ object Notifications {
             context,
             id,
             Intent(context, MainActivity::class.java)
+                .setData(openUri(accountId, "rsvp", accessId, eventId))
+                .putExtra(EXTRA_ACCOUNT, accountId)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(EXTRA_SLOT, slot),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -114,7 +143,7 @@ object Notifications {
             .lockScreen(context, CHANNEL_RSVP, tr("Rückmeldung fehlt"))
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(id, notification)
+            NotificationManagerCompat.from(context).notify(tag(accountId), id, notification)
         } catch (e: SecurityException) {
             // Erlaubnis inzwischen entzogen
         }
@@ -124,6 +153,7 @@ object Notifications {
     fun showCircular(
         context: Context,
         slot: Int,
+        accountId: String,
         accessId: Int,
         circularId: Int,
         title: String,
@@ -138,6 +168,8 @@ object Notifications {
             context,
             id,
             Intent(context, MainActivity::class.java)
+                .setData(openUri(accountId, "circular", accessId, circularId))
+                .putExtra(EXTRA_ACCOUNT, accountId)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(EXTRA_SLOT, slot)
                 .putExtra(EXTRA_ACCESS, accessId)
@@ -160,12 +192,12 @@ object Notifications {
             .lockScreen(context, CHANNEL_MESSAGES, tr("Neue Mitteilung"))
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(id, notification)
+            NotificationManagerCompat.from(context).notify(tag(accountId), id, notification)
         } catch (e: SecurityException) {
         }
     }
 
-    fun showText(context: Context, id: Int, title: String, text: String) {
+    fun showText(context: Context, accountId: String, id: Int, title: String, text: String) {
         if (!allowed(context)) return
         val notification = NotificationCompat.Builder(context, CHANNEL_RSVP)
             .setSmallIcon(R.drawable.ic_notification)
@@ -175,19 +207,21 @@ object Notifications {
             .lockScreen(context, CHANNEL_RSVP, tr("Neuer Hinweis"))
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(id, notification)
+            NotificationManagerCompat.from(context).notify(tag(accountId), id, notification)
         } catch (e: SecurityException) {
         }
     }
 
     /** Hinweis von HUBIplan (z. B. Foto freigegeben, Änderung übernommen); öffnet die App. */
-    fun showInfo(context: Context, slot: Int, accessId: Int, title: String, text: String, logo: Bitmap? = null) {
+    fun showInfo(context: Context, slot: Int, accountId: String, accessId: Int, title: String, text: String, logo: Bitmap? = null) {
         if (!allowed(context)) return
         val id = (notificationId(slot, accessId, (title + text).hashCode()) xor 0x1000_0000) and 0x3FFFFFFF
         val open = PendingIntent.getActivity(
             context,
             id,
             Intent(context, MainActivity::class.java)
+                .setData(openUri(accountId, "info", accessId, id))
+                .putExtra(EXTRA_ACCOUNT, accountId)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 .putExtra(EXTRA_SLOT, slot),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -203,7 +237,7 @@ object Notifications {
             .lockScreen(context, CHANNEL_MESSAGES, tr("Neuer Hinweis"))
             .build()
         try {
-            NotificationManagerCompat.from(context).notify(id, notification)
+            NotificationManagerCompat.from(context).notify(tag(accountId), id, notification)
         } catch (e: SecurityException) {
         }
     }

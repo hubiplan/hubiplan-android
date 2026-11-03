@@ -46,10 +46,12 @@ class Accounts(private val context: Context) {
     }
 
     /** Konto entfernen (Speicher leeren); der Platz wird frei. */
-    suspend fun remove(slot: Int) {
-        store(slot).clear()
-        val rest = slots() - slot
-        prefs.edit().putString(SLOTS, rest.ifEmpty { listOf(0) }.joinToString(",")).apply()
+    suspend fun remove(slot: Int, expected: Account? = null, before: suspend () -> Unit = {}): Boolean {
+        val current = expected ?: store(slot).currentAccount() ?: return false
+        if (!store(slot).clearIfCurrent(current, before)) return false
+        // Platz registriert lassen: Eine zeitgleiche neue Kopplung kann ihn schon
+        // wieder belegen. list() blendet leere Plätze aus; slotFor() verwendet sie wieder.
+        return true
     }
 
     /** Alle Konten mit Platz, in der Reihenfolge des Verbindens. */
