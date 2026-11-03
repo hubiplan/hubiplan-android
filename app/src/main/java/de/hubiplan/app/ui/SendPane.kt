@@ -101,7 +101,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                     onClick = { pick = list.size > 1 },
                     modifier = if (list.size > 1) Modifier.dropdown(tr("An"), senderName, pick) else Modifier,
                 ) {
-                    Text("An: " + (sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–") + if (list.size > 1) " ▾" else "")
+                    Text(tr("An") + ": " + (sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–") + if (list.size > 1) " ▾" else "")
                 }
                 DropdownMenu(expanded = pick, onDismissRequest = { pick = false }) {
                     list.forEach { s ->

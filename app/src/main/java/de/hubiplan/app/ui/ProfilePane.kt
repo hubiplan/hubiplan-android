@@ -351,10 +351,10 @@ private fun ChangeForm(profile: Profile, sending: Boolean, onCancel: () -> Unit,
         "last_name" to profile.lastName,
     )
     val labels = listOf(
-        "email" to "E-Mail",
+        "email" to tr("E-Mail"),
         "phone" to tr("Telefon"),
         "street" to tr("Straße und Hausnummer"),
-        "postal_code" to "PLZ",
+        "postal_code" to tr("PLZ"),
         "city" to tr("Ort"),
         "last_name" to tr("Nachname"),
     )

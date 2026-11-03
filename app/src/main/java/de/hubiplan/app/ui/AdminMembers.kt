@@ -298,7 +298,7 @@ fun MemberScreen(
             if (c.email.isNotBlank()) {
                 ListItem(
                     headlineContent = { Text(c.email) },
-                    overlineContent = { Text("E-Mail") },
+                    overlineContent = { Text(tr("E-Mail")) },
                     modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${c.email}"))) },
                 )
             }
