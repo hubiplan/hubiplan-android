@@ -11,7 +11,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -154,7 +154,9 @@ class Api(
         headers: Map<String, String>,
         accept: Boolean,
     ): Request {
-        val url = (server + path).toHttpUrl()
+        // Gespeicherte Adresse mit ungültigem Port (ältere Version): Fehler melden statt Absturz (Audit F04)
+        val url = (server + path).toHttpUrlOrNull()
+            ?: throw ApiException(0, tr("Bitte die Adresse von HUBIplan angeben, z. B. verein.example.de."))
         val builder = Request.Builder().url(url)
         if (accept) builder.header("Accept", "application/json")
         token?.let { builder.header("Authorization", "Bearer ${if (it.startsWith(TOKEN_PREFIX)) DeviceTokens.current(it) else it}") }
@@ -275,22 +277,7 @@ class Api(
         return authStep(status, text, sessionToken)
     }
 
-    private fun authStep(status: Int, text: String, previous: String?): LoginStep {
-        val root = try {
-            json.parseToJsonElement(text).jsonObject
-        } catch (e: Exception) {
-            throw ApiException(status, errorMessage(status, text))
-        }
-        val session = root["meta"]?.jsonObject?.get("session_token")?.jsonPrimitive?.contentOrNull ?: previous
-        if (status == 200 && session != null) return LoginStep.Done(session)
-        val pendingMfa = root["data"]?.jsonObject?.get("flows")?.jsonArray?.any {
-            val flow = it.jsonObject
-            flow["id"]?.jsonPrimitive?.contentOrNull == "mfa_authenticate" &&
-                flow["is_pending"]?.jsonPrimitive?.booleanOrNull == true
-        } ?: false
-        if (status == 401 && pendingMfa && session != null) return LoginStep.NeedsCode(session)
-        throw ApiException(status, runCatching { allauthMessage(root) }.getOrNull() ?: tr("Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen."))
-    }
+    private fun authStep(status: Int, text: String, previous: String?): LoginStep = parseAuthStep(status, text, previous)
 
     suspend fun createDevice(sessionToken: String, deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
         decodeApi(
@@ -506,6 +493,29 @@ private fun quote(value: String): String =
 
 private fun jsonObjectOf(vararg pairs: Pair<String, String>): JsonObject =
     JsonObject(pairs.associate { (k, v) -> k to JsonPrimitive(v) })
+
+/** Antwort eines allauth-Anmeldeschritts auswerten; jede kaputte Antwort wird zur [ApiException] (Audit F03). */
+internal fun parseAuthStep(status: Int, text: String, previous: String?): LoginStep {
+    val root = try {
+        json.parseToJsonElement(text).jsonObject
+    } catch (e: Exception) {
+        throw ApiException(status, errorMessage(status, text))
+    }
+    // Falsch geformte Antworten (z. B. "meta" als Liste) melden statt abzustürzen
+    val (session, pendingMfa) = try {
+        val session = root["meta"]?.jsonObject?.get("session_token")?.jsonPrimitive?.contentOrNull ?: previous
+        session to (root["data"]?.jsonObject?.get("flows")?.jsonArray?.any {
+            val flow = it.jsonObject
+            flow["id"]?.jsonPrimitive?.contentOrNull == "mfa_authenticate" &&
+                flow["is_pending"]?.jsonPrimitive?.booleanOrNull == true
+        } ?: false)
+    } catch (e: IllegalArgumentException) {
+        throw ApiException(status, tr("Die Antwort des Servers war unverständlich. Bitte später erneut versuchen."))
+    }
+    if (status == 200 && session != null) return LoginStep.Done(session)
+    if (status == 401 && pendingMfa && session != null) return LoginStep.NeedsCode(session)
+    throw ApiException(status, runCatching { allauthMessage(root) }.getOrNull() ?: tr("Anmeldung fehlgeschlagen. Bitte E-Mail und Passwort prüfen."))
+}
 
 private fun allauthMessage(root: JsonObject): String? =
     root["errors"]?.jsonArray?.firstOrNull()?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull

@@ -1,6 +1,7 @@
 package de.hubiplan.app.data
 
 import java.net.URI
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** Inhalt des QR-Codes „App verbinden“: https://<Instanz>/app/verbinden#code=<Code>. */
 data class PairingLink(val server: String, val code: String) {
@@ -19,8 +20,8 @@ data class PairingLink(val server: String, val code: String) {
                 ?.removePrefix("code=")
                 ?.takeIf { it.isNotBlank() }
                 ?: return null
-            val port = if (uri.port == -1) "" else ":${uri.port}"
-            return PairingLink("https://${uri.host}$port", code)
+            val server = httpsOrigin(uri) ?: return null
+            return PairingLink(server, code)
         }
     }
 }
@@ -36,6 +37,13 @@ fun normalizeServer(input: String): String? {
         return null
     }
     if (uri.scheme != "https" || uri.host.isNullOrBlank()) return null
-    val port = if (uri.port == -1) "" else ":${uri.port}"
-    return "https://${uri.host}$port"
+    return httpsOrigin(uri)
+}
+
+/** https://Host[:Port], nur wenn okhttp die Adresse auch annimmt (Port 1–65535). */
+internal fun httpsOrigin(uri: URI): String? {
+    val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
+    if (uri.port != -1 && uri.port !in 1..65535) return null
+    val origin = "https://$host" + if (uri.port == -1) "" else ":${uri.port}"
+    return origin.takeIf { it.toHttpUrlOrNull() != null }
 }

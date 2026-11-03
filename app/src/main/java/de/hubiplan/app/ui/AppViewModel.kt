@@ -34,6 +34,7 @@ import de.hubiplan.app.data.normalizeServer
 import de.hubiplan.app.push.PushSetup
 import de.hubiplan.app.shortcut.ClubShortcut
 import de.hubiplan.app.sync.SyncWorker
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -796,6 +797,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             } catch (e: ApiException) {
                 if (created) DeviceKeys.delete(alias)
                 _connect.value = _connect.value.copy(busy = false, error = e.message)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Unerwartete Fehler (z. B. falsch geformte Antwort) dürfen die App nicht beenden (Audit F03)
+                if (created) runCatching { DeviceKeys.delete(alias) }
+                _connect.value = _connect.value.copy(
+                    busy = false,
+                    error = tr("Die Antwort des Servers war unverständlich. Bitte später erneut versuchen."),
+                )
             }
         }
     }
