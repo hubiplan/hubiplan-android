@@ -81,7 +81,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import de.hubiplan.app.tr
 
-// Quittung mit Unterschrift (hubiplan konzepte/digitale-quittung.md): vorbereiten, beide
+// Quittung mit Unterschrift: vorbereiten, beide
 // unterschreiben (Gegenseite im Vollbild, quer), abschließen mit Belegnummer aus dem
 // Kassenbuch. Ohne Netz bleibt die Quittung verschlüsselt auf dem Telefon, bis sie gesendet ist.
 

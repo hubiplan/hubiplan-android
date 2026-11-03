@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         applicationId = "de.hubiplan.app"
-        // Android 8.0: Benachrichtigungskanäle, einheitliche Hintergrundregeln (Konzept, Frage 12)
+        // Benachrichtigungskanäle und einheitliche Hintergrundregeln
         minSdk = 28
         targetSdk = 37
         versionCode = 35

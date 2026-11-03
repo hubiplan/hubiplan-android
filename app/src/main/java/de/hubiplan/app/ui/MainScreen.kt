@@ -269,7 +269,7 @@ private fun OfflinePane(main: Screen.Main, events: Boolean) {
 
 /**
  * Noch nicht gesendete Buchungen und Quittungen dieses Kontos, auch ohne Netz sichtbar (F03).
- * Außerhalb der entsperrten Verwaltung nur die Anzahl, ohne Entschlüsseln (GA-S10, Ralf 01.11.).
+ * Außerhalb der entsperrten Verwaltung nur die Anzahl, ohne Entschlüsseln (GA-S10).
  */
 @Composable
 fun PendingLocalCard(main: Screen.Main) {

@@ -9,7 +9,7 @@ import org.junit.Test
 import java.io.File
 import java.time.ZoneId
 
-/** Sprache der App (hubiplan/konzepte/englisch.md, 7): Katalog vollständig, Umschalten wirkt. */
+/** Sprache der App: Katalog vollständig, Umschalten wirkt. */
 class TexteTest {
     private val katalog = Texte.parse(File("src/main/assets/texte/en.json").readText())
 

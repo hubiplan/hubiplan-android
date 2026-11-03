@@ -7,7 +7,7 @@ import java.util.Locale
 import de.hubiplan.app.Texte
 import de.hubiplan.app.tr
 
-// Formate je Sprache der App (Englisch britisch, Konzept F4); als Getter, damit ein
+// Formate je Sprache der App (britisches Englisch); als Getter, damit ein
 // Sprachwechsel sofort gilt
 private val english: Boolean get() = Texte.sprache == "en"
 private val DAY: DateTimeFormatter

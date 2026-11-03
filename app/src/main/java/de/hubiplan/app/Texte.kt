@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
- * Sprache der App (hubiplan/konzepte/englisch.md, 7). Deutsch ist Quelle und Schlüssel wie im
+ * Sprache der App. Deutsch ist Quelle und Schlüssel wie im
  * Browser: `tr("Erneut laden")` liefert auf Englisch den Text aus `assets/texte/en.json`, sonst den
  * deutschen. Platzhalter in geschweiften Klammern: `tr("Hallo {name}", "name" to n)`.
  *

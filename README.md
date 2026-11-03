@@ -139,6 +139,10 @@ Testläufe auf einem Rechner nicht ausbremsen, holt es sich einen Testplatz mit 
 (aus [hubiplan/scripts/testplatz.sh](https://github.com/hubiplan/hubiplan/blob/main/scripts/testplatz.sh),
 Installation steht im Kopf der Datei).
 
+Gebaut und getestet wird ausschließlich lokal. Über alle Projekte desselben Rechners
+gelten höchstens zwei gleichzeitige Testläufe mit je höchstens acht Kernen. Temporäre
+Dateien gehören in ein lokal konfiguriertes Temp-Verzeichnis.
+
 Nur beim Herausgeber, nie im Repository:
 
 - `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`): Signatur
