@@ -56,7 +56,7 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     )
                 }
             },
-            confirmButton = { Button(onClick = vm::confirmPairing) { Text("Ja, verbinden") } },
+            confirmButton = { Button(onClick = vm::confirmPairing) { Text(tr("Ja, verbinden")) } },
             dismissButton = { TextButton(onClick = vm::cancelPairing) { Text(tr("Abbrechen")) } },
         )
     }
@@ -131,7 +131,7 @@ private fun PasswordLogin(state: ConnectState, vm: AppViewModel) {
     OutlinedTextField(
         value = email,
         onValueChange = { email = it },
-        label = { Text("E-Mail") },
+        label = { Text(tr("E-Mail")) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
         modifier = Modifier.fillMaxWidth(),

@@ -151,7 +151,7 @@ private fun ShortcutOffer(name: String, vm: AppViewModel) {
                 style = MaterialTheme.typography.bodySmall,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { vm.pinShortcut() }) { Text("Ja, ablegen") }
+                TextButton(onClick = { vm.pinShortcut() }) { Text(tr("Ja, ablegen")) }
                 TextButton(onClick = vm::dismissShortcutOffer) { Text(tr("Nein, danke")) }
             }
         }

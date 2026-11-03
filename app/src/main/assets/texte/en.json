@@ -594,5 +594,7 @@
  "({n} Personen)": "({n} people)",
  "1 Absage": "1 not attending",
  "{n} Absagen": "{n} not attending",
- "{n} offen": "{n} open"
+ "{n} offen": "{n} open",
+ "Ja, ablegen": "Yes, add",
+ "Ja, verbinden": "Yes, connect"
 }
