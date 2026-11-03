@@ -141,8 +141,18 @@ object LocalAccountData {
      * solche, die sich nie mehr öffnen lassen (Schlüssel weg, z. B. nach dem Entfernen der
      * Bildschirmsperre), sofort. Die App sagt danach, was weg ist.
      */
-    fun sweep(context: Context, now: Long = System.currentTimeMillis()): Sweep {
-        val quarantine = File(context.filesDir, QUARANTINE)
+    fun sweep(context: Context, now: Long = System.currentTimeMillis()): Sweep =
+        sweep(context.filesDir, context.cacheDir, now, DraftCrypto::hasKey, DraftCrypto::open, DraftCrypto::deleteKey)
+
+    internal fun sweep(
+        filesDir: File,
+        cacheDir: File,
+        now: Long,
+        hasKey: (String) -> Boolean,
+        open: (String, ByteArray) -> ByteArray,
+        deleteKey: (String) -> Unit,
+    ): Sweep {
+        val quarantine = File(filesDir, QUARANTINE)
         val freed = mutableSetOf<String>()
         var expired = 0
         var unreadable = 0
@@ -150,7 +160,7 @@ object LocalAccountData {
             val who = owner(box)
             val count = entries(box).size
             val old = since(box) < now - FINAL_DAYS * DAY_MS
-            val lost = !old && unreadableBox(box, who?.alias ?: DraftCrypto.LEGACY_ALIAS)
+            val lost = !old && unreadableBox(box, who?.alias ?: DraftCrypto.LEGACY_ALIAS, hasKey, open)
             if (!old && !lost) continue
             if (box.deleteRecursively()) {
                 if (old) expired += count else unreadable += count
@@ -158,17 +168,26 @@ object LocalAccountData {
             }
         }
         val inUse = quarantine.listFiles().orEmpty().mapNotNull { owner(it)?.alias }.toSet()
-        (freed - inUse).forEach { DraftCrypto.deleteKey(it) }
-        File(context.cacheDir, EXPORT).deleteRecursively()
+        (freed - inUse).forEach(deleteKey)
+        File(cacheDir, EXPORT).deleteRecursively()
         return Sweep(expired, unreadable)
     }
 
-    /** Unlesbar nur, wenn der Schlüssel fehlt oder nicht zur Datei passt, nie bei gesperrtem Telefon. */
-    private fun unreadableBox(box: File, alias: String): Boolean {
-        if (!DraftCrypto.hasKey(alias)) return true
+    /**
+     * Nur nachgewiesener Schlüsselverlust betrifft den ganzen Ordner. Ein ungültiger
+     * GCM-Tag kann eine einzelne beschädigte Datei sein; sie und ihre Nachbarn bleiben
+     * zur Rettung in der Quarantäne. Auch bei gesperrtem Telefon nichts löschen.
+     */
+    private fun unreadableBox(
+        box: File,
+        alias: String,
+        hasKey: (String) -> Boolean,
+        open: (String, ByteArray) -> ByteArray,
+    ): Boolean {
+        if (!hasKey(alias)) return true
         val first = entries(box).firstOrNull() ?: return false
         return try {
-            DraftCrypto.open(alias, first.readBytes())
+            open(alias, first.readBytes())
             false
         } catch (e: Exception) {
             DraftCrypto.isPermanent(e)

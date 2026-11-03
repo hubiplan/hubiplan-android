@@ -100,11 +100,12 @@ internal object DraftCrypto {
     fun hasKey(alias: String): Boolean = runCatching { store().containsAlias(alias) }.getOrDefault(true)
 
     /**
-     * Fehler, der nicht vorübergeht: Schlüssel ungültig oder passt nicht zur Datei. Ein
+     * Nachgewiesener dauerhafter Schlüsselfehler. Ein ungültiger GCM-Tag allein kann eine
+     * einzelne beschädigte Datei bedeuten und erlaubt keine Ordnerlöschung. Ein
      * gesperrtes Telefon zählt nicht dazu (Fachfrage FQ24).
      */
     fun isPermanent(e: Throwable): Boolean =
-        e is android.security.keystore.KeyPermanentlyInvalidatedException || e is javax.crypto.AEADBadTagException
+        e is android.security.keystore.KeyPermanentlyInvalidatedException
 
     fun deleteKey(alias: String) {
         runCatching { store().deleteEntry(alias) }
