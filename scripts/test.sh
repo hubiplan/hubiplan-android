@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
-# Baut die App und führt die Unit-Tests aus (lokal auf Ralfs PC, unter Windows in Git Bash
-# oder in WSL, wo ein Android-SDK liegt).
+# Baut die App und führt die Unit-Tests lokal mit installiertem Android-SDK aus
+# (Linux, WSL oder Git Bash unter Windows).
 #
 #   scripts/test.sh [Gradle-Aufgaben …]
 #
-# Regeln: nie auf dem Testserver. Höchstens zwei Testläufe gleichzeitig (alle Projekte),
+# Regeln: nur lokal testen. Höchstens zwei Testläufe gleichzeitig (alle Projekte),
 # jeder höchstens 8 Kerne: das Skript holt sich einen Platz mit testplatz (aus
 # hubiplan/scripts/testplatz.sh), Gradle bekommt so viele Worker wie der Platz Kerne.
 set -euo pipefail
 
 if [ -z "${TESTPLATZ:-}" ]; then
     if ! command -v testplatz > /dev/null; then
-        echo "Abbruch: testplatz fehlt (siehe hubiplan/docs/testserver.md, „Testplätze“)." >&2
+        echo "Abbruch: testplatz fehlt (siehe README.md, „Bauen und testen“)." >&2
         exit 2
     fi
     exec testplatz "$0" "$@"

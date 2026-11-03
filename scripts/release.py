@@ -7,8 +7,8 @@
     release.sh taggen [Ref]                     prüfen, Tag v<versionName> und GitHub-Release
 
 Quelle der Texte ist der Abschnitt „Für die Änderungshinweise“ der PRs, wie bei HUBIplan und der
-Webseite (hubiplan/docs/releases.md). Ralf entscheidet, wann eine Version erscheint: „taggen“ nur
-auf sein Wort. Ref ist ohne Angabe origin/main.
+Webseite. Der Herausgeber entscheidet, wann eine Version erscheint: „taggen“ nur nach
+ausdrücklicher Freigabe (docs/veroeffentlichen.md). Ref ist ohne Angabe origin/main.
 """
 
 # git und gh laufen mit festen Argumenten
@@ -185,7 +185,8 @@ def entwurf(args: argparse.Namespace) -> None:
         "Weiter: Changelogs lesen und kürzen, als PR „App " + args.version + "“ mergen,"
     )
     print(
-        "auf Ralfs PC bauen und testen (scripts/test.sh), dann auf Ralfs Wort release.sh taggen."
+        "lokal bauen und testen (scripts/test.sh), dann nach Freigabe des Herausgebers "
+        "release.sh taggen."
     )
 
 
@@ -220,7 +221,8 @@ def taggen(args: argparse.Namespace) -> None:
 
     notizen = (
         f"{texte['de']}\n\n---\n\n**English**\n\n{texte['en']}\n\n"
-        f"versionCode {code}. Signierte APK und AAB baut Ralf (docs/veroeffentlichen.md); "
+        f"versionCode {code}. Signierte APK und AAB baut der Herausgeber "
+        "(docs/veroeffentlichen.md); "
         "F-Droid baut selbst aus diesem Tag."
     )
     print(

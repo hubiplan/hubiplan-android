@@ -1,17 +1,17 @@
 # Veröffentlichen
 
-Herausgeber im Play Store ist **Philipsen EDV** mit einem Organisationskonto (Entscheidung
-30.10.2026, Konzept Frage 11). Bis das Konto steht, gibt es die APK zum Herunterladen und die
-Vorbereitung für F-Droid.
+Die Veröffentlichung im Play Store erfolgt durch **Philipsen EDV** mit einem Organisationskonto.
+Daneben sind eine APK zum Herunterladen und die Vorbereitung für F-Droid vorgesehen.
 
 ## Versionen
 
 `versionCode` steigt mit jeder Veröffentlichung um 1, `versionName` ist SemVer (im Store ab
 1.0.0). Zu jedem `versionCode` gehören `fastlane/metadata/android/de-DE/changelogs/<versionCode>.txt`
 und `…/en-US/changelogs/<versionCode>.txt` (je höchstens 500 Zeichen). Jede Version, die
-erscheint, bekommt den Tag `v<versionName>` und ein GitHub-Release, aber nur auf Ralfs Wort.
+erscheint, bekommt den Tag `v<versionName>` und ein GitHub-Release, aber nur nach ausdrücklicher
+Freigabe durch den Herausgeber.
 
-Ablauf in WSL (gh dort als `GH=gh.exe`):
+Ablauf mit `git` und GitHub CLI (`gh`; bei Bedarf über `GH` konfigurierbar):
 
 1. `scripts/release.sh entwurf --version 0.32.0` setzt `versionName`, erhöht `versionCode` um 1
    und schreibt die Hinweise aller PRs seit dem letzten Tag (Abschnitt „Für die
@@ -19,11 +19,11 @@ Ablauf in WSL (gh dort als `GH=gh.exe`):
    `--seit <Commit>`. PRs mit „Braucht HUBIplan“ zählt es auf; diese gehören in die
    Verträglichkeitstabelle in `hubiplan/docs/versionen.md`.
 2. Changelogs lesen und kürzen, als PR „App 0.32.0“ squashen und mergen.
-3. Auf Ralfs PC bauen und testen (`scripts/test.sh`), APK/AAB aus diesem Stand bauen.
-4. Auf Ralfs Wort `scripts/release.sh taggen`: prüft Form und Reihenfolge der Version, dass
+3. Lokal mit installiertem Android-SDK bauen und testen (`scripts/test.sh`), APK/AAB aus diesem Stand bauen.
+4. Nach ausdrücklicher Freigabe durch den Herausgeber `scripts/release.sh taggen`: prüft Form und Reihenfolge der Version, dass
    der Stand das neueste Release enthält und dass beide Changelogs da sind und passen, zeigt die
    Notizen und legt nach Rückfrage Tag und GitHub-Release an. F-Droid baut aus dem Tag; APK und
-   AAB lädt Ralf hoch.
+   AAB lädt der Herausgeber hoch.
 
 Die App fragt `features` in `/api/app/v1/instance/` ab und blendet aus, was eine ältere
 HUBIplan-Instanz noch nicht kann (`hubiplan/docs/versionen.md`).
@@ -46,7 +46,7 @@ demselben Schlüssel signiert sein. Fingerabdruck (SHA-256) neben der Datei ange
 
 ## Google Play
 
-**Entscheidung 30.10.2026:** Im Play Store erscheint die Variante `foss`, also ohne Google-Push
+Im Play Store erscheint die Variante `foss`, also ohne Google-Push
 und ohne Google-Dienste (kein Firebase, keine Play-Dienste; freie Bibliotheken wie ZXing oder
 AndroidX stammen zwar von Google, stehen aber unter der Apache-Lizenz). So gibt es kein Firebase-Projekt und kein Push-Gateway, und der
 Herausgeber ist für keinen Verein Auftragsverarbeiter. Push kommt über UnifiedPush (z. B. ntfy);
@@ -56,8 +56,8 @@ ohne Push-App gleicht die App alle 15 Minuten ab, mit Push alle 6 Stunden. Die V
 Voraussetzungen von Google (Stand 10/2026): `targetSdk` mindestens 36 (Android 16) für neue Apps
 und Updates; die App zielt schon auf 37 (Android 17, AGP 9, Gradle 9). `minSdk` ist 28 (Android 9, seit 0.25.0: Schlüsselschutz bei gesperrtem Telefon). Ein Weg
 zum Löschen von Konto und Daten in der App (Konto › „Konto und Daten löschen“) und als Webseite des
-Herausgebers. Prüferzugang auf dem Testserver mit erfundenen Daten. Ausführliche Anleitung:
-`anleitungen/play-store-veroeffentlichung.md` im Projektordner.
+Herausgebers. Für die Prüfung einen eigenen Zugang mit ausschließlich erfundenen Daten
+bereitstellen; dessen Zugangsdaten nur vertraulich an die Store-Prüfer übermitteln.
 
 1. `./gradlew bundleFossRelease` (mit `keystore.properties`, Upload-Schlüssel), Datei
    `app/build/outputs/bundle/fossRelease/app-foss-release.aab`.

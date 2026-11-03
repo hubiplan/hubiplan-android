@@ -423,7 +423,7 @@ data class BillingInfo(val accounts: List<BillingAccount> = emptyList(), @Serial
 @Serializable
 data class CashResult(val invoice: InvoiceItem, val payment: Int)
 
-// --- Quittung mit Unterschrift (hubiplan docs/app.md, konzepte/digitale-quittung.md) ---
+// --- Quittung mit Unterschrift (hubiplan docs/app.md) ---
 
 /** Gespeicherte Form einer Unterschrift: Breite 1000, Linienzüge als x,y,x,y,… */
 @Serializable

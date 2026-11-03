@@ -14,7 +14,7 @@ import de.hubiplan.app.data.Theme
 /**
  * Farbschema aus den Vereinsfarben in HUBIplan (Primär- und Akzentfarbe, mit Vererbung
  * Zug ← Verein ← Dachverband). Die dynamischen Systemfarben von Android werden bewusst
- * nicht genutzt, damit die Vereinsfarben bleiben (Konzept, Ralf 30.10.).
+ * nicht genutzt, damit die Vereinsfarben bleiben.
  */
 fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     val primary = parseHexColor(theme?.primary) ?: DEFAULT_PRIMARY
