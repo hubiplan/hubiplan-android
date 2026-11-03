@@ -159,6 +159,17 @@ class AdminFormatTest {
     }
 
     @Test
+    fun rueckmeldungenAufEnglisch() {
+        val katalog = Texte.parse(java.io.File("src/main/assets/texte/en.json").readText())
+        try {
+            Texte.setzeFuerTest("en", katalog)
+            assertEquals("12 attending (15 people) · 1 not attending · 20 open", responseSummary(12, 1, 15, 20))
+        } finally {
+            Texte.setzeFuerTest("de", katalog)
+        }
+    }
+
+    @Test
     fun zeitpunktVergleichen() {
         assertTrue(sameInstant("2026-06-13T12:00:00Z", "2026-06-13T14:00:00+02:00"))
         assertFalse(sameInstant("2026-06-13T12:00:00Z", "2026-06-13T12:00:00+02:00"))

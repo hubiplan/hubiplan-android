@@ -248,8 +248,8 @@ fun InvoiceScreen(
         }
         HorizontalDivider()
         AmountRow(tr("Gesamt"), d.total)
-        if (d.paid.toBigDecimalOrNull()?.signum() == 1) AmountRow("bezahlt", d.paid)
-        if (d.status == "open") AmountRow("offen", d.outstanding, bold = true)
+        if (d.paid.toBigDecimalOrNull()?.signum() == 1) AmountRow(tr("bezahlt"), d.paid)
+        if (d.status == "open") AmountRow(tr("offen"), d.outstanding, bold = true)
 
         val newPayment = lastPayment
         if (newPayment != null) {
