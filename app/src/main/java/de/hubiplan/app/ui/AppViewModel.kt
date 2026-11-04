@@ -758,6 +758,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectAccess(access: PortalAccess) {
         val main = screen.value as? Screen.Main ?: return
+        if (_selectedTodo.value?.scope == "p" && _selectedTodo.value?.unitId != access.id) _selectedTodo.value = null
         _screen.value = main.copy(access = access)
         viewModelScope.launch { applyAccess(access) }
     }

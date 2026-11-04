@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
@@ -48,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import de.hubiplan.app.tr
 
 private enum class Tab(val label: String) {
-    TERMINE(tr("Termine")), MITTEILUNGEN(tr("Mitteilungen")), PROFIL(tr("Profil")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Konto")),
+    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen")), PROFIL(tr("Profil")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Konto")),
 }
 
 /** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
@@ -69,9 +70,10 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
     val admin by vm.admin.collectAsStateWithLifecycle()
     val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
-    val hasDraft = leave.hasDraft || leave.busy
+val hasDraft = leave.hasDraft || leave.busy
     androidx.compose.runtime.SideEffect { vm.todoFormActive.value = hasDraft }
     androidx.compose.runtime.DisposableEffect(vm) { onDispose { vm.todoFormActive.value = false } }
+    val selectedTodo by vm.selectedTodo.collectAsStateWithLifecycle()
     LaunchedEffect(pendingTodo, leave.busy) {
         val pending = pendingTodo ?: return@LaunchedEffect
         if (!pending.ready) {
@@ -79,6 +81,16 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 vm.todoFormActive.value = false
                 vm.todoHandled()
                 vm.openTodoNotification(pending.accountId, pending.target)
+            }, onStay = vm::todoHandled)
+        } else if (pending.target.scope == "p") {
+            if (pending.accountId != de.hubiplan.app.sync.RsvpActionReceiver.accountId(main.account)) {
+                vm.todoHandled(); return@LaunchedEffect
+            }
+            leave.request(action = {
+                main.me?.portal?.firstOrNull { it.id == pending.target.unitId }?.let { vm.selectAccess(it) }
+                vm.selectTodo(pending.target)
+                vm.todoHandled()
+                tab = Tab.AUFGABEN
             }, onStay = vm::todoHandled)
         } else if (tab != Tab.VERWALTUNG) leave.request(action = { tab = Tab.VERWALTUNG }, onStay = vm::todoHandled)
     }
@@ -103,6 +115,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     icon = {
                         Icon(
                             when (t) {
+                                Tab.AUFGABEN -> Icons.Filled.CheckCircle
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
                                 Tab.PROFIL -> Icons.Filled.Person
@@ -151,6 +164,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
                     tab == Tab.VERWALTUNG -> AdminPane(main, vm)
+                    tab == Tab.AUFGABEN -> MemberTodosPane(main, vm)
                     main.me == null && !main.offline -> Loading()
                     access == null && main.me != null -> Message(
                         tr("Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an den Vorstand."),
