@@ -46,6 +46,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
     var pick by remember { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val fields = rememberServerFields()
     var preview by remember { mutableStateOf<Map<String, Int>?>(null) }
 
     LaunchedEffect(Unit) {
@@ -56,10 +57,12 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
             maxBody = data.maxBody
             if (senderKey == null) senderKey = data.senders.firstOrNull()?.key
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = fields.receive(e)
         }
     }
-    val sender = senders?.firstOrNull { it.key == senderKey }
+    val sender = senders?.firstOrNull { it.key == senderKey } ?: if (senderKey == null) senders?.firstOrNull() else null
+    val saved = rememberFormDraft(subject, body, senderKey, busy = busy)
+    val leave = LocalFormLeaveGuard.current
 
     fun call(confirm: Boolean) {
         val api = vm.api() ?: return
@@ -71,12 +74,13 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 val result = api.sendShort(s, subject.trim(), body.trim(), confirm)
                 if (confirm) {
                     preview = null
+                    saved()
                     onDone(tr("Kurzmitteilung an {name} ist unterwegs.", "name" to s.name))
                 } else {
                     preview = result.counts
                 }
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+                if (e.status == 401) vm.deviceRevoked(e) else error = fields.receive(e)
             } finally {
                 busy = false
             }
@@ -87,7 +91,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        TextButton(onClick = onCancel) { Text(tr("‹ Zurück")) }
+        TextButton(enabled = !busy, onClick = { if (leave == null) onCancel() else leave.request(onCancel) }) { Text(tr("‹ Zurück")) }
         Text(tr("Kurzmitteilung senden"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         val list = senders
         when {
@@ -99,6 +103,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 val senderName = sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–"
                 OutlinedButton(
                     onClick = { pick = list.size > 1 },
+                    enabled = !busy,
                     modifier = if (list.size > 1) Modifier.dropdown(tr("An"), senderName, pick) else Modifier,
                 ) {
                     Text(tr("An") + ": " + (sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–") + if (list.size > 1) " ▾" else "")
@@ -116,15 +121,13 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 }
             }
             Text(tr("Geht an alle Mitglieder dieser Einheit: per App, sonst per E-Mail."), style = MaterialTheme.typography.bodySmall)
-            OutlinedTextField(
-                value = subject,
+            ServerTextField(field = "subject", errors = fields, enabled = !busy, value = subject,
                 onValueChange = { subject = it.take(200) },
                 label = { Text(tr("Betreff")) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
-                value = body,
+            ServerTextField(field = "body", errors = fields, enabled = !busy, value = body,
                 onValueChange = { body = it.take(maxBody) },
                 label = { Text(tr("Text")) },
                 supportingText = { Text(tr("{length} von {maxBody} Zeichen", "length" to body.length, "maxBody" to maxBody)) },

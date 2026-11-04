@@ -21,6 +21,8 @@ android {
         targetSdk = 37
         versionCode = 35
         versionName = "0.31.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["additionalTestOutputDir"] = "/sdcard/Android/media/de.hubiplan.app/ui-test-output"
     }
 
     // Signatur der Veröffentlichung aus keystore.properties (nur auf dem Rechner des Herausgebers):
@@ -105,6 +107,11 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     "playImplementation"(libs.firebase.messaging)
     testImplementation(libs.junit)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.espresso.core)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
 
 // Lizenzseite der App (Lizenzaudit 31.10.2026, L01): Beim Bauen jeder Variante entsteht aus

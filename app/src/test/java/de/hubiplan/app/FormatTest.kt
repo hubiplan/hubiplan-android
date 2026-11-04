@@ -28,7 +28,7 @@ class FormatTest {
     @Test
     fun fehlermeldungen() {
         assertEquals("Der Code ist ungültig.", errorMessage(404, """{"detail":"Der Code ist ungültig."}"""))
-        assertEquals("Dieses Feld darf nicht leer sein.", errorMessage(400, """{"name":["Dieses Feld darf nicht leer sein."]}"""))
+        assertEquals("Name: Dieses Feld darf nicht leer sein.", errorMessage(400, """{"name":["Dieses Feld darf nicht leer sein."]}"""))
         assertEquals("Zu viele Versuche. Bitte später erneut.", errorMessage(429, ""))
         assertEquals(
             "Falsches Passwort.",

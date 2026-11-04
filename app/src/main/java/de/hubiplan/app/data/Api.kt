@@ -31,7 +31,10 @@ class ApiException(
     message: String,
     val body: String = "",
     val origin: String? = null,
-) : Exception(message)
+) : Exception(message) {
+    val fieldErrors: Map<String, String> = if (status == 400 || status == 422) parseFieldErrors(body) else emptyMap()
+    val generalError: String? = parseGeneralError(body)
+}
 
 /** Kennung von Server und Schlüssel einer Anfrage, ohne den Schlüssel selbst. */
 fun apiOrigin(server: String, token: String?): String = "$server#${token?.hashCode()}"
@@ -136,6 +139,8 @@ class Api(
     private val deviceToken: String? = null,
     /** Härtung H7: Vorstands-Schlüsselpaar; gesetzt, wenn Vorstandsanfragen unterschrieben werden. */
     private val adminKeyAlias: String? = null,
+    /** Austauschbarer Transport für reproduzierbare Geräteprüfungen, Standard unverändert. */
+    private val transport: OkHttpClient = http,
 ) {
 
     private class Raw(val code: Int, val body: ByteArray, val headers: okhttp3.Headers) {
@@ -198,7 +203,7 @@ class Api(
         val bytes = body?.let { b -> okio.Buffer().also { b.writeTo(it) }.readByteArray() }
         val used = deviceKeyToken()
         val raw = try {
-            http.newCall(request(method, path, bytes, body?.contentType(), headers, accept)).execute().use { resp ->
+            transport.newCall(request(method, path, bytes, body?.contentType(), headers, accept)).execute().use { resp ->
                 Raw(resp.code, readLimited(resp.body, limit), resp.headers)
             }
         } catch (e: IOException) {
@@ -233,7 +238,7 @@ class Api(
     ): String {
         val (status, text) = call(method, path, body, headers)
         if (status in 200..299) return text
-        throw ApiException(status, errorMessage(status, text), origin = apiOrigin(server, token))
+        throw ApiException(status, errorMessage(status, text), body = text, origin = apiOrigin(server, token))
     }
 
     suspend fun instance(): Instance = decodeApi(expect("GET", "/api/app/v1/instance/"))
@@ -479,7 +484,7 @@ class Api(
             .addFormDataPart("file", "foto.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
             .build()
         val resp = send("POST", "/api/portal/$accessId/photo/", form)
-        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), origin = apiOrigin(server, token))
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
         return decodeApi(PhotoState.serializer(), resp.text)
     }
 
@@ -543,17 +548,12 @@ fun errorMessage(status: Int, text: String): String {
         null
     }
     if (parsed is JsonObject) {
-        (parsed["detail"] as? JsonPrimitive)?.contentOrNull?.let { return it }
-        runCatching { allauthMessage(parsed) }.getOrNull()?.let { return it }
-        val fields = parsed.values.mapNotNull { v ->
-            when (v) {
-                is JsonArray -> (v.firstOrNull() as? JsonPrimitive)?.contentOrNull
-                is JsonPrimitive -> v.contentOrNull
-                else -> null
-            }
-        }
-        if (fields.isNotEmpty()) return fields.joinToString(" ")
+        val general = parseGeneralError(text)
+        val fields = parseFieldErrors(text)
+        val summary = fields.takeIf { it.isNotEmpty() }?.entries?.joinToString(" ") { (key, value) -> "${validationFieldLabel(key)}: $value" }
+        if (general != null || summary != null) return listOfNotNull(general, summary).joinToString(" ")
     }
+
     return when (status) {
         401 -> tr("Dieses Gerät ist nicht mehr angemeldet. Bitte die App neu verbinden.")
         403 -> tr("Dafür fehlt die Berechtigung.")
@@ -562,4 +562,63 @@ fun errorMessage(status: Int, text: String): String {
         in 500..599 -> tr("Der Server hat gerade ein Problem. Bitte später erneut versuchen.")
         else -> tr("Unerwartete Antwort vom Server ({status}).", "status" to status)
     }
+}
+
+/** Feldpfade bleiben erhalten; allgemeine und allauth-Fehler sind keine Feldmarkierung. */
+fun parseFieldErrors(text: String): Map<String, String> {
+    val root = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: return emptyMap()
+    val out = linkedMapOf<String, String>()
+    fun visit(path: String, value: kotlinx.serialization.json.JsonElement) {
+        when (value) {
+            is JsonObject -> value.forEach { (key, item) -> visit("$path.$key", item) }
+            is JsonArray -> {
+                val messages = value.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.contentOrNull }
+                if (messages.isNotEmpty()) out[path] = messages.joinToString(" ")
+                value.forEachIndexed { index, item -> if (item is JsonObject || item is JsonArray) visit("$path.$index", item) }
+            }
+            is JsonPrimitive -> if (value.isString) value.contentOrNull?.let { out[path] = it }
+        }
+    }
+    root.filterKeys { it !in setOf("detail", "non_field_errors", "errors", "status", "meta", "data", "code", "request_id") }.forEach { (key, value) -> visit(key, value) }
+    return out
+}
+
+/** Lesbare Rückfallebene auch für noch unbekannte Serverfelder. */
+fun validationFieldLabel(key: String): String = when (key.substringAfterLast('.')) {
+    "first_name" -> tr("Vorname")
+    "last_name" -> tr("Nachname")
+    "birth_date" -> tr("Geburtsdatum")
+    "entry_date" -> tr("Eintritt am")
+    "email" -> tr("E-Mail")
+    "phone" -> tr("Telefon")
+    "street" -> tr("Straße")
+    "postal_code" -> tr("PLZ")
+    "city" -> tr("Ort")
+    "amount" -> tr("Betrag in €")
+    "account" -> tr("Konto")
+    "category" -> tr("Kategorie")
+    "date" -> tr("Datum (TT.MM.JJJJ)")
+    "name", "counterparty_name" -> tr("Name")
+    "counterparty" -> tr("Zahler oder Empfänger")
+    "purpose" -> tr("Zweck")
+    "text" -> tr("Text")
+    "title" -> tr("Titel")
+    "subject" -> tr("Betreff")
+    "body" -> tr("Text")
+    "member_type" -> tr("Mitgliedsart")
+    "department_ids" -> tr("Untereinheit")
+    "starts_at" -> tr("Beginn (HH:MM)")
+    "ends_at" -> tr("Ende (optional)")
+    "description" -> tr("Beschreibung")
+    "due_date" -> tr("Frist (TT.MM.JJJJ, optional)")
+    "due_time" -> tr("Uhrzeit (optional)")
+    "rsvp_deadline" -> tr("Anmeldeschluss (optional, TT.MM.JJJJ)")
+    else -> tr("Angabe")
+}
+
+fun parseGeneralError(text: String): String? {
+    val root = runCatching { json.parseToJsonElement(text) as? JsonObject }.getOrNull() ?: return null
+    (root["detail"] as? JsonPrimitive)?.contentOrNull?.let { return it }
+    runCatching { allauthMessage(root) }.getOrNull()?.let { return it }
+    return (root["non_field_errors"] as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.contentOrNull }?.takeIf { it.isNotEmpty() }?.joinToString(" ")
 }

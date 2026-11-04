@@ -41,6 +41,7 @@ import de.hubiplan.app.tr
 /** Rundschreiben und Mitteilungen der Einheit (wie „Rundschreiben“ im Mitgliederbereich). */
 @Composable
 fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
+    val leave = LocalFormLeaveGuard.current
     var items by remember(access.id) { mutableStateOf<List<CircularItem>?>(null) }
     var error by remember(access.id) { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(access.id) { mutableStateOf<Int?>(null) }
@@ -48,7 +49,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
     var notice by remember { mutableStateOf<String?>(null) }
     var reload by remember { mutableStateOf(0) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(openRequest, access.id) {
+    LaunchedEffect(openRequest, access.id, leave?.busy) {
         val request = openRequest ?: return@LaunchedEffect
         if (request.first == access.id) {
             selected = request.second
@@ -75,7 +76,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
             Column(Modifier.fillMaxSize()) {
                 if (canSend) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Button(onClick = { selected = SEND }) { Text(tr("Kurzmitteilung senden")) }
+                        Button(onClick = { if (selected != SEND) { if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
                     }
                 }
                 notice?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp)) }
@@ -90,7 +91,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                     else -> LazyColumn(Modifier.fillMaxSize()) {
                         items(list, key = { it.id }) { c ->
                             ListItem(
-                                modifier = Modifier.clickable { selected = c.id },
+                                modifier = Modifier.clickable { if (leave == null) selected = c.id else leave.request { selected = c.id } },
                                 colors = if (c.id == selected) {
                                     ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
                                 } else {

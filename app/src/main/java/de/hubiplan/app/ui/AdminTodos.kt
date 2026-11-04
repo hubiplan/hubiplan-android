@@ -148,16 +148,18 @@ fun TodoCreateScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Uni
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
+    rememberFormDraft(title, description, date, time, busy = busy, retainOnDispose = false)
+    val fields = rememberServerFields()
     val body = todoInput(title, description, date, time)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neue Aufgabe"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Die neue Aufgabe ist zunächst privat. Teilen, Anhänge und Serien verwaltest du im Browser."))
-        OutlinedTextField(title, { title = it.take(200) }, label = { Text(tr("Titel")) }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(description, { description = it.take(50000) }, label = { Text(tr("Beschreibung")) }, enabled = !busy, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(date, { date = it }, label = { Text(tr("Frist (TT.MM.JJJJ, optional)")) }, singleLine = true, enabled = !busy,
+        ServerTextField("title", fields, title, { title = it.take(200) }, label = { Text(tr("Titel")) }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth())
+        ServerTextField("description", fields, description, { description = it.take(50000) }, label = { Text(tr("Beschreibung")) }, enabled = !busy, modifier = Modifier.fillMaxWidth())
+        ServerTextField("due_date", fields, date, { date = it }, label = { Text(tr("Frist (TT.MM.JJJJ, optional)")) }, singleLine = true, enabled = !busy,
             trailingIcon = { if (!busy) DatePickButton(date) { date = it } }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(time, { time = it }, label = { Text(tr("Uhrzeit (optional)")) }, singleLine = true, enabled = !busy,
+        ServerTextField("due_time", fields, time, { time = it }, label = { Text(tr("Uhrzeit (optional)")) }, singleLine = true, enabled = !busy,
             trailingIcon = { if (!busy) TimePickButton(time) { time = it } }, modifier = Modifier.fillMaxWidth())
         Text(tr("Zeitzone: {zone}", "zone" to "Europe/Berlin"), style = MaterialTheme.typography.bodySmall)
         if (body == null && (date.isNotBlank() || time.isNotBlank())) Text(tr("Bitte Frist und Uhrzeit prüfen. Eine Uhrzeit braucht ein Datum."))
@@ -170,7 +172,7 @@ fun TodoCreateScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Uni
                 try {
                     val created = client.createTodo(values)
                     onCreated(created.value.id, created.changeSet)
-                } catch (e: ApiException) { error = errors.message(e) } finally { busy = false }
+                } catch (e: ApiException) { error = fields.receive(e, errors) } finally { busy = false }
             }
         }) { Text(tr("Anlegen")) }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())

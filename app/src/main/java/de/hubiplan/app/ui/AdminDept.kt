@@ -73,18 +73,24 @@ fun DeptMemberScreen(
     var busy by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(false) }
     var saveError by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(id, reload) {
+    var attempt by remember(id) { androidx.compose.runtime.mutableIntStateOf(0) }
+    var loading by remember(id) { mutableStateOf(true) }
+    LaunchedEffect(id, reload, attempt) {
+        loading = true
+        error = null
         try {
             detail = client.deptMember(id)
             error = null
         } catch (e: ApiException) {
             error = errors.message(e)
-        }
+        } finally { loading = false }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
-        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (detail == null) Text(tr("Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        if (busy || loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
+        if (error != null) TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
         val d = detail ?: return@Column
         Text(d.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(listOfNotNull(d.memberType, d.clubNumber.ifBlank { null }?.let { "Nr. $it" }).joinToString(" · "))
