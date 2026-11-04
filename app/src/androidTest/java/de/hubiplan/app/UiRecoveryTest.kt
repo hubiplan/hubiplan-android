@@ -183,6 +183,8 @@ class UiRecoveryTest {
         pad.performTouchInput { down(Offset(30f, 60f)); moveTo(Offset(140f, 90f), delayMillis = 80) }
         compose.waitForIdle()
         restoration.emulateSavedInstanceStateRestore()
+        // Die unterbrochene Berührung auch im Eingabesimulator beenden; die Striche sind bereits restauriert.
+        compose.onNodeWithContentDescription("Unterschriftsfeld: Kassierer").performTouchInput { cancel() }
         compose.onNodeWithText("Bestätigen").assertIsEnabled()
         compose.runOnIdle { wide = true }
         compose.waitForIdle()
