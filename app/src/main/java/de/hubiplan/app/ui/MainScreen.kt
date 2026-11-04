@@ -70,7 +70,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
     val admin by vm.admin.collectAsStateWithLifecycle()
     val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
-val hasDraft = leave.hasDraft || leave.busy
+    val hasDraft = leave.hasDraft || leave.busy
     androidx.compose.runtime.SideEffect { vm.todoFormActive.value = hasDraft }
     androidx.compose.runtime.DisposableEffect(vm) { onDispose { vm.todoFormActive.value = false } }
     val selectedTodo by vm.selectedTodo.collectAsStateWithLifecycle()
@@ -102,8 +102,9 @@ val hasDraft = leave.hasDraft || leave.busy
             vm.resumeCircular(request)
         }, onStay = vm::clearDeferredCircular)
     }
-    val adminVisible = admin.visible || pendingTodo != null
-    val tabs = Tab.entries.filter { it != Tab.VERWALTUNG || adminVisible }
+    val adminVisible = admin.visible || pendingTodo?.target?.scope?.let { it != "p" } == true
+    val tasksVisible = main.me?.portal?.isNotEmpty() == true || selectedTodo?.scope == "p"
+    val tabs = Tab.entries.filter { (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) }
     LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
