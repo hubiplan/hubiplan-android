@@ -323,6 +323,20 @@ class Api(
         expect("DELETE", "/api/app/v1/devices/$deviceId/")
     }
 
+    suspend fun memberTodos(accessId: Int): MemberTodoList =
+        decodeApi(expect("GET", "/api/portal/$accessId/todos/"))
+
+    suspend fun memberTodo(accessId: Int, id: Int): MemberTodo =
+        decodeApi(expect("GET", "/api/portal/$accessId/todos/$id/"))
+
+    suspend fun completeMemberTodo(accessId: Int, id: Int, version: Int, done: Boolean): MemberTodo =
+        decodeApi(expect("PATCH", "/api/portal/$accessId/todos/$id/",
+            json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), obj("version" to version, "status" to if (done) "done" else "open"))))
+
+    suspend fun claimMemberTodo(accessId: Int, id: Int, version: Int, claim: Boolean): MemberTodo =
+        decodeApi(expect("PATCH", "/api/portal/$accessId/todos/$id/",
+            json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), obj("version" to version, "action" to if (claim) "claim" else "release"))))
+
     suspend fun events(accessId: Int, from: String, to: String): List<Occurrence> =
         decodeApi<EventList>(expect("GET", "/api/portal/$accessId/events/?from=$from&to=$to")).items
 

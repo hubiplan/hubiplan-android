@@ -241,7 +241,7 @@ object PushSetup {
         when (message.type) {
             "todo" -> {
                 if (message.v != 1) return
-                val target = de.hubiplan.app.data.TodoTarget.fromPush(message.org, message.department, message.todo) ?: return
+                val target = de.hubiplan.app.data.TodoTarget.fromPush(message.org, message.department, message.todo, message.access) ?: return
                 store.ifCurrent(account) {
                     Notifications.showTodo(context, store.slot, accountId, target, message.title, message.text)
                 }

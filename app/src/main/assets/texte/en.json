@@ -619,5 +619,11 @@
  "Erinnerungen und Freigaben für Aufgaben": "Task reminders and sharing notifications",
  "Aufgabe": "Task",
  "Neuer Aufgabenhinweis": "New task notification",
- "Beschreibung": "Description"
+ "Beschreibung": "Description",
+ "Aufgabe auswählen": "Select a task",
+ "Für dich freigegebene Aufgaben und offene Angebote deiner Einheit.": "Tasks shared with you and open offers from your unit.",
+ "Von dir übernommen": "Claimed by you",
+ "Bereits übernommen": "Already claimed",
+ "Aufgabe übernehmen": "Claim task",
+ "Übernahme freigeben": "Release claim"
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
@@ -48,7 +49,7 @@ import androidx.compose.ui.unit.dp
 import de.hubiplan.app.tr
 
 private enum class Tab(val label: String) {
-    TERMINE(tr("Termine")), MITTEILUNGEN(tr("Mitteilungen")), PROFIL(tr("Profil")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Konto")),
+    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen")), PROFIL(tr("Profil")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Konto")),
 }
 
 /** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
@@ -65,9 +66,21 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
     val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
     val todoForm by vm.todoFormActive.collectAsStateWithLifecycle()
     var leaveTab by remember { mutableStateOf<Tab?>(null) }
-    LaunchedEffect(pendingTodo) { if (pendingTodo != null) tab = Tab.VERWALTUNG }
-    val adminVisible = admin.visible || pendingTodo != null
-    val tabs = Tab.entries.filter { it != Tab.VERWALTUNG || adminVisible }
+    val selectedTodo by vm.selectedTodo.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingTodo) {
+        val request = pendingTodo ?: return@LaunchedEffect
+        if (request.target.scope != "p" || !request.ready) { tab = Tab.VERWALTUNG; return@LaunchedEffect }
+        if (request.accountId != de.hubiplan.app.sync.RsvpActionReceiver.accountId(main.account)) {
+            vm.todoHandled(); return@LaunchedEffect
+        }
+        main.me?.portal?.firstOrNull { it.id == request.target.unitId }?.let { vm.selectAccess(it) }
+        vm.selectTodo(request.target)
+        vm.todoHandled()
+        tab = Tab.AUFGABEN
+    }
+    val adminVisible = admin.visible || pendingTodo?.target?.scope?.let { it != "p" } == true
+    val tasksVisible = main.me?.portal?.isNotEmpty() == true || selectedTodo?.scope == "p"
+    val tabs = Tab.entries.filter { (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) }
     LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
     leaveTab?.let { next ->
         androidx.compose.material3.AlertDialog(
@@ -88,6 +101,7 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
                     icon = {
                         Icon(
                             when (t) {
+                                Tab.AUFGABEN -> Icons.Filled.CheckCircle
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
                                 Tab.PROFIL -> Icons.Filled.Person
@@ -136,6 +150,7 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
                     tab == Tab.VERWALTUNG -> AdminPane(main, vm)
+                    tab == Tab.AUFGABEN -> MemberTodosPane(main, vm)
                     main.me == null && !main.offline -> Loading()
                     access == null && main.me != null -> Message(
                         tr("Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an den Vorstand."),

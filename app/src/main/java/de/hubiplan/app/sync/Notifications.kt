@@ -83,7 +83,7 @@ object Notifications {
         if (!allowed(context)) return
         val kind = "todo-${target.scope}"
         val id = (notificationId(slot, target.unitId, target.todoId) xor
-            if (target.scope == "d") 0x0800_0000 else 0x0400_0000) and 0x3FFFFFFF
+            when (target.scope) { "p" -> 0x1000_0000; "d" -> 0x0800_0000; else -> 0x0400_0000 }) and 0x3FFFFFFF
         val open = PendingIntent.getActivity(
             context, id,
             Intent(context, MainActivity::class.java)

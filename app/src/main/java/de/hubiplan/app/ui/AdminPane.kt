@@ -331,6 +331,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             }
             return@LaunchedEffect
         }
+        if (pending.target.scope == "p") return@LaunchedEffect
         if (pending.accountId != de.hubiplan.app.sync.RsvpActionReceiver.accountId(main.account)) {
             vm.todoHandled()
             return@LaunchedEffect
