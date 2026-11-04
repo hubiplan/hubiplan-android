@@ -60,7 +60,7 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
         return
     }
     // Ein anderes Konto oder ein anderer Mitgliedszugang besitzt einen neuen Ansichtsbaum.
-    key(main.account.generation, access.id) {
+    key(main.account.server, main.account.deviceId, main.account.generation, access.id) {
         val api = remember(main.account) { Api(main.account.server, main.account.token) }
         MemberTaskList(api, access.id, portalTarget?.todoId, main.account.server, vm)
     }
