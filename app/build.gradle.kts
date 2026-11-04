@@ -107,10 +107,10 @@ dependencies {
     "playImplementation"(libs.firebase.messaging)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.compose.bom))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.espresso.core)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
 
 // Lizenzseite der App (Lizenzaudit 31.10.2026, L01): Beim Bauen jeder Variante entsteht aus
