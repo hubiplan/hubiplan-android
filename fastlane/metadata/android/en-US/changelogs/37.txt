@@ -1,0 +1,9 @@
+First release of HUBIplan for Android.
+
+• View club events and respond to invitations
+• View and complete tasks
+• Read club announcements
+• Show your membership card
+• Review your membership details and request changes
+
+Requires an account with a club that uses HUBIplan.
