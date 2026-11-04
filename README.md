@@ -57,6 +57,10 @@ Bildschirmfotos sind dort gesperrt.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
+- Aufgaben in Einheiten und Abteilungen: offene und erledigte Aufgaben lesen, private
+  Aufgaben mit optionaler Frist anlegen, mit Bearbeitungsrecht erledigen und wieder öffnen;
+  Änderungen lassen sich im Hinweis rückgängig machen. Auch ein Konto nur mit Aufgabenleserecht
+  erreicht diesen Bereich nach der üblichen Freischaltung und Entsperrung.
 - Mitglieder suchen, anrufen und bearbeiten (Stammdaten, Mitgliedsart, Untereinheit,
   Beitrag, Austritt, Wiedereintritt, Ehrungen, Zusatzfelder, Bankverbindung) mit
   Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen
@@ -67,6 +71,39 @@ Bildschirmfotos sind dort gesperrt.
 - offene Rechnungen suchen, Barzahlung verbuchen, Quittung als PDF teilen
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,
   Belegnummer aus dem Kassenbuch)
+
+### Aufgaben auf dem Telefon
+
+Unter **Verwaltung › Aufgaben** wählst du die Einheit oder Abteilung und „Offen“ oder
+„Erledigt“. Eine neue Aufgabe ist zunächst privat. Eine Uhrzeit braucht ein Datum;
+die Frist gilt in der angezeigten Zeitzone Europe/Berlin. Zum Teilen und für Anhänge,
+Serienregeln und Verteilung über Ebenen dient die Aufgabenansicht im Browser. In der App
+lassen sich auch freigegebene Aufgaben und lokale Ausgaben solcher Serien erledigen,
+soweit der Server es erlaubt. Eine zentrale Vorlage für einzelne Zielkopien wird nicht
+als Ganzes erledigt. Wiederöffnen kann bei einer bereits bearbeiteten Folgeausgabe
+abgelehnt werden; dann neu laden. Bei einem Versionskonflikt wird keine Änderung erzwungen.
+
+Push-Hinweise öffnen die konkrete Aufgabe im zugehörigen Konto und Bereich nach der
+Verwaltungsentsperrung. Die App lädt Inhalt und Rechte neu; alte Hinweise oder entzogene
+Freigaben geben keinen Zugriff. Auf dem Sperrbildschirm steht standardmäßig nur ein
+neutraler Hinweis. Titel und Versandkanäle kannst du unter „Mein Konto › Benachrichtigungen“
+in HUBIplan einstellen, den Android-Kanal „Aufgaben“ in den Systemeinstellungen.
+Ohne Push werden Aufgaben beim Öffnen oder Aktualisieren der Liste geladen.
+Aufgabeninhalte und Entwürfe werden nicht lokal gespeichert. Vor dem Verlassen eines
+Formulars fragt die App nach; eine Gerätesperre verwirft den privaten Entwurf.
+Nach einem Verbindungsabbruch beim Anlegen zuerst die Liste aktualisieren, bevor du
+dieselbe Aufgabe erneut anlegst: Es kann sein, dass sie den Server bereits erreicht hat.
+
+Benötigt die Aufgaben-Schnittstellen aus HUBIplan A1–A6 (PRs 128–133).
+
+**English:** In **Administration › Tasks**, choose a unit or department and view open or
+completed tasks. Create a private task with an optional due date and time (Europe/Berlin),
+or complete and reopen tasks when permitted. Sharing, attachments, recurrence rules and
+distribution are managed in the browser. Push opens the exact task in the matching account
+after administration is unlocked; current permissions are always checked by the server.
+Task contents and drafts are kept only in memory. Leaving a form requires confirmation;
+locking administration discards the draft. If creating a task loses connection, refresh
+the list before trying again. This feature requires HUBIplan task APIs A1–A6 (PRs 128–133).
 
 ## Verbinden
 

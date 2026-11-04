@@ -15,6 +15,9 @@ data class PushMessage(
     val title: String = "",
     val text: String = "",
     val from: String = "",
+    val todo: Int? = null,
+    val org: Int? = null,
+    val department: Int? = null,
 ) {
     companion object {
         fun parse(text: String): PushMessage? =

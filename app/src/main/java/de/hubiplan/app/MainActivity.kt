@@ -99,7 +99,14 @@ class MainActivity : FragmentActivity() {
         val circular = intent?.getIntExtra(Notifications.EXTRA_CIRCULAR, -1) ?: -1
         val shortcut = intent?.getStringExtra(Notifications.EXTRA_SHORTCUT_ACCOUNT)
         val account = intent?.getStringExtra(Notifications.EXTRA_ACCOUNT)
-        if (account != null) {
+        val todo = de.hubiplan.app.data.TodoTarget.create(
+            intent?.getStringExtra(Notifications.EXTRA_TODO_SCOPE),
+            intent?.getIntExtra(Notifications.EXTRA_TODO_UNIT, -1),
+            intent?.getIntExtra(Notifications.EXTRA_TODO, -1),
+        )
+        if (account != null && todo != null) {
+            vm.openTodoNotification(account, todo)
+        } else if (account != null && !intent.hasExtra(Notifications.EXTRA_TODO)) {
             vm.openNotification(account, access, circular)
         } else if (shortcut != null && access > 0) {
             // Verknüpfung auf dem Startbildschirm: Konto und Einheit dieser Verknüpfung
@@ -108,6 +115,9 @@ class MainActivity : FragmentActivity() {
         // Alte Hinweise ohne Kontokennung öffnen nur die App. Ein Platz allein
         // beweist nicht, dass dort noch die ursprüngliche Verbindung liegt.
         intent?.removeExtra(Notifications.EXTRA_CIRCULAR)
+        intent?.removeExtra(Notifications.EXTRA_TODO)
+        intent?.removeExtra(Notifications.EXTRA_TODO_SCOPE)
+        intent?.removeExtra(Notifications.EXTRA_TODO_UNIT)
         intent?.removeExtra(Notifications.EXTRA_SLOT)
         intent?.removeExtra(Notifications.EXTRA_SHORTCUT_ACCOUNT)
         intent?.removeExtra(Notifications.EXTRA_ACCOUNT)
