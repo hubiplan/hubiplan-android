@@ -161,6 +161,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedTodo = MutableStateFlow<de.hubiplan.app.data.TodoTarget?>(null)
     val selectedTodo: StateFlow<de.hubiplan.app.data.TodoTarget?> = _selectedTodo
     val todoFormActive = MutableStateFlow(false)
+    private val _deferredCircular = MutableStateFlow<DeferredCircular?>(null)
+    val deferredCircular: StateFlow<DeferredCircular?> = _deferredCircular
 
     fun selectTodo(target: de.hubiplan.app.data.TodoTarget?) { _selectedTodo.value = target }
     fun todoHandled() { _openTodo.value = null }
@@ -424,8 +426,6 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val openRequest: StateFlow<Pair<Int, Int>?> = _openRequest
 
     data class DeferredCircular(val slot: Int?, val accountId: String?, val accessId: Int, val circularId: Int)
-    private val _deferredCircular = MutableStateFlow<DeferredCircular?>(null)
-    val deferredCircular: StateFlow<DeferredCircular?> = _deferredCircular
     fun clearDeferredCircular() { _deferredCircular.value = null }
     fun resumeCircular(request: DeferredCircular) {
         _deferredCircular.value = null
