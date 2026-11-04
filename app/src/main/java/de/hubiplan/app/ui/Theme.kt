@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import de.hubiplan.app.data.Theme
 
 /**
@@ -21,38 +22,44 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     val onPrimary = parseHexColor(theme?.onPrimary) ?: WHITE
     val accent = parseHexColor(theme?.accent) ?: DEFAULT_ACCENT
     val onAccent = parseHexColor(theme?.onAccent) ?: BLACK
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    val surfaces = listOf(base.surface, base.background, base.surfaceVariant,
+        base.surfaceContainerLowest, base.surfaceContainerLow, base.surfaceContainer,
+        base.surfaceContainerHigh, base.surfaceContainerHighest).map { it.toArgb().toLong() and 0xFFFFFFFFL }
+    fun on(color: Long, preferred: Long) = if (contrast(color, preferred) >= 4.5) preferred else readableOn(color)
     return if (!dark) {
         // Primärfarbe dient in Material als Text- und Rahmenfarbe (Textknöpfe, aktive Felder,
         // Schalter): bei hellen Vereinsfarben abdunkeln (Barrierefreiheit A-03). Die
         // unveränderte Vereinsfarbe bleibt für die Kopfleiste (LocalBrand).
-        val uiPrimary = withContrast(primary, listOf(WHITE, LIGHT_SURFACE), BLACK)
+        val uiPrimary = withContrast(primary, surfaces, BLACK)
+        val uiAccent = withContrast(accent, surfaces, BLACK)
         lightColorScheme(
             primary = Color(uiPrimary),
-            onPrimary = Color(if (uiPrimary == primary) onPrimary else readableOn(uiPrimary)),
+            onPrimary = Color(on(uiPrimary, onPrimary)),
             primaryContainer = Color(mix(primary, WHITE, 0.85f)),
-            onPrimaryContainer = Color(mix(primary, BLACK, 0.5f)),
-            secondary = Color(accent),
-            onSecondary = Color(onAccent),
+            onPrimaryContainer = Color(readableOn(mix(primary, WHITE, 0.85f))),
+            secondary = Color(uiAccent),
+            onSecondary = Color(on(uiAccent, onAccent)),
             secondaryContainer = Color(mix(accent, WHITE, 0.8f)),
-            onSecondaryContainer = Color(mix(accent, BLACK, 0.6f)),
-            tertiary = Color(accent),
-            onTertiary = Color(onAccent),
+            onSecondaryContainer = Color(readableOn(mix(accent, WHITE, 0.8f))),
+            tertiary = Color(uiAccent),
+            onTertiary = Color(on(uiAccent, onAccent)),
         )
     } else {
         // Im Dunkeln hellere Töne derselben Farben, damit Text lesbar bleibt
-        val lightPrimary = withContrast(mix(primary, WHITE, 0.45f), listOf(DARK_SURFACE), WHITE)
-        val lightAccent = mix(accent, WHITE, 0.3f)
+        val lightPrimary = withContrast(mix(primary, WHITE, 0.45f), surfaces, WHITE)
+        val lightAccent = withContrast(mix(accent, WHITE, 0.3f), surfaces, WHITE)
         darkColorScheme(
             primary = Color(lightPrimary),
-            onPrimary = Color(mix(primary, BLACK, 0.6f)),
+            onPrimary = Color(readableOn(lightPrimary)),
             primaryContainer = Color(mix(primary, BLACK, 0.35f)),
-            onPrimaryContainer = Color(mix(primary, WHITE, 0.85f)),
+            onPrimaryContainer = Color(readableOn(mix(primary, BLACK, 0.35f))),
             secondary = Color(lightAccent),
-            onSecondary = Color(mix(accent, BLACK, 0.7f)),
+            onSecondary = Color(readableOn(lightAccent)),
             secondaryContainer = Color(mix(accent, BLACK, 0.5f)),
-            onSecondaryContainer = Color(mix(accent, WHITE, 0.85f)),
+            onSecondaryContainer = Color(readableOn(mix(accent, BLACK, 0.5f))),
             tertiary = Color(lightAccent),
-            onTertiary = Color(mix(accent, BLACK, 0.7f)),
+            onTertiary = Color(readableOn(lightAccent)),
         )
     }
 }

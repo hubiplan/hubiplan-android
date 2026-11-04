@@ -512,14 +512,17 @@ fun ConfirmChangeDialog(preview: Preview, onDismiss: () -> Unit, onConfirm: () -
 
 /** Auswahl aus einer kurzen Liste (Wert, Beschriftung). */
 @Composable
-fun <T> ChoicePicker(label: String, options: List<Pair<T, String>>, selected: T?, show: (T) -> String, onPick: (T) -> Unit) {
+fun <T> ChoicePicker(label: String, options: List<Pair<T, String>>, selected: T?, show: (T) -> String, field: String? = null, errors: ServerFields? = null, enabled: Boolean = true, onPick: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
+    val error = field?.let { errors?.messages?.get(it) }
+    val base = if (field != null && errors != null) errors.modifier(field) else Modifier
     Column {
         Text(label, style = MaterialTheme.typography.labelMedium)
         androidx.compose.foundation.layout.Box {
             OutlinedButton(
+                enabled = enabled,
                 onClick = { open = true },
-                modifier = Modifier.fillMaxWidth().dropdown(label, selected?.let(show) ?: tr("nichts gewählt"), open),
+                modifier = base.fillMaxWidth().dropdown(label, selected?.let(show) ?: tr("nichts gewählt"), open),
             ) {
                 Text((selected?.let(show) ?: tr("Bitte wählen")) + " ▾")
             }
@@ -527,11 +530,13 @@ fun <T> ChoicePicker(label: String, options: List<Pair<T, String>>, selected: T?
                 options.forEach { (value, text) ->
                     androidx.compose.material3.DropdownMenuItem(text = { Text(text) }, onClick = {
                         open = false
+                        field?.let { errors?.clear(it) }
                         onPick(value)
                     })
                 }
             }
         }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
     }
 }
 
@@ -595,19 +600,24 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
     }
     var types by remember { mutableStateOf<List<MemberTypeItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<DepartmentItem>>(emptyList()) }
-    var type by remember { mutableStateOf<MemberTypeItem?>(null) }
-    var unit by remember { mutableStateOf<DepartmentItem?>(null) }
+    var typeId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val type = types.firstOrNull { it.id == typeId }
+    var unitId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val unit = units.firstOrNull { it.id == unitId }
     var duplicates by remember { mutableStateOf<List<DuplicateItem>?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val fields = rememberServerFields()
     LaunchedEffect(Unit) {
         try {
             types = client.memberTypes()
             units = runCatching { client.departments() }.getOrDefault(emptyList())
         } catch (e: ApiException) {
-            error = errors.message(e)
+            error = fields.receive(e, errors)
         }
     }
+
+    val saved = rememberFormDraft(values, typeId, unitId, busy = busy)
 
     fun admit(person: Int?) {
         val birth = parseGermanDate(values["birth_date"] ?: "")
@@ -628,22 +638,22 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
             busy = true
             try {
                 val created = client.admit(obj(*body.toList().toTypedArray()), key)
+                saved()
                 onDone(created.id, "${created.name} aufgenommen")
             } catch (e: ApiException) {
-                error = errors.message(e)
+                error = fields.receive(e, errors)
             }
             busy = false
         }
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neues Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         for (k in listOf("first_name", "last_name", "birth_date", "street", "postal_code", "city", "email", "phone")) {
-            OutlinedTextField(
-                value = values[k] ?: "",
+            ServerTextField(field = k, errors = fields, enabled = !busy, value = values[k] ?: "",
                 onValueChange = { values = values + (k to it) },
                 label = { Text(if (k == "birth_date") tr("Geburtsdatum (TT.MM.JJJJ)") else FIELD_LABELS[k] ?: k) },
                 singleLine = true,
@@ -659,9 +669,9 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
             )
         }
         ChoicePicker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
-        ChoicePicker(tr("Mitgliedsart"), types.map { it to it.name }, type, { it.name }) { type = it }
-        if (units.isNotEmpty()) ChoicePicker(tr("Untereinheit (optional)"), listOf<DepartmentItem?>(null).map { it to "keine" } + units.map { it to it.label }, unit, { it?.label ?: "keine" }) { unit = it }
-        DateInput(tr("Eintritt am"), values["entry_date"] ?: "") { values = values + ("entry_date" to it) }
+        ChoicePicker(tr("Mitgliedsart"), types.map { it to it.name }, type, { it.name }, field = "member_type", errors = fields, enabled = !busy) { typeId = it?.id }
+        if (units.isNotEmpty()) ChoicePicker(tr("Untereinheit (optional)"), listOf<DepartmentItem?>(null).map { it to "keine" } + units.map { it to it.label }, unit, { it?.label ?: "keine" }, field = "department_ids", errors = fields, enabled = !busy) { unitId = it?.id }
+        ServerTextField(field = "entry_date", errors = fields, value = values["entry_date"] ?: "", onValueChange = { values = values + ("entry_date" to it) }, label = { Text(tr("Eintritt am")) }, enabled = !busy, singleLine = true, trailingIcon = { DatePickButton(values["entry_date"].orEmpty()) { values = values + ("entry_date" to it) } })
         Button(
             enabled = !busy,
             onClick = {
@@ -682,7 +692,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                             val found = client.duplicates(values["last_name"]!!, values["first_name"]!!, birth)
                             if (found.isEmpty()) admit(null) else duplicates = found
                         } catch (e: ApiException) {
-                            error = errors.message(e)
+                            error = fields.receive(e, errors)
                         }
                         busy = false
                     }

@@ -20,7 +20,7 @@ import kotlinx.serialization.json.put
  * Abmelden werden Ordner und Schlüssel gelöscht.
  */
 object LocalAccountData {
-    private val FOLDERS = listOf("entwuerfe", "quittungen", "ausweise", ClubLogo.FOLDER)
+    private val FOLDERS = listOf("entwuerfe", "quittungen", "ausweise", ClubLogo.FOLDER, FormAttachments.FOLDER)
 
     /** Kontokennung wie bisher: Serveradresse und Geräte-Nummer. */
     fun key(server: String, deviceId: Int) = "$server-$deviceId"

@@ -69,21 +69,25 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
     val scope = rememberCoroutineScope()
     var search by remember(client.unitId) { mutableStateOf("") }
     var openOnly by remember(client.unitId) { mutableStateOf(true) }
-    var rows by remember(client.unitId) { mutableStateOf<List<InvoiceItem>?>(null) }
-    var count by remember(client.unitId) { mutableIntStateOf(0) }
-    var page by remember(client.unitId) { mutableIntStateOf(1) }
-    var hasMore by remember(client.unitId) { mutableStateOf(false) }
-    var error by remember(client.unitId) { mutableStateOf<String?>(null) }
+    var attempt by remember(client.unitId) { mutableIntStateOf(0) }
+    // Auch während der Tipp-Pause gehören Treffer und Seitennachladen ausschließlich
+    // zu dieser Auswahl. Alte Coroutinen halten nur den alten Zustand fest.
+    val query = InvoiceQuery(client.unitId, search, openOnly, reload, attempt)
+    var rows by remember(client, query) { mutableStateOf<List<InvoiceItem>?>(null) }
+    var count by remember(client, query) { mutableIntStateOf(0) }
+    var page by remember(client, query) { mutableIntStateOf(1) }
+    var hasMore by remember(client, query) { mutableStateOf(false) }
+    var error by remember(client, query) { mutableStateOf<String?>(null) }
+    var loadingMore by remember(client, query) { mutableStateOf(false) }
     LaunchedEffect(Unit) { withContext(Dispatchers.IO) { ReceiptCache.clear(context) } }
-    LaunchedEffect(client.unitId, search, openOnly, reload) {
+    LaunchedEffect(client, query) {
         delay(300) // erst suchen, wenn die Eingabe ruht
         try {
-            val first = client.invoices(search, 1, openOnly)
+            val first = client.invoices(query.search, 1, query.openOnly)
             rows = first.results
             count = first.count
             hasMore = first.next != null
             page = 1
-            error = null
         } catch (e: ApiException) {
             error = errors.message(e)
         }
@@ -103,6 +107,9 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
                     FilterChip(selected = !openOnly, onClick = { openOnly = false }, label = { Text(tr("Alle")) })
                 }
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
+                if (rows == null && error != null) {
+                    OutlinedButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
+                }
                 val list = rows
                 if (list == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
                 if (list != null) {
@@ -124,17 +131,24 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
         if (hasMore) {
             item {
                 TextButton(onClick = {
+                    if (loadingMore) return@TextButton
+                    loadingMore = true
+                    error = null
                     scope.launch {
                         try {
-                            val next = client.invoices(search, page + 1, openOnly)
+                            val next = client.invoices(query.search, page + 1, query.openOnly)
                             rows = rows.orEmpty() + next.results
                             hasMore = next.next != null
                             page++
                         } catch (e: ApiException) {
                             error = errors.message(e)
+                        } finally {
+                            loadingMore = false
                         }
                     }
-                }, modifier = Modifier.padding(8.dp)) { Text(tr("Weitere laden")) }
+                }, enabled = !loadingMore, modifier = Modifier.padding(8.dp)) {
+                    Text(if (loadingMore) tr("Wird geladen …") else tr("Weitere laden"))
+                }
             }
         }
         item {

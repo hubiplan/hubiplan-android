@@ -399,12 +399,13 @@ class PhotoPicker(val camera: () -> Unit, val gallery: () -> Unit)
 fun rememberPhotoPicker(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit): PhotoPicker {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var cameraFile by remember { mutableStateOf<File?>(null) }
+    var cameraPath by rememberSaveable { mutableStateOf<String?>(null) }
+    val cameraFile = cameraPath?.let(::File)
     fun load(uri: Uri) {
         scope.launch {
             val bitmap = withContext(Dispatchers.IO) { runCatching { PhotoPrep.load(context, uri) }.getOrNull() }
             cameraFile?.delete()
-            cameraFile = null
+            cameraPath = null
             if (bitmap == null) onError(tr("Das Bild ließ sich nicht öffnen.")) else onPhoto(bitmap)
         }
     }
@@ -414,8 +415,8 @@ fun rememberPhotoPicker(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit): P
     }
     fun startCamera() {
         val dir = File(context.cacheDir, "fotos").apply { mkdirs() }
-        val file = File(dir, "beleg.jpg")
-        cameraFile = file
+        val file = File(dir, "beleg-${UUID.randomUUID()}.jpg")
+        cameraPath = file.absolutePath
         takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.dateien", file))
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
@@ -444,13 +445,17 @@ fun BookingScreen(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
     var error by remember(id) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var refresh by remember { mutableIntStateOf(0) }
+    var loading by remember(id) { mutableStateOf(true) }
+    var loadError by remember(id) { mutableStateOf<String?>(null) }
     LaunchedEffect(id, refresh) {
+        loading = true
+        loadError = null
         try {
             booking = client.booking(id)
             error = null
         } catch (e: ApiException) {
-            error = errors.message(e)
-        }
+            loadError = errors.message(e)
+        } finally { loading = false }
     }
     val picker = rememberPhotoPicker(onPhoto = { bitmap ->
         scope.launch {
@@ -469,8 +474,13 @@ fun BookingScreen(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
-        if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        if (booking == null) Text(tr("Buchung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        if (busy || loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
+        loadError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true))
+            TextButton(onClick = { refresh++ }) { Text(tr("Erneut laden")) }
+        }
         val b = booking ?: return@Column
         Text(b.text.ifBlank { b.kindLabel }, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text("${b.kindLabel} · ${formatMoney(b.amount)}", style = MaterialTheme.typography.titleMedium)
@@ -517,6 +527,9 @@ fun BookingForm(
     // Eingaben überstehen Drehen und kurze Unterbrechungen (UX-Audit 31.10. A02)
     val key = rememberSaveable { UUID.randomUUID().toString() }
     var photo by remember { mutableStateOf<Bitmap?>(null) }
+    val context = LocalContext.current
+    val attachments = remember(client.accountKey) { de.hubiplan.app.data.FormAttachments(context, client.accountKey) }
+    var photoKey by rememberSaveable { mutableStateOf<String?>(null) }
     var kind by rememberSaveable { mutableStateOf("expense") }
     var amount by rememberSaveable { mutableStateOf("") }
     var date by rememberSaveable { mutableStateOf(LocalDate.now().format(DAY_INPUT)) }
@@ -524,21 +537,49 @@ fun BookingForm(
     var counterparty by rememberSaveable { mutableStateOf("") }
     var accounts by remember { mutableStateOf<List<FinanceAccount>>(emptyList()) }
     var categories by remember { mutableStateOf<List<FinanceCategory>>(emptyList()) }
-    var account by remember { mutableStateOf<FinanceAccount?>(null) }
-    var category by remember { mutableStateOf<FinanceCategory?>(null) }
+    var accountId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var categoryId by rememberSaveable { mutableStateOf<Int?>(null) }
+    val account = accounts.firstOrNull { it.id == accountId } ?: if (accountId == null) accounts.firstOrNull { it.kind == "cash" } ?: accounts.firstOrNull() else null
+    val category = categoriesFor(categories, kind).firstOrNull { it.id == categoryId }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val fields = rememberServerFields()
     LaunchedEffect(Unit) {
         try {
             accounts = client.accounts()
             categories = client.categories()
             // Meist die Barkasse
-            account = accounts.firstOrNull { it.kind == "cash" } ?: accounts.firstOrNull()
+            // Automatische Vorgabe nur auflösen, gespeicherte IDs niemals überschreiben.
         } catch (e: ApiException) {
-            error = errors.message(e)
+            error = fields.receive(e, errors)
         }
     }
-    val picker = rememberPhotoPicker(onPhoto = { photo = it }, onError = { error = it })
+    LaunchedEffect(photoKey) {
+        val ref = photoKey ?: return@LaunchedEffect
+        if (photo != null) return@LaunchedEffect
+        try {
+            photo = withContext(Dispatchers.IO) {
+                val bytes = attachments.read(ref)
+                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: throw java.io.IOException("Bilddaten")
+            }
+        } catch (_: java.io.IOException) { error = tr("Das Belegfoto konnte nicht wiederhergestellt werden. Bitte erneut auswählen.") }
+        catch (_: java.security.GeneralSecurityException) { error = tr("Das Belegfoto konnte nicht wiederhergestellt werden. Bitte erneut auswählen.") }
+    }
+    val saved = rememberFormDraft(kind, amount, date, text, counterparty, accountId, categoryId, photoKey, busy = busy,
+        onDiscard = { photoKey?.let(attachments::delete) })
+    val picker = rememberPhotoPicker(onPhoto = { bitmap ->
+        scope.launch {
+            busy = true
+            try {
+                val ref = UUID.randomUUID().toString()
+                withContext(Dispatchers.IO) { attachments.write(ref, PhotoPrep.jpeg(bitmap)); photoKey?.let(attachments::delete) }
+                photo = bitmap
+                photoKey = ref
+            } catch (_: java.io.IOException) { error = tr("Das Belegfoto konnte nicht gesichert werden. Bitte erneut versuchen.") }
+            catch (_: java.security.GeneralSecurityException) { error = tr("Das Belegfoto konnte nicht gesichert werden. Bitte erneut versuchen.") }
+            finally { busy = false }
+        }
+    }, onError = { error = it })
     val amountValue = parseAmount(amount)
     val dateValue = parseGermanDate(date)
     val kindCategories = categoriesFor(categories, kind)
@@ -546,22 +587,21 @@ fun BookingForm(
         (kindCategories.isEmpty() || category != null)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neue Buchung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Wird sofort gebucht, nur mit Belegfoto. Ändern und Storno im Browser."), style = MaterialTheme.typography.bodySmall)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         photo?.let { Image(it.asImageBitmap(), contentDescription = tr("Beleg"), contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp)) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = picker.camera) { Text(if (photo == null) tr("Beleg fotografieren") else tr("Neu fotografieren")) }
-            OutlinedButton(onClick = picker.gallery) { Text(tr("Aus der Galerie")) }
+            Button(onClick = picker.camera, enabled = !busy) { Text(if (photo == null) tr("Beleg fotografieren") else tr("Neu fotografieren")) }
+            OutlinedButton(onClick = picker.gallery, enabled = !busy) { Text(tr("Aus der Galerie")) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = kind == "expense", onClick = { kind = "expense"; category = null }, label = { Text(tr("Ausgabe")) })
-            FilterChip(selected = kind == "income", onClick = { kind = "income"; category = null }, label = { Text(tr("Einnahme")) })
+            FilterChip(enabled = !busy, selected = kind == "expense", onClick = { kind = "expense"; categoryId = null }, label = { Text(tr("Ausgabe")) })
+            FilterChip(enabled = !busy, selected = kind == "income", onClick = { kind = "income"; categoryId = null }, label = { Text(tr("Einnahme")) })
         }
-        OutlinedTextField(
-            value = amount,
+        ServerTextField(field = "amount", errors = fields, enabled = !busy, value = amount,
             onValueChange = { amount = it },
             label = { Text(tr("Betrag in €")) },
             singleLine = true,
@@ -569,26 +609,24 @@ fun BookingForm(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = date,
+        ServerTextField(field = "date", errors = fields, enabled = !busy, value = date,
             onValueChange = { date = it },
             label = { Text(tr("Datum (TT.MM.JJJJ)")) },
             singleLine = true,
             isError = dateValue == null,
-            trailingIcon = { DatePickButton(date) { date = it } },
+            trailingIcon = { if (!busy) DatePickButton(date) { date = it } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(value = text, onValueChange = { text = it.take(200) }, label = { Text(tr("Buchungstext")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(
-            value = counterparty,
+        ServerTextField(field = "text", errors = fields, enabled = !busy, value = text, onValueChange = { text = it.take(200) }, label = { Text(tr("Buchungstext")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        ServerTextField(field = "counterparty", errors = fields, enabled = !busy, value = counterparty,
             onValueChange = { counterparty = it.take(200) },
             label = { Text(if (kind == "expense") tr("Empfänger (optional)") else tr("Zahler (optional)")) },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        ChoicePicker(tr("Konto"), accounts.map { it to it.name }, account, { it.name }) { account = it }
-        if (kindCategories.isNotEmpty()) ChoicePicker(tr("Kategorie"), kindCategories.map { it to it.name }, category, { it.name }) { category = it }
+        ChoicePicker(tr("Konto"), accounts.map { it to it.name }, account, { it.name }, field = "account", errors = fields, enabled = !busy) { accountId = it?.id }
+        if (kindCategories.isNotEmpty()) ChoicePicker(tr("Kategorie"), kindCategories.map { it to it.name }, category, { it.name }, field = "category", errors = fields, enabled = !busy) { categoryId = it?.id }
         Button(
             enabled = ready && !busy,
             modifier = Modifier.fillMaxWidth(),
@@ -616,20 +654,24 @@ fun BookingForm(
                     // Erst dauerhaft als Entwurf sichern, dann senden (Audit 31.10., R-CL-01):
                     // bricht die App mitten im Aufruf ab, geht die Buchung nicht verloren; der
                     // Idempotency-Key verhindert doppeltes Buchen beim späteren Senden.
-                    val saved = runCatching { withContext(Dispatchers.IO) { store.save(draft) } }.isSuccess
+                    val persisted = runCatching { withContext(Dispatchers.IO) { store.save(draft) } }.isSuccess
                     try {
                         val booked = client.book(draft, jpeg)
                         withContext(Dispatchers.IO) { store.delete(key) }
+                        saved()
+                        photoKey?.let(attachments::delete)
                         onDone(tr("Gebucht als Nr. {displayNumber}", "displayNumber" to booked.displayNumber))
                     } catch (e: ApiException) {
                         if (e.status == 0) {
                             // Ohne Netz: verschlüsselt aufheben, später senden
-                            if (!saved) withContext(Dispatchers.IO) { store.save(draft) }
+                            if (!persisted) withContext(Dispatchers.IO) { store.save(draft) }
+                            saved()
+                            photoKey?.let(attachments::delete)
                             onDone(tr("Ohne Verbindung: als Entwurf gespeichert, wird später gesendet"))
                         } else {
                             // Abgelehnt: Entwurf wieder entfernen, die Eingaben stehen noch im Formular
                             withContext(Dispatchers.IO) { store.delete(key) }
-                            error = errors.message(e)
+                            error = fields.receive(e, errors)
                         }
                     }
                     busy = false

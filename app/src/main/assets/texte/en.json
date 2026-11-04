@@ -619,5 +619,17 @@
  "Erinnerungen und Freigaben für Aufgaben": "Task reminders and sharing notifications",
  "Aufgabe": "Task",
  "Neuer Aufgabenhinweis": "New task notification",
- "Beschreibung": "Description"
+ "Beschreibung": "Description",
+ "Wird geladen …": "Loading …",
+ "Das Belegfoto konnte nicht wiederhergestellt werden. Bitte erneut auswählen.": "The receipt photo could not be restored. Please select it again.",
+ "Das Belegfoto konnte nicht gesichert werden. Bitte erneut versuchen.": "The receipt photo could not be saved. Please try again.",
+ "Die laufende Unterschrift konnte nicht wiederhergestellt werden. Bitte erneut unterschreiben.": "The unfinished signature could not be restored. Please sign again.",
+ "Bitte prüfe die markierten Angaben.": "Please check the highlighted fields.",
+ "Zahler oder Empfänger": "Payer or payee",
+ "Angabe": "Field",
+ "Buchung": "Booking",
+ "Mitglied": "Member",
+ "Untereinheit": "Sub-unit",
+ "Unterschriftsfeld: {name}": "Signature field: {name}",
+ "Name": "Name"
 }

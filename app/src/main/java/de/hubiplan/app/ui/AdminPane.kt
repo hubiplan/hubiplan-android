@@ -78,6 +78,9 @@ import de.hubiplan.app.tr
 fun AdminPane(main: Screen.Main, vm: AppViewModel) {
     val context = LocalContext.current
     val state by vm.admin.collectAsStateWithLifecycle()
+    val retained = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    val retainedKey = "${main.account.server}-${main.account.deviceId}"
+    rememberFormDraft(Unit, onDiscard = { retained.removeState(retainedKey) })
     // Im Verwaltungsbereich keine Bildschirmfotos und keine Vorschau im App-Wechsler
     DisposableEffect(Unit) {
         val window = context.findActivity()?.window
@@ -130,7 +133,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
                     DeviceUnlock.ask(context, tr("Verwaltung öffnen"), onSuccess = vm::openAdmin, onError = {})
                 }
             }
-            else -> AdminHome(overview.allUnits, overview.until, main, vm)
+            else -> retained.SaveableStateProvider(retainedKey) { AdminHome(overview.allUnits, overview.until, main, vm) }
         }
     }
 }
@@ -249,10 +252,6 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var section by rememberSaveable(unit.key) { mutableStateOf(if (showsTodos(unit)) Section.TODOS else Section.TASKS) }
     var todoId by remember(unit.key) { mutableStateOf<Int?>(null) }
     var creatingTodo by remember(unit.key) { mutableStateOf(false) }
-    DisposableEffect(creatingTodo) {
-        vm.todoFormActive.value = creatingTodo
-        onDispose { vm.todoFormActive.value = false }
-    }
     var member by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var requests by rememberSaveable(unit.key) { mutableStateOf(false) }
     var admitting by rememberSaveable(unit.key) { mutableStateOf(false) }
@@ -301,36 +300,31 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
 
     // Android-Zurück geht eine Ebene zurück wie „‹ Zurück“ (UX-Audit 31.10. A01); aus einem
     // Formular erst nach Rückfrage, damit Eingaben nicht unbemerkt verloren gehen.
-    var leaveForm by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val leave = LocalFormLeaveGuard.current
+    fun requestLeave(action: () -> Unit) { if (leave == null) action() else leave.request(action) }
     val inForm = newBooking || newReceipt || admitting || creatingEvent != null || creatingTodo
     val nested = inForm || invoiceId != null || bookingId != null || eventId != null || member != null || requests || todoId != null
     androidx.activity.compose.BackHandler(enabled = nested) {
-        when {
-            creatingTodo -> leaveForm = { creatingTodo = false }
-            todoId != null -> { todoId = null; reload++ }
-            invoiceId != null -> { invoiceId = null; reload++ }
-            newReceipt -> leaveForm = { newReceipt = false; reload++ }
-            newBooking -> leaveForm = { newBooking = false }
-            bookingId != null -> bookingId = null
-            creatingEvent != null -> leaveForm = { creatingEvent = null }
-            eventId != null -> { eventId = null; eventStart = null }
-            admitting -> leaveForm = { admitting = false }
-            member != null -> member = null
-            requests -> requests = false
+        requestLeave {
+            when {
+                creatingTodo -> creatingTodo = false
+                todoId != null -> { todoId = null; reload++ }
+                invoiceId != null -> { invoiceId = null; reload++ }
+                newReceipt -> { newReceipt = false; reload++ }
+                newBooking -> newBooking = false
+                bookingId != null -> bookingId = null
+                creatingEvent != null -> creatingEvent = null
+                eventId != null -> { eventId = null; eventStart = null }
+                admitting -> admitting = false
+                member != null -> member = null
+                requests -> requests = false
+            }
         }
     }
-
     val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
-    LaunchedEffect(pendingTodo) {
+    LaunchedEffect(pendingTodo, leave?.busy) {
         val pending = pendingTodo ?: return@LaunchedEffect
-        if (!pending.ready) {
-            leaveForm = {
-                vm.todoFormActive.value = false
-                vm.todoHandled()
-                vm.openTodoNotification(pending.accountId, pending.target)
-            }
-            return@LaunchedEffect
-        }
+        if (!pending.ready) return@LaunchedEffect // Entscheidung vor einem Kontowechsel gehört dem MainScreen.
         if (pending.accountId != de.hubiplan.app.sync.RsvpActionReceiver.accountId(main.account)) {
             vm.todoHandled()
             return@LaunchedEffect
@@ -340,43 +334,26 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             vm.todoHandled()
             snackbar.showSnackbar(tr("Die Aufgabe ist nicht mehr verfügbar oder nicht freigegeben."))
         } else {
-            val navigate = {
-                creatingTodo = false
-                unitKey = targetUnit.key
-                vm.todoHandled()
-                vm.selectTodo(pending.target)
-            }
-            if (inForm) leaveForm = navigate else navigate()
+            val navigate = { creatingTodo = false; unitKey = targetUnit.key; vm.todoHandled(); vm.selectTodo(pending.target) }
+            if (leave == null) navigate() else leave.request(action = navigate, onStay = vm::todoHandled)
         }
     }
     val selectedTodo by vm.selectedTodo.collectAsStateWithLifecycle()
-    LaunchedEffect(selectedTodo, unit.key) {
+    LaunchedEffect(selectedTodo, unit.key, leave?.busy) {
         val target = selectedTodo ?: return@LaunchedEffect
         if (target.unitKey == unit.key) {
-            member = null; requests = false; admitting = false; eventId = null; creatingEvent = null
-            bookingId = null; newBooking = false; newReceipt = false; invoiceId = null
-            section = Section.TODOS
-            todoId = target.todoId
-            vm.selectTodo(null)
+            val navigate = {
+                member = null; requests = false; admitting = false; eventId = null; eventStart = null; creatingEvent = null
+                bookingId = null; newBooking = false; newReceipt = false; invoiceId = null; creatingTodo = false
+                section = Section.TODOS; todoId = target.todoId; vm.selectTodo(null)
+            }
+            if (leave == null) navigate() else leave.request(action = navigate, onStay = { vm.selectTodo(null) })
         }
-    }
-    leaveForm?.let { leave ->
-        AlertDialog(
-            onDismissRequest = { leaveForm = null; vm.todoHandled() },
-            title = { Text(tr("Eingaben verwerfen?")) },
-            text = { Text(tr("Was du in diesem Formular eingegeben hast, geht verloren.")) },
-            confirmButton = { TextButton(onClick = { leaveForm = null; leave() }) { Text(tr("Verwerfen")) } },
-            dismissButton = { TextButton(onClick = { leaveForm = null; vm.todoHandled() }) { Text(tr("Weiter bearbeiten")) } },
-        )
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            UnitPicker(units, unit) { picked ->
-                if (picked.key != unit.key) {
-                    if (inForm) leaveForm = { unitKey = picked.key } else unitKey = picked.key
-                }
-            }
+            UnitPicker(units, unit) { picked -> if (picked.key != unit.key) requestLeave { unitKey = picked.key } }
             if (!nested) {
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
@@ -384,7 +361,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     sections.forEach { s ->
-                        FilterChip(selected = section == s, onClick = { section = s }, label = { Text(s.label) })
+                        FilterChip(selected = section == s, onClick = { if (section != s) requestLeave { section = s } }, label = { Text(s.label) })
                     }
                     if (hasMembers) TextButton(onClick = {
                         scanner.launch(
@@ -406,7 +383,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             val openInvoice = invoiceId
             val openTodo = todoId
             when {
-                creatingTodo && showsTodos(unit) -> TodoCreateScreen(client, errors, onBack = { leaveForm = { creatingTodo = false } }) { id, changeSet ->
+                creatingTodo && showsTodos(unit) -> TodoCreateScreen(client, errors, onBack = { requestLeave { creatingTodo = false } }) { id, changeSet ->
                     creatingTodo = false
                     todoId = id
                     onChanged(tr("Aufgabe angelegt"), changeSet)
@@ -417,17 +394,14 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     invoiceId = null
                     reload++
                 }, onChanged = onChanged)
-                newReceipt -> ReceiptScreen(client, unit.name, receiptStore, errors, onBack = {
-                    newReceipt = false
-                    reload++
-                }, onChanged = onChanged)
-                newBooking -> BookingForm(client, unit.name, drafts, errors, onBack = { newBooking = false }) { text ->
+                newReceipt -> ReceiptScreen(client, unit.name, receiptStore, errors, onBack = { requestLeave { newReceipt = false; reload++ } }, onChanged = onChanged)
+                newBooking -> BookingForm(client, unit.name, drafts, errors, onBack = { requestLeave { newBooking = false } }) { text ->
                     newBooking = false
                     reload++
                     onChanged(text, null)
                 }
                 openBooking != null -> BookingScreen(client, openBooking, FINANCE_EDIT in unit.permissions, errors, onBack = { bookingId = null }, onChanged = onChanged)
-                rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { creatingEvent = null }) { id, text, changeSet ->
+                rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { requestLeave { creatingEvent = null } }) { id, text, changeSet ->
                     creatingEvent = null
                     eventId = id
                     eventStart = null
@@ -437,7 +411,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     eventId = null
                     eventStart = null
                 }, onChanged = onChanged, reload = reload)
-                admitting -> AdmitScreen(client, errors, onBack = { admitting = false }) { id, text ->
+                admitting -> AdmitScreen(client, errors, onBack = { requestLeave { admitting = false } }) { id, text ->
                     admitting = false
                     member = id
                     onChanged(text, null)

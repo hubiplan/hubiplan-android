@@ -39,8 +39,10 @@ fun contrast(a: Long, b: Long): Double {
 }
 
 /** Besser lesbare Schrift (weiß oder fast schwarz) auf einer Farbfläche. */
-fun readableOn(background: Long): Long =
-    if (contrast(background, WHITE) >= contrast(background, DARK_TEXT)) WHITE else DARK_TEXT
+fun readableOn(background: Long): Long {
+    val dark = if (contrast(background, DARK_TEXT) >= 4.5) DARK_TEXT else BLACK
+    return if (contrast(background, WHITE) >= contrast(background, dark)) WHITE else dark
+}
 
 const val DARK_TEXT = 0xFF1D2421L
 

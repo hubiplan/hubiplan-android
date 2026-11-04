@@ -448,6 +448,8 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
     var notify by rememberSaveable { mutableStateOf(false) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
+    val fields = rememberServerFields()
+    val saved = rememberFormDraft(title, date, start, end, allDay, location, description, visibility, rsvp, guests, deadline, notify, busy = busy)
     val times = eventTimes(date, start, end, allDay)
     val deadlineIso = deadline.takeIf { it.isNotBlank() }?.let { parseGermanDate(it) }
     val deadlineOk = deadline.isBlank() || deadlineIso != null
@@ -455,14 +457,13 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
     val canRsvp = rsvpAllowed && visibility != "board"
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neuer Termin"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Einmaliger Termin. Serien, Anhänge und Weitergabe an andere Einheiten im Browser."), style = MaterialTheme.typography.bodySmall)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-        OutlinedTextField(value = title, onValueChange = { title = it.take(200) }, label = { Text(tr("Titel")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(
-            value = date,
+        ServerTextField(field = "title", errors = fields, enabled = !busy, value = title, onValueChange = { title = it.take(200) }, label = { Text(tr("Titel")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        ServerTextField(field = if (allDay) "starts_at" else "date", errors = fields, enabled = !busy, value = date,
             onValueChange = { date = it },
             label = { Text(tr("Tag (TT.MM.JJJJ)")) },
             singleLine = true,
@@ -474,8 +475,7 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
         LabeledSwitch(tr("Ganztägig"), allDay, { allDay = it })
         if (!allDay) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = start,
+                ServerTextField(field = "starts_at", errors = fields, enabled = !busy, value = start,
                     onValueChange = { start = it },
                     label = { Text(tr("Beginn (HH:MM)")) },
                     singleLine = true,
@@ -483,8 +483,7 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
                     trailingIcon = { TimePickButton(start) { start = it } },
                     modifier = Modifier.weight(1f),
                 )
-                OutlinedTextField(
-                    value = end,
+                ServerTextField(field = "ends_at", errors = fields, enabled = !busy, value = end,
                     onValueChange = { end = it },
                     label = { Text(tr("Ende (optional)")) },
                     singleLine = true,
@@ -495,15 +494,14 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
             }
         }
         if (times == null) Text(tr("Bitte Tag als TT.MM.JJJJ und Zeit als HH:MM eingeben."), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.announce(urgent = true))
-        OutlinedTextField(value = location, onValueChange = { location = it.take(200) }, label = { Text(tr("Ort (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text(tr("Beschreibung (optional)")) }, minLines = 2, modifier = Modifier.fillMaxWidth())
+        ServerTextField(field = "location", errors = fields, enabled = !busy, value = location, onValueChange = { location = it.take(200) }, label = { Text(tr("Ort (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        ServerTextField(field = "description", errors = fields, enabled = !busy, value = description, onValueChange = { description = it }, label = { Text(tr("Beschreibung (optional)")) }, minLines = 2, modifier = Modifier.fillMaxWidth())
         ChoicePicker(tr("Wer sieht den Termin?"), VISIBILITIES, visibility, { v -> VISIBILITIES.first { it.first == v }.second }) { visibility = it }
         if (canRsvp) {
             LabeledSwitch(tr("Zu- und Absagen"), rsvp, { rsvp = it })
             if (rsvp) {
                 LabeledSwitch(tr("Begleitung erlaubt"), guests, { guests = it })
-                OutlinedTextField(
-                    value = deadline,
+                ServerTextField(field = "rsvp_deadline", errors = fields, enabled = !busy, value = deadline,
                     onValueChange = { deadline = it },
                     label = { Text(tr("Anmeldeschluss (optional, TT.MM.JJJJ)")) },
                     singleLine = true,
@@ -540,9 +538,10 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
                     busy = true
                     try {
                         val r = client.createEvent(obj(*body.toList().toTypedArray()))
+                        saved()
                         onDone(r.value.id, "„${r.value.title}“ angelegt", r.changeSet)
                     } catch (e: ApiException) {
-                        error = errors.message(e)
+                        error = fields.receive(e, errors)
                     }
                     busy = false
                 }

@@ -59,6 +59,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -93,15 +95,29 @@ private class Strokes {
     var current by mutableStateOf<List<Offset>>(emptyList())
     var size by mutableStateOf(IntSize.Zero)
 
-    val isEmpty: Boolean get() = lines.none { it.size > 1 }
+    val isEmpty: Boolean get() = (lines + listOf(current)).none { it.size > 1 }
 
     fun toStrokes(): SignatureStrokes? {
         if (isEmpty || size.width < 10 || size.height < 10) return null
         return SignatureStrokes(
             width = size.width,
             height = size.height,
-            strokes = lines.filter { it.size > 1 }.map { line -> line.map { listOf(it.x.toInt(), it.y.toInt()) } },
+            strokes = (lines + listOf(current)).filter { it.size > 1 }.map { line -> line.map { listOf(it.x.toInt(), it.y.toInt()) } },
         )
+    }
+
+    fun resize(next: IntSize) {
+        if (size.width > 0 && size.height > 0 && size != next) {
+            fun scale(line: List<Offset>) = line.map { Offset(it.x * next.width / size.width, it.y * next.height / size.height) }
+            for (i in lines.indices) lines[i] = scale(lines[i])
+            current = scale(current)
+        }
+        size = next
+    }
+
+    fun restore(data: SignatureStrokes) {
+        size = IntSize(data.width, data.height)
+        lines.addAll(data.strokes.map { line -> line.map { Offset(it[0].toFloat(), it[1].toFloat()) } })
     }
 
     fun clear() {
@@ -121,7 +137,8 @@ private fun SignaturePad(strokes: Strokes, label: String, modifier: Modifier = M
         Canvas(
             Modifier
                 .fillMaxSize()
-                .onSizeChanged { strokes.size = it }
+                .semantics { contentDescription = tr("Unterschriftsfeld: {name}", "name" to label) }
+                .onSizeChanged { strokes.resize(it) }
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
@@ -210,9 +227,32 @@ private tailrec fun Context.activity(): Activity? = when (this) {
  * „Zurück“ fragt, ob die Unterschrift verworfen werden soll.
  */
 @Composable
-private fun SignatureFullscreen(title: String, text: String, onConfirm: (SignatureStrokes) -> Unit, onCancel: () -> Unit) {
+internal fun SignatureFullscreen(title: String, text: String, accountKey: String, onConfirm: (SignatureStrokes) -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
-    val strokes = remember { Strokes() }
+    val attachments = remember(accountKey) { de.hubiplan.app.data.FormAttachments(context, accountKey) }
+    val strokeKey = rememberSaveable { UUID.randomUUID().toString() }
+    var restoreError by remember { mutableStateOf<String?>(null) }
+    val saver = remember(attachments, strokeKey) {
+        androidx.compose.runtime.saveable.Saver<Strokes, String>(
+            save = { state ->
+                try {
+                    val data = state.toStrokes() ?: SignatureStrokes(state.size.width, state.size.height, emptyList())
+                    attachments.write(strokeKey, json.encodeToString(SignatureStrokes.serializer(), data).toByteArray())
+                    strokeKey
+                } catch (_: Exception) { "!nicht-gesichert" }
+            },
+            restore = { ref ->
+                Strokes().also { state ->
+                    try {
+                        state.restore(json.decodeFromString(SignatureStrokes.serializer(), String(attachments.read(ref))))
+                    } catch (_: Exception) { restoreError = tr("Die laufende Unterschrift konnte nicht wiederhergestellt werden. Bitte erneut unterschreiben.") }
+                }
+            },
+        )
+    }
+    val strokes = rememberSaveable(strokeKey, saver = saver) { Strokes() }
+    val signatureSaved = rememberFormDraft(strokes.isEmpty, onDiscard = { attachments.delete(strokeKey) })
+    fun cancel() { signatureSaved(); attachments.delete(strokeKey); onCancel() }
     var askCancel by remember { mutableStateOf(false) }
     DisposableEffect(Unit) {
         // Kein erzwungenes Querformat (WCAG 1.3.4): wer das Telefon nicht drehen kann,
@@ -227,12 +267,13 @@ private fun SignatureFullscreen(title: String, text: String, onConfirm: (Signatu
         }
     }
     BackHandler {
-        if (strokes.isEmpty) onCancel() else askCancel = true
+        if (strokes.isEmpty) cancel() else askCancel = true
     }
     Column(
         Modifier.fillMaxSize().background(Color.White).safeDrawingPadding().padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        restoreError?.let { Text(it, color = Color(0xFFB00020), modifier = Modifier.announce(urgent = true)) }
         Text(text, style = MaterialTheme.typography.titleMedium, color = Color(0xFF222222))
         if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT) {
             Text(tr("Tipp: Telefon quer halten, dann ist mehr Platz."), style = MaterialTheme.typography.bodySmall, color = Color(0xFF444444))
@@ -240,15 +281,15 @@ private fun SignatureFullscreen(title: String, text: String, onConfirm: (Signatu
         SignaturePad(strokes, title, Modifier.fillMaxWidth().weight(1f))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
             TextButton(onClick = { strokes.clear() }, enabled = !strokes.isEmpty) { Text(tr("Löschen")) }
-            OutlinedButton(onClick = { if (strokes.isEmpty) onCancel() else askCancel = true }) { Text(tr("Abbrechen")) }
-            Button(onClick = { strokes.toStrokes()?.let(onConfirm) }, enabled = !strokes.isEmpty) { Text(tr("Bestätigen")) }
+            OutlinedButton(onClick = { if (strokes.isEmpty) cancel() else askCancel = true }) { Text(tr("Abbrechen")) }
+            Button(onClick = { strokes.toStrokes()?.let { signatureSaved(); attachments.delete(strokeKey); onConfirm(it) } }, enabled = !strokes.isEmpty) { Text(tr("Bestätigen")) }
         }
     }
     if (askCancel) {
         AlertDialog(
             onDismissRequest = { askCancel = false },
             title = { Text(tr("Unterschrift verwerfen?")) },
-            confirmButton = { TextButton(onClick = onCancel) { Text(tr("Verwerfen")) } },
+            confirmButton = { TextButton(onClick = ::cancel) { Text(tr("Verwerfen")) } },
             dismissButton = { TextButton(onClick = { askCancel = false }) { Text(tr("Weiter unterschreiben")) } },
         )
     }
@@ -296,6 +337,9 @@ fun ReceiptScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val receiptKey = rememberSaveable { UUID.randomUUID().toString() }
+    val finalizeKey = rememberSaveable { UUID.randomUUID().toString() }
+    var serverId by rememberSaveable { mutableStateOf<Int?>(null) }
     var choices by remember(client.unitId) { mutableStateOf(store.choices(client.unitId)) }
     var offline by remember { mutableStateOf(false) }
     var receives by rememberSaveable { mutableStateOf(false) }
@@ -319,8 +363,10 @@ fun ReceiptScreen(
     var declineText by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    var done by remember { mutableStateOf<CashReceiptItem?>(null) }
-    var waiting by remember { mutableStateOf(false) }
+    val fields = rememberServerFields()
+    var doneJson by rememberSaveable { mutableStateOf<String?>(null) }
+    val done = doneJson?.let { json.decodeFromString(CashReceiptItem.serializer(), it) }
+    var waiting by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(client.unitId) {
         try {
@@ -339,7 +385,7 @@ fun ReceiptScreen(
             withContext(Dispatchers.IO) { store.saveChoices(client.unitId, fresh) }
             offline = false
         } catch (e: ApiException) {
-            if (e.status == 0) offline = true else error = errors.message(e)
+            if (e.status == 0) offline = true else error = fields.receive(e, errors)
         }
     }
 
@@ -365,6 +411,8 @@ fun ReceiptScreen(
         confirmed = false
     }
 
+    val saved = rememberFormDraft(receives, name, email, amount, purpose, accountId, categoryId,
+        treasurerJson, otherJson, useStored, declined, confirmed, sendMail, busy = busy)
     val signRole = signing
     if (signRole != null) {
         val text = if (signRole == "treasurer") {
@@ -373,6 +421,7 @@ fun ReceiptScreen(
             confirmationText(receives, parsedAmount ?: "0", unitName, purpose)
         }
         SignatureFullscreen(
+            accountKey = client.accountKey,
             title = if (signRole == "treasurer") tr("Kassierer") else name,
             text = text,
             onConfirm = { s ->
@@ -397,8 +446,9 @@ fun ReceiptScreen(
         val acc = account ?: return
         val cat = category ?: return
         val draft = ReceiptDraft(
-            key = UUID.randomUUID().toString(),
-            finalizeKey = UUID.randomUUID().toString(),
+            key = receiptKey,
+            finalizeKey = finalizeKey,
+            serverId = serverId,
             unitId = client.unitId,
             direction = if (receives) "in" else "out",
             counterpartyName = name.trim(),
@@ -424,14 +474,17 @@ fun ReceiptScreen(
             var current = draft
             try {
                 val result = client.submitReceipt(current) { id ->
+                    serverId = id
                     current = current.copy(serverId = id)
                     store.save(current)
                 }
                 withContext(Dispatchers.IO) { store.delete(draft.key) }
-                done = result
+                saved()
+                doneJson = json.encodeToString(CashReceiptItem.serializer(), result)
                 onChanged(tr("Quittung {number} abgeschlossen", "number" to result.number), null)
             } catch (e: ApiException) {
                 if (e.status == 0) {
+                    saved()
                     waiting = true
                 } else {
                     // Noch nicht auf dem Server: Entwurf verwerfen, die Angaben bleiben im Formular.
@@ -439,7 +492,7 @@ fun ReceiptScreen(
                     withContext(Dispatchers.IO) {
                         if (current.serverId == null) store.delete(draft.key) else store.save(current.copy(error = e.message))
                     }
-                    error = errors.message(e)
+                    error = fields.receive(e, errors)
                 }
             }
             busy = false
@@ -467,7 +520,7 @@ fun ReceiptScreen(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Quittung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -483,7 +536,7 @@ fun ReceiptScreen(
                         Button(onClick = { pdf(result.id, true, result.number) }, enabled = !busy) { Text(tr("Quittung teilen")) }
                         OutlinedButton(onClick = { pdf(result.id, false, result.number) }, enabled = !busy) { Text(tr("Ansehen")) }
                     }
-                    TextButton(onClick = onBack) { Text(tr("Fertig")) }
+                    TextButton(onClick = onBack, enabled = !busy) { Text(tr("Fertig")) }
                 }
             }
             return@Column
@@ -496,7 +549,7 @@ fun ReceiptScreen(
                         tr("Die Quittung liegt verschlüsselt auf diesem Telefon und bekommt ihre Belegnummer, sobald wieder Netz da ist (unter Kasse, spätestens nach 30 Tagen). Das Datum ist der Zeitpunkt der Unterschrift."),
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    TextButton(onClick = onBack) { Text(tr("Fertig")) }
+                    TextButton(onClick = onBack, enabled = !busy) { Text(tr("Fertig")) }
                 }
             }
             return@Column
@@ -528,8 +581,7 @@ fun ReceiptScreen(
                 }
             }, label = { Text(tr("Verein zahlt aus")) })
         }
-        OutlinedTextField(
-            value = name,
+        ServerTextField(field = "counterparty_name", errors = fields, enabled = !busy, value = name,
             onValueChange = {
                 name = it
                 signedChanged()
@@ -538,8 +590,7 @@ fun ReceiptScreen(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = amount,
+        ServerTextField(field = "amount", errors = fields, enabled = !busy, value = amount,
             onValueChange = {
                 amount = it
                 signedChanged()
@@ -550,8 +601,7 @@ fun ReceiptScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             modifier = Modifier.fillMaxWidth(),
         )
-        OutlinedTextField(
-            value = purpose,
+        ServerTextField(field = "purpose", errors = fields, enabled = !busy, value = purpose,
             onValueChange = {
                 purpose = it
                 signedChanged()
@@ -561,13 +611,12 @@ fun ReceiptScreen(
             modifier = Modifier.fillMaxWidth(),
         )
         if (accounts.size > 1) {
-            ChoicePicker(tr("Barkasse"), accounts.map { it to it.name }, account, { it.name }) { accountId = it.id }
+            ChoicePicker(tr("Barkasse"), accounts.map { it to it.name }, account, { it.name }, field = "account", errors = fields, enabled = !busy) { accountId = it.id }
         } else {
             Text(tr("in die {x1}", "x1" to accounts.first().name), style = MaterialTheme.typography.bodySmall)
         }
-        ChoicePicker(tr("Kategorie"), categories.map { it to it.name }, category, { it.name }) { categoryId = it.id }
-        OutlinedTextField(
-            value = email,
+        ChoicePicker(tr("Kategorie"), categories.map { it to it.name }, category, { it.name }, field = "category", errors = fields, enabled = !busy) { categoryId = it.id }
+        ServerTextField(field = "email", errors = fields, enabled = !busy, value = email,
             onValueChange = { email = it },
             label = { Text(tr("E-Mail für das PDF (optional)")) },
             singleLine = true,
@@ -629,7 +678,7 @@ fun ReceiptScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(tr("Dann gilt nur deine Unterschrift als Kassierer, wie bei einer Papierquittung."))
-                    OutlinedTextField(value = declineText, onValueChange = { declineText = it }, label = { Text(tr("Grund")) })
+                    ServerTextField(field = "no_signature_reason", errors = fields, enabled = !busy, value = declineText, onValueChange = { declineText = it }, label = { Text(tr("Grund")) })
                 }
             },
             confirmButton = {

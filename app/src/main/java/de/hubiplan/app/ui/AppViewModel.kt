@@ -423,7 +423,21 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _openRequest = MutableStateFlow<Pair<Int, Int>?>(null)
     val openRequest: StateFlow<Pair<Int, Int>?> = _openRequest
 
+    data class DeferredCircular(val slot: Int?, val accountId: String?, val accessId: Int, val circularId: Int)
+    private val _deferredCircular = MutableStateFlow<DeferredCircular?>(null)
+    val deferredCircular: StateFlow<DeferredCircular?> = _deferredCircular
+    fun clearDeferredCircular() { _deferredCircular.value = null }
+    fun resumeCircular(request: DeferredCircular) {
+        _deferredCircular.value = null
+        if (request.accountId != null) openNotification(request.accountId, request.accessId, request.circularId)
+        else request.slot?.let { openCircular(it, request.accessId, request.circularId) }
+    }
+
     fun openCircular(slot: Int, accessId: Int, circularId: Int) {
+        if (todoFormActive.value) {
+            _deferredCircular.value = DeferredCircular(slot, null, accessId, circularId)
+            return
+        }
         _openRequest.value = accessId to circularId
         if (slot != accounts.active.value) {
             // Mitteilung eines anderen Kontos: dorthin wechseln, mit dem Zugang der Mitteilung
@@ -440,6 +454,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Ein alter Hinweis darf keinen neu belegten Speicherplatz öffnen. */
     fun openNotification(accountId: String, accessId: Int, circularId: Int) {
+        if (todoFormActive.value) {
+            _deferredCircular.value = DeferredCircular(null, accountId, accessId, circularId)
+            return
+        }
         viewModelScope.launch {
             val (slot, account) = accounts.list().firstOrNull { (_, account) ->
                 de.hubiplan.app.sync.RsvpActionReceiver.accountId(account) == accountId

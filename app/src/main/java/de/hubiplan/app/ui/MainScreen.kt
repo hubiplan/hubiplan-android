@@ -57,34 +57,49 @@ val TWO_PANE_MIN_WIDTH = 720.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(main: Screen.Main, vm: AppViewModel) {
+    FormLeaveGuardHost { leave -> MainScreenContent(main, vm, leave) }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLeaveGuard) {
     var tab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(openRequest) { if (openRequest != null) tab = Tab.MITTEILUNGEN }
+    LaunchedEffect(openRequest, leave.busy) { if (openRequest != null && tab != Tab.MITTEILUNGEN) leave.request(action = { tab = Tab.MITTEILUNGEN }, onStay = vm::openHandled) }
     // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
     val admin by vm.admin.collectAsStateWithLifecycle()
     val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
-    val todoForm by vm.todoFormActive.collectAsStateWithLifecycle()
-    var leaveTab by remember { mutableStateOf<Tab?>(null) }
-    LaunchedEffect(pendingTodo) { if (pendingTodo != null) tab = Tab.VERWALTUNG }
+    val hasDraft = leave.hasDraft || leave.busy
+    androidx.compose.runtime.SideEffect { vm.todoFormActive.value = hasDraft }
+    androidx.compose.runtime.DisposableEffect(vm) { onDispose { vm.todoFormActive.value = false } }
+    LaunchedEffect(pendingTodo, leave.busy) {
+        val pending = pendingTodo ?: return@LaunchedEffect
+        if (!pending.ready) {
+            leave.request(action = {
+                vm.todoFormActive.value = false
+                vm.todoHandled()
+                vm.openTodoNotification(pending.accountId, pending.target)
+            }, onStay = vm::todoHandled)
+        } else if (tab != Tab.VERWALTUNG) leave.request(action = { tab = Tab.VERWALTUNG }, onStay = vm::todoHandled)
+    }
+    val deferredCircular by vm.deferredCircular.collectAsStateWithLifecycle()
+    LaunchedEffect(deferredCircular, leave.busy) {
+        val request = deferredCircular ?: return@LaunchedEffect
+        leave.request(action = {
+            vm.todoFormActive.value = false
+            vm.resumeCircular(request)
+        }, onStay = vm::clearDeferredCircular)
+    }
     val adminVisible = admin.visible || pendingTodo != null
     val tabs = Tab.entries.filter { it != Tab.VERWALTUNG || adminVisible }
     LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
-    leaveTab?.let { next ->
-        androidx.compose.material3.AlertDialog(
-            onDismissRequest = { leaveTab = null },
-            title = { Text(tr("Eingaben verwerfen?")) },
-            text = { Text(tr("Was du in diesem Formular eingegeben hast, geht verloren.")) },
-            confirmButton = { TextButton(onClick = { leaveTab = null; tab = next }) { Text(tr("Verwerfen")) } },
-            dismissButton = { TextButton(onClick = { leaveTab = null }) { Text(tr("Weiter bearbeiten")) } },
-        )
-    }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             tabs.forEach { t ->
                 item(
                     selected = tab == t,
-                    onClick = { if (t != tab && todoForm) leaveTab = t else tab = t },
+                    onClick = { if (t != tab) leave.request { tab = t } },
                     icon = {
                         Icon(
                             when (t) {
@@ -174,6 +189,7 @@ private fun ShortcutOffer(name: String, vm: AppViewModel) {
 
 @Composable
 private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
+    val leave = LocalFormLeaveGuard.current
     val accesses = main.me?.portal.orEmpty()
     val current = main.access
     var open by rememberSaveable { mutableStateOf(false) }
@@ -189,7 +205,7 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
             accesses.forEach { a ->
                 DropdownMenuItem(text = { Text(a.title) }, onClick = {
                     open = false
-                    vm.selectAccess(a)
+                    if (a.id != current?.id) { if (leave == null) vm.selectAccess(a) else leave.request { vm.selectAccess(a) } }
                 })
             }
         }
@@ -208,6 +224,8 @@ fun ListDetail(
     detail: @Composable () -> Unit,
     emptyDetail: String,
 ) {
+    val leave = LocalFormLeaveGuard.current
+    androidx.activity.compose.BackHandler(enabled = hasDetail) { if (leave == null) onBack() else leave.request(onBack) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val boxWidth = maxWidth
         if (boxWidth >= TWO_PANE_MIN_WIDTH) {
@@ -220,7 +238,6 @@ fun ListDetail(
             }
         } else {
             if (hasDetail) {
-                androidx.activity.compose.BackHandler(onBack = onBack)
                 detail()
             } else {
                 list()
