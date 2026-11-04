@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- Nur lokale Instrumentierung; von außen nicht erreichbar, nie in Release. -->
+        <activity android:name=".InterruptionTestActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+    </application>
+</manifest>

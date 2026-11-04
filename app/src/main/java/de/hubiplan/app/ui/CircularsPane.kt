@@ -30,6 +30,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -79,7 +82,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                         Button(onClick = { if (selected != SEND) { if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
                     }
                 }
-                notice?.let { Text(it, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(horizontal = 16.dp)) }
+                notice?.let { StatusNotice(it, Modifier.padding(horizontal = 16.dp)) }
                 when {
                     // Fehler mit erneutem Versuch statt leerer Liste (UX-Audit 31.10. A07)
                     error != null -> Column(Modifier.padding(16.dp)) {
@@ -90,17 +93,9 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                     list.isEmpty() -> Message(tr("Noch keine Mitteilungen."))
                     else -> LazyColumn(Modifier.fillMaxSize()) {
                         items(list, key = { it.id }) { c ->
-                            ListItem(
-                                modifier = Modifier.clickable { if (leave == null) selected = c.id else leave.request { selected = c.id } },
-                                colors = if (c.id == selected) {
-                                    ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                } else {
-                                    ListItemDefaults.colors()
-                                },
-                                overlineContent = { Text(listOf(c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · ")) },
-                                headlineContent = { Text(c.subject.ifBlank { tr("(ohne Betreff)") }) },
-                                supportingContent = { if (c.sender.isNotBlank()) Text(c.sender) },
-                            )
+                            CircularRow(c, c.id == selected) {
+                                if (leave == null) selected = c.id else leave.request { selected = c.id }
+                            }
                             HorizontalDivider()
                         }
                     }
@@ -122,6 +117,18 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                 else -> CircularDetail(access, id, vm) { selected = null }
             }
         },
+    )
+}
+
+/** Auswahlzustand gehört zur selben bedienbaren Zeile wie Betreff und Absender. */
+@Composable
+internal fun CircularRow(c: CircularItem, isSelected: Boolean, onClick: () -> Unit) {
+    ListItem(
+        modifier = Modifier.semantics { selected = isSelected }.clickable(role = Role.Button, onClick = onClick),
+        colors = if (isSelected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer) else ListItemDefaults.colors(),
+        overlineContent = { Text(listOf(c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · ")) },
+        headlineContent = { Text(c.subject.ifBlank { tr("(ohne Betreff)") }) },
+        supportingContent = { if (c.sender.isNotBlank()) Text(c.sender) },
     )
 }
 
