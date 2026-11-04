@@ -19,8 +19,8 @@ android {
         // Benachrichtigungskanäle und einheitliche Hintergrundregeln
         minSdk = 28
         targetSdk = 37
-        versionCode = 36
-        versionName = "0.31.1"
+        versionCode = 37
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["additionalTestOutputDir"] = "/sdcard/Android/media/de.hubiplan.app/ui-test-output"
     }
@@ -62,6 +62,7 @@ android {
         release {
             if (keystore.exists()) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

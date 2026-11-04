@@ -1,0 +1,9 @@
+Erste Veröffentlichung von HUBIplan für Android.
+
+• Vereinstermine ansehen und Teilnahme zurückmelden
+• Aufgaben einsehen und erledigen
+• Vereinsmitteilungen lesen
+• Mitgliedsausweis anzeigen
+• Eigene Mitgliedsdaten prüfen und Änderungen melden
+
+Für die Nutzung wird ein Zugang zu einem Verein benötigt, der HUBIplan verwendet.
