@@ -2,5 +2,6 @@
     <application>
         <!-- Nur lokale Instrumentierung; von außen nicht erreichbar, nie in Release. -->
         <activity android:name=".InterruptionTestActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".AccessibilityTestActivity" android:exported="false" />
     </application>
 </manifest>
