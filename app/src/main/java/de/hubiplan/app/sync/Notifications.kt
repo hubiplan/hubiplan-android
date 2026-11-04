@@ -21,6 +21,10 @@ import de.hubiplan.app.tr
 object Notifications {
     const val CHANNEL_RSVP = "rueckmeldung"
     const val CHANNEL_MESSAGES = "mitteilungen"
+    const val CHANNEL_TODOS = "aufgaben"
+    const val EXTRA_TODO = "aufgabe"
+    const val EXTRA_TODO_SCOPE = "aufgabe_bereich"
+    const val EXTRA_TODO_UNIT = "aufgabe_einheit"
     const val EXTRA_ACCESS = "zugang"
     const val EXTRA_CIRCULAR = "mitteilung"
     const val EXTRA_SLOT = "konto"
@@ -45,6 +49,11 @@ object Notifications {
     fun createChannels(context: Context) {
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_TODOS, tr("Aufgaben"), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = tr("Erinnerungen und Freigaben für Aufgaben")
+            },
+        )
+        manager.createNotificationChannel(
             NotificationChannel(CHANNEL_MESSAGES, tr("Mitteilungen"), NotificationManager.IMPORTANCE_HIGH).apply {
                 description = tr("Mitteilungen und Rundschreiben des Vorstands")
             },
@@ -68,6 +77,37 @@ object Notifications {
     }
 
     private const val PREFS = "hinweise"
+
+    /** Nur zur gesicherten Detailansicht navigieren; keine Aktion umgeht die Entsperrung. */
+    fun showTodo(context: Context, slot: Int, accountId: String, target: de.hubiplan.app.data.TodoTarget, title: String, text: String) {
+        if (!allowed(context)) return
+        val kind = "todo-${target.scope}"
+        val id = (notificationId(slot, target.unitId, target.todoId) xor
+            if (target.scope == "d") 0x0800_0000 else 0x0400_0000) and 0x3FFFFFFF
+        val open = PendingIntent.getActivity(
+            context, id,
+            Intent(context, MainActivity::class.java)
+                .setData(openUri(accountId, kind, target.unitId, target.todoId))
+                .putExtra(EXTRA_ACCOUNT, accountId)
+                .putExtra(EXTRA_TODO, target.todoId)
+                .putExtra(EXTRA_TODO_SCOPE, target.scope)
+                .putExtra(EXTRA_TODO_UNIT, target.unitId)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_TODOS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title.ifBlank { tr("Aufgabe") })
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            .setContentIntent(open)
+            .setAutoCancel(true)
+            .lockScreen(context, CHANNEL_TODOS, tr("Neuer Aufgabenhinweis"))
+            .build()
+        try { NotificationManagerCompat.from(context).notify(tag(accountId), id, notification) } catch (e: SecurityException) {
+            // Berechtigung inzwischen entzogen.
+        }
+    }
     private const val KEY_CONTENT_LOCKED = "inhalt_gesperrt"
 
     /**

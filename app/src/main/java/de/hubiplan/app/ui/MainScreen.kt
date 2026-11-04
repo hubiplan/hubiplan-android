@@ -62,15 +62,29 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
     LaunchedEffect(openRequest) { if (openRequest != null) tab = Tab.MITTEILUNGEN }
     // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
     val admin by vm.admin.collectAsStateWithLifecycle()
-    val tabs = Tab.entries.filter { it != Tab.VERWALTUNG || admin.visible }
-    LaunchedEffect(admin.visible) { if (tab == Tab.VERWALTUNG && !admin.visible) tab = Tab.TERMINE }
+    val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
+    val todoForm by vm.todoFormActive.collectAsStateWithLifecycle()
+    var leaveTab by remember { mutableStateOf<Tab?>(null) }
+    LaunchedEffect(pendingTodo) { if (pendingTodo != null) tab = Tab.VERWALTUNG }
+    val adminVisible = admin.visible || pendingTodo != null
+    val tabs = Tab.entries.filter { it != Tab.VERWALTUNG || adminVisible }
+    LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
+    leaveTab?.let { next ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { leaveTab = null },
+            title = { Text(tr("Eingaben verwerfen?")) },
+            text = { Text(tr("Was du in diesem Formular eingegeben hast, geht verloren.")) },
+            confirmButton = { TextButton(onClick = { leaveTab = null; tab = next }) { Text(tr("Verwerfen")) } },
+            dismissButton = { TextButton(onClick = { leaveTab = null }) { Text(tr("Weiter bearbeiten")) } },
+        )
+    }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             tabs.forEach { t ->
                 item(
                     selected = tab == t,
-                    onClick = { tab = t },
+                    onClick = { if (t != tab && todoForm) leaveTab = t else tab = t },
                     icon = {
                         Icon(
                             when (t) {

@@ -100,7 +100,11 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
             kotlinx.coroutines.delay(15_000)
         }
     }
-    val overview = state.overview ?: return Loading()
+    val overview = state.overview
+    if (overview == null || overview.allUnits.isEmpty()) {
+        Notice(tr("Die Aufgabe oder der Verwaltungsbereich ist nicht verfügbar. Bitte Verbindung und Berechtigung prüfen."), tr("Erneut laden"), vm::reload)
+        return
+    }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         when {
             !overview.twoFactor -> Notice(
@@ -192,7 +196,8 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
 }
 
 private enum class Section(val label: String) {
-    TASKS(tr("Aufgaben")),
+    TASKS(tr("Offene Aufgaben")),
+    TODOS(tr("Aufgaben")),
     MEMBERS(tr("Mitglieder")),
     EVENTS(tr("Termine")),
     FINANCE(tr("Kasse")),
@@ -206,6 +211,7 @@ private fun sectionsFor(unit: AdminUnit): List<Section> {
     if (unit.isDepartment) {
         return listOfNotNull(
             Section.TASKS,
+            Section.TODOS.takeIf { showsTodos(unit) },
             Section.MEMBERS.takeIf { showsMembers(unit) },
             Section.EVENTS.takeIf { showsEvents(unit) },
         )
@@ -213,6 +219,7 @@ private fun sectionsFor(unit: AdminUnit): List<Section> {
     val members = showsMembers(unit)
     return listOfNotNull(
         Section.TASKS,
+        Section.TODOS.takeIf { showsTodos(unit) },
         Section.MEMBERS.takeIf { members },
         Section.EVENTS.takeIf { showsEvents(unit) },
         Section.FINANCE.takeIf { FINANCE_VIEW in p || FINANCE_EDIT in p },
@@ -228,7 +235,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val snackbar = remember { SnackbarHostState() }
     var unitKey by rememberSaveable { mutableStateOf(units.first().key) }
     val unit = units.firstOrNull { it.key == unitKey } ?: units.first()
-    val client = remember(unit.key) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::useAdmin, unit.scope, "${main.account.server}-${main.account.deviceId}") } } ?: return
+    val client = remember(unit.key, main.account.server, main.account.deviceId) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::useAdmin, unit.scope, "${main.account.server}-${main.account.deviceId}") } } ?: return
     val errors = remember { AdminErrors(onLocked = vm::adminRejected) }
     val sections = sectionsFor(unit)
     val hasMembers = !unit.isDepartment && showsMembers(unit)
@@ -239,7 +246,13 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val receiptStore = remember(main.account.server, main.account.deviceId) {
         ReceiptStore(context, "${main.account.server}-${main.account.deviceId}")
     }
-    var section by rememberSaveable(unit.key) { mutableStateOf(Section.TASKS) }
+    var section by rememberSaveable(unit.key) { mutableStateOf(if (showsTodos(unit)) Section.TODOS else Section.TASKS) }
+    var todoId by remember(unit.key) { mutableStateOf<Int?>(null) }
+    var creatingTodo by remember(unit.key) { mutableStateOf(false) }
+    DisposableEffect(creatingTodo) {
+        vm.todoFormActive.value = creatingTodo
+        onDispose { vm.todoFormActive.value = false }
+    }
     var member by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var requests by rememberSaveable(unit.key) { mutableStateOf(false) }
     var admitting by rememberSaveable(unit.key) { mutableStateOf(false) }
@@ -289,10 +302,12 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     // Android-Zurück geht eine Ebene zurück wie „‹ Zurück“ (UX-Audit 31.10. A01); aus einem
     // Formular erst nach Rückfrage, damit Eingaben nicht unbemerkt verloren gehen.
     var leaveForm by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val inForm = newBooking || newReceipt || admitting || creatingEvent != null
-    val nested = inForm || invoiceId != null || bookingId != null || eventId != null || member != null || requests
+    val inForm = newBooking || newReceipt || admitting || creatingEvent != null || creatingTodo
+    val nested = inForm || invoiceId != null || bookingId != null || eventId != null || member != null || requests || todoId != null
     androidx.activity.compose.BackHandler(enabled = nested) {
         when {
+            creatingTodo -> leaveForm = { creatingTodo = false }
+            todoId != null -> { todoId = null; reload++ }
             invoiceId != null -> { invoiceId = null; reload++ }
             newReceipt -> leaveForm = { newReceipt = false; reload++ }
             newBooking -> leaveForm = { newBooking = false }
@@ -304,20 +319,65 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             requests -> requests = false
         }
     }
+
+    val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingTodo) {
+        val pending = pendingTodo ?: return@LaunchedEffect
+        if (!pending.ready) {
+            leaveForm = {
+                vm.todoFormActive.value = false
+                vm.todoHandled()
+                vm.openTodoNotification(pending.accountId, pending.target)
+            }
+            return@LaunchedEffect
+        }
+        if (pending.accountId != de.hubiplan.app.sync.RsvpActionReceiver.accountId(main.account)) {
+            vm.todoHandled()
+            return@LaunchedEffect
+        }
+        val targetUnit = units.firstOrNull { pending.target.permittedBy(it) }
+        if (targetUnit == null) {
+            vm.todoHandled()
+            snackbar.showSnackbar(tr("Die Aufgabe ist nicht mehr verfügbar oder nicht freigegeben."))
+        } else {
+            val navigate = {
+                creatingTodo = false
+                unitKey = targetUnit.key
+                vm.todoHandled()
+                vm.selectTodo(pending.target)
+            }
+            if (inForm) leaveForm = navigate else navigate()
+        }
+    }
+    val selectedTodo by vm.selectedTodo.collectAsStateWithLifecycle()
+    LaunchedEffect(selectedTodo, unit.key) {
+        val target = selectedTodo ?: return@LaunchedEffect
+        if (target.unitKey == unit.key) {
+            member = null; requests = false; admitting = false; eventId = null; creatingEvent = null
+            bookingId = null; newBooking = false; newReceipt = false; invoiceId = null
+            section = Section.TODOS
+            todoId = target.todoId
+            vm.selectTodo(null)
+        }
+    }
     leaveForm?.let { leave ->
         AlertDialog(
-            onDismissRequest = { leaveForm = null },
+            onDismissRequest = { leaveForm = null; vm.todoHandled() },
             title = { Text(tr("Eingaben verwerfen?")) },
             text = { Text(tr("Was du in diesem Formular eingegeben hast, geht verloren.")) },
             confirmButton = { TextButton(onClick = { leaveForm = null; leave() }) { Text(tr("Verwerfen")) } },
-            dismissButton = { TextButton(onClick = { leaveForm = null }) { Text(tr("Weiter bearbeiten")) } },
+            dismissButton = { TextButton(onClick = { leaveForm = null; vm.todoHandled() }) { Text(tr("Weiter bearbeiten")) } },
         )
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            UnitPicker(units, unit) { unitKey = it.key }
-            if (member == null && !requests && !admitting && eventId == null && creatingEvent == null && bookingId == null && !newBooking && !newReceipt && invoiceId == null) {
+            UnitPicker(units, unit) { picked ->
+                if (picked.key != unit.key) {
+                    if (inForm) leaveForm = { unitKey = picked.key } else unitKey = picked.key
+                }
+            }
+            if (!nested) {
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -344,7 +404,15 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             val rsvpAllowed = creatingEvent
             val openBooking = bookingId
             val openInvoice = invoiceId
+            val openTodo = todoId
             when {
+                creatingTodo && showsTodos(unit) -> TodoCreateScreen(client, errors, onBack = { leaveForm = { creatingTodo = false } }) { id, changeSet ->
+                    creatingTodo = false
+                    todoId = id
+                    onChanged(tr("Aufgabe angelegt"), changeSet)
+                }
+                openTodo != null && showsTodos(unit) -> TodoScreen(client, openTodo, errors, reload, onBack = { todoId = null; reload++ }, onChanged = onChanged)
+                section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onOpen = { todoId = it })
                 openInvoice != null -> InvoiceScreen(client, openInvoice, BILLING_EDIT in unit.permissions, errors, onBack = {
                     invoiceId = null
                     reload++
@@ -412,6 +480,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                 else -> TaskList(client, errors, until, vm, reload) { task ->
                     when {
                         task.kind == "change_request" -> requests = true
+                        task.kind == "todo" -> { if (showsTodos(unit)) todoId = task.ref }
                         task.kind == "photo" && task.membership != null -> member = task.membership
                         task.kind == "event" && task.ref != null -> {
                             eventId = task.ref
@@ -447,12 +516,14 @@ private fun TaskList(
     reloadKey: Int,
     onOpen: (AdminTask) -> Unit,
 ) {
-    var tasks by remember(client.unitId) { mutableStateOf<List<AdminTask>?>(null) }
-    var error by remember(client.unitId) { mutableStateOf<String?>(null) }
+    var tasks by remember(client) { mutableStateOf<List<AdminTask>?>(null) }
+    var error by remember(client) { mutableStateOf<String?>(null) }
     var reload by remember { mutableIntStateOf(0) }
-    LaunchedEffect(client.unitId, reload, reloadKey) {
+    LaunchedEffect(client, reload, reloadKey) {
+        tasks = null
+        error = null
         val api = vm.adminApi() ?: return@LaunchedEffect
-        // Untereinheit (Zugführung): keine Aufgabenliste, nur Mitglieder und Termine
+        // Untereinheiten nutzen den eigenen Bereich „Aufgaben“, keine gemischte Übersicht.
         if (client.scope == "d") {
             tasks = emptyList()
             return@LaunchedEffect

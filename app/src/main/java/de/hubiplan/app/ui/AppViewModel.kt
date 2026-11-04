@@ -85,6 +85,8 @@ data class AdminState(
 /** Kennung eines Kontos für den Verwaltungszustand: Server und Gerät. */
 fun accountKey(account: Account): String = "${account.server}#${account.deviceId}"
 
+data class TodoOpenRequest(val accountId: String, val target: de.hubiplan.app.data.TodoTarget, val ready: Boolean = true)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val accounts = (app as HubiplanApp).accounts
@@ -154,6 +156,34 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _admin = MutableStateFlow(AdminState())
     val admin: StateFlow<AdminState> = _admin
+    private val _openTodo = MutableStateFlow<TodoOpenRequest?>(null)
+    val openTodo: StateFlow<TodoOpenRequest?> = _openTodo
+    private val _selectedTodo = MutableStateFlow<de.hubiplan.app.data.TodoTarget?>(null)
+    val selectedTodo: StateFlow<de.hubiplan.app.data.TodoTarget?> = _selectedTodo
+    val todoFormActive = MutableStateFlow(false)
+
+    fun selectTodo(target: de.hubiplan.app.data.TodoTarget?) { _selectedTodo.value = target }
+    fun todoHandled() { _openTodo.value = null }
+
+    /** Konto an die aktuelle Verbindung binden, vor dem Öffnen Übersicht frisch laden. */
+    fun openTodoNotification(accountId: String, target: de.hubiplan.app.data.TodoTarget) {
+        if (todoFormActive.value) {
+            _openTodo.value = TodoOpenRequest(accountId, target, ready = false)
+            return
+        }
+        viewModelScope.launch {
+            val (slot, account) = accounts.list().firstOrNull { (_, account) ->
+                de.hubiplan.app.sync.RsvpActionReceiver.accountId(account) == accountId
+            } ?: return@launch
+            accounts.store(slot).ifCurrent(account) { accounts.setActive(slot) } ?: return@launch
+            resetAdmin()
+            val generation = adminGeneration
+            refresh(account)
+            if (generation == adminGeneration && accounts.store(slot).currentAccount()?.generation == account.generation && accounts.active.value == slot) {
+                _openTodo.value = TodoOpenRequest(accountId, target)
+            }
+        }
+    }
     private var adminUsedAt = 0L
 
     /**
@@ -182,6 +212,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Verwaltungszustand verwerfen: anderes Konto gewählt oder Konto entfernt. */
     private fun resetAdmin() {
+        _openTodo.value = null
+        _selectedTodo.value = null
+        todoFormActive.value = false
         adminGeneration++
         _admin.value = AdminState()
     }

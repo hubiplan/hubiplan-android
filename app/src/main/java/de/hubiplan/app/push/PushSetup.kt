@@ -239,6 +239,13 @@ object PushSetup {
         val account = expected ?: store.currentAccount() ?: return
         val accountId = de.hubiplan.app.sync.RsvpActionReceiver.accountId(account)
         when (message.type) {
+            "todo" -> {
+                if (message.v != 1) return
+                val target = de.hubiplan.app.data.TodoTarget.fromPush(message.org, message.department, message.todo) ?: return
+                store.ifCurrent(account) {
+                    Notifications.showTodo(context, store.slot, accountId, target, message.title, message.text)
+                }
+            }
             "circular" -> {
                 val access = message.access ?: return
                 val id = message.id ?: return

@@ -37,7 +37,7 @@ class ApiException(
 fun apiOrigin(server: String, token: String?): String = "$server#${token?.hashCode()}"
 
 /** Antwort der Verwaltung mit Änderungspaket (für „Rückgängig“). */
-data class AdminResponse(val text: String, val changeSet: String?, val undoable: Boolean, val label: String?)
+data class AdminResponse(val text: String, val changeSet: String?, val undoable: Boolean, val label: String?, val task: Int? = null)
 
 val json = Json {
     ignoreUnknownKeys = true
@@ -419,6 +419,7 @@ class Api(
             resp.headers["X-Change-Set"],
             resp.headers["X-Change-Undoable"] == "1",
             resp.headers["X-Change-Label"]?.let { java.net.URLDecoder.decode(it, "UTF-8") },
+            resp.headers["X-Change-Task"]?.toIntOrNull()?.takeIf { it > 0 },
         )
     }
 

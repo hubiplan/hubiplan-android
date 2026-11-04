@@ -25,6 +25,27 @@ class AdminClient(
     val accountKey: String = "",
 ) {
     private val base = "/api/app/v1/admin/$scope/$unitId/"
+    private val todoUndos = mutableMapOf<String, Int>()
+
+    suspend fun todos(): TodoList = decodeApi(get("todos/"))
+
+    suspend fun todo(id: Int): TodoItem {
+        require(id > 0)
+        return decodeApi(get("todos/$id/"))
+    }
+
+    suspend fun createTodo(body: JsonObject): Changed<TodoItem> {
+        val response = use().admin("POST", "${base}todos/", body.toString())
+        return Changed(decodeApi(response.text), response.changeSet.takeIf { response.undoable }, response.label)
+    }
+
+    suspend fun completeTodo(id: Int, version: Int, done: Boolean): Changed<TodoItem> {
+        require(id > 0 && version > 0)
+        val response = use().admin("PATCH", "${base}todos/$id/", obj("version" to version, "status" to if (done) "done" else "open").toString())
+        val changeSet = response.changeSet.takeIf { response.undoable }
+        if (changeSet != null && response.task == id) todoUndos[changeSet] = id
+        return Changed(decodeApi(response.text), changeSet, response.label)
+    }
 
     /** Jede Anfrage zählt als Nutzung (Gerätesperre erst nach 5 Minuten Pause). */
     private fun use(): Api {
@@ -67,7 +88,9 @@ class AdminClient(
         change("POST", "members/$id/exit/", obj("exit_date" to date, "exit_reason" to reason, "note" to note))
 
     suspend fun undo(changeSet: String) {
-        use().admin("POST", "${base}changes/$changeSet/undo/", "{}")
+        val task = todoUndos[changeSet]
+        val prefix = if (task != null) "todos/$task/" else ""
+        use().admin("POST", "${base}${prefix}changes/$changeSet/undo/", "{}")
     }
 
     suspend fun decidePhoto(id: Int, approve: Boolean): Changed<Unit> {

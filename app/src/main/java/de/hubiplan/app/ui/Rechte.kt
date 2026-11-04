@@ -1,6 +1,7 @@
 package de.hubiplan.app.ui
 
 import de.hubiplan.app.data.AdminUnit
+import de.hubiplan.app.data.canReadTodos
 
 // Rechte der Verwaltung in der App. Seit November 2026 hat HUBIplan je Bereich die Stufen
 // „lesen“ (<bereich>.view) und „bearbeiten“ (<bereich>.edit), auch in Untereinheiten
@@ -10,6 +11,8 @@ import de.hubiplan.app.data.AdminUnit
 const val EVENTS_VIEW = "events.view"
 const val EVENTS_EDIT = "events.edit"
 const val PHOTOS_EDIT = "photos.edit"
+
+fun showsTodos(unit: AdminUnit): Boolean = canReadTodos(unit.permissions)
 private const val DEPT_MEMBERS = "dept.members."
 
 /** Bereich „Mitglieder“ zeigen: mindestens lesen. */
