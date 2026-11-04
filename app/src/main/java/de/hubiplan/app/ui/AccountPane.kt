@@ -75,6 +75,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             style = MaterialTheme.typography.bodySmall,
         )
         TextButton(onClick = { licenses = true }) { Text(tr("Lizenzen")) }
+        TextButton(onClick = { open(APP_PRIVACY_URL) }) { Text(tr("Datenschutzerklärung der App")) }
         TextButton(onClick = { open(SOURCE_URL) }) { Text(tr("Quellcode")) }
     }
 

@@ -33,6 +33,9 @@ import de.hubiplan.app.tr
 
 const val SOURCE_URL = "https://github.com/hubiplan/hubiplan-android"
 
+// Datenschutzerklärung des Herausgebers zur App (Google Play verlangt den Link auch in der App)
+const val APP_PRIVACY_URL = "https://philipsen-edv.de/hubiplan-app/datenschutz/"
+
 private fun Context.asset(path: String): String? =
     runCatching { assets.open(path).bufferedReader().use { it.readText() } }.getOrNull()
 
