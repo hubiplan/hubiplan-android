@@ -13,6 +13,7 @@ import androidx.test.espresso.Espresso.closeSoftKeyboard
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
 import org.junit.Assume.assumeTrue
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -43,7 +44,13 @@ class UiInterruptionTest {
         assertTrue("System-PIN-Feld muss erscheinen", editable(instrumentation.uiAutomation.rootInActiveWindow))
         shell("input text " + pin)
         shell("input keyevent 66")
+        val returned = SystemClock.elapsedRealtime()
+        while (instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() != instrumentation.targetContext.packageName && SystemClock.elapsedRealtime() - returned < 20_000) SystemClock.sleep(100)
+        assertEquals(instrumentation.targetContext.packageName, instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString())
         compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse A ▾").fetchSemanticsNodes().isNotEmpty() || compose.onAllNodesWithText("Kasse B ▾").fetchSemanticsNodes().isNotEmpty() }
+    }
+    @After fun dismissSystemWindow() {
+        shell("input keyevent 4")
     }
     private fun fill() {
         compose.onNodeWithText("Betrag in €").performScrollTo().performTextInput("23,50")
@@ -81,14 +88,22 @@ class UiInterruptionTest {
             shell("settings put system font_scale 2.0")
             compose.waitUntil(20_000) { instrumentation.targetContext.resources.configuration.fontScale >= 1.99f }
             unlock()
-            compose.onNodeWithText("Buchungstext").performScrollTo().performTextInput("Test mit großer Schrift")
+            compose.onNodeWithText("Buchungstext").performScrollTo().performClick().performTextInput("Test mit großer Schrift")
             compose.onNodeWithText("Test mit großer Schrift").assertIsDisplayed()
-            assertTrue(shell("dumpsys input_method").let { it.contains("mInputShown=true") || it.contains("isInputViewShown=true") })
+            val imeStart = SystemClock.elapsedRealtime()
+            fun imeShown() = shell("dumpsys input_method").let { it.contains("mInputShown=true") || it.contains("isInputViewShown=true") }
+            while (!imeShown() && SystemClock.elapsedRealtime() - imeStart < 10_000) SystemClock.sleep(100)
+            assertTrue("Die echte Bildschirmtastatur ist sichtbar", imeShown())
             closeSoftKeyboard()
             compose.onNodeWithText("Buchen", substring = false).performScrollTo().assertIsDisplayed().assertIsNotEnabled()
             compose.onNodeWithText("Kasse A ▾").performScrollTo().assertIsDisplayed().performClick()
             compose.onNodeWithText("Kasse B").performClick()
             compose.onNodeWithText("Kasse B ▾").assertIsDisplayed()
-        } finally { shell("settings put system font_scale " + scale.toFloatOrNull().let { it ?: 1f }) }
+        } finally {
+            closeSoftKeyboard()
+            val restored = scale.toFloatOrNull() ?: 1f
+            shell("settings put system font_scale " + restored)
+            compose.waitUntil(20_000) { kotlin.math.abs(instrumentation.targetContext.resources.configuration.fontScale - restored) < 0.01f }
+        }
     }
 }
