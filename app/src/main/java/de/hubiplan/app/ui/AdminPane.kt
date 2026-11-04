@@ -412,7 +412,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     onChanged(tr("Aufgabe angelegt"), changeSet)
                 }
                 openTodo != null && showsTodos(unit) -> TodoScreen(client, openTodo, errors, reload, onBack = { todoId = null; reload++ }, onChanged = onChanged)
-                section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onOpen = { todoId = it })
+                section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onLock = vm::lockAdmin, onOpen = { todoId = it })
                 openInvoice != null -> InvoiceScreen(client, openInvoice, BILLING_EDIT in unit.permissions, errors, onBack = {
                     invoiceId = null
                     reload++

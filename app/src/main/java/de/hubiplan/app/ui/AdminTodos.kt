@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 
 /** Inhalte bleiben nur in der entsperrten Ansicht, ohne lokale Speicherung. */
 @Composable
-fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onNew: () -> Unit, onOpen: (Int) -> Unit) {
+fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onNew: () -> Unit, onLock: () -> Unit, onOpen: (Int) -> Unit) {
     var rows by remember(client) { mutableStateOf<List<TodoItem>?>(null) }
     var error by remember(client) { mutableStateOf<String?>(null) }
     var done by remember { mutableStateOf(false) }
@@ -58,6 +58,7 @@ fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onN
             TextButton(onClick = onNew) { Text(tr("Neue Aufgabe")) }
             TextButton(onClick = { reload++ }) { Text(tr("Aktualisieren")) }
         }
+        TextButton(onClick = onLock, modifier = Modifier.padding(horizontal = 8.dp)) { Text(tr("Verwaltung auf diesem Telefon sperren")) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
         val list = rows
         if (list == null && error == null) Loading()
