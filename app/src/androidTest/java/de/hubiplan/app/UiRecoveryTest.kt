@@ -60,7 +60,9 @@ class UiRecoveryTest {
         compose.waitUntil(10_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
     }
     private fun image(name: String) {
-        val file = File(context.filesDir, name)
+        val directory = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")?.let(::File) ?: context.filesDir
+        check(directory.isDirectory || directory.mkdirs())
+        val file = File(directory, name)
         file.outputStream().use { compose.onRoot().captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
     private fun invoice(name: String, id: Int = 1, more: Boolean = false) =
