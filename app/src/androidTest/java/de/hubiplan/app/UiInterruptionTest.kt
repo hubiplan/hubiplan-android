@@ -24,8 +24,11 @@ class UiInterruptionTest {
     @get:Rule val compose = createAndroidComposeRule<InterruptionTestActivity>()
     private val instrumentation get() = InstrumentationRegistry.getInstrumentation()
     private val pin get() = requireNotNull(InstrumentationRegistry.getArguments().getString("fixturePin")).also { require(it.matches(Regex("[0-9]{6}"))) }
+    private var fixtureAllowed = false
     @Before fun isolatedDevice() {
         assumeTrue("Nur auf dem eigens eingerichteten Emulator mit Test-PIN", Build.HARDWARE.contains("ranchu") && InstrumentationRegistry.getArguments().containsKey("fixturePin"))
+        fixtureAllowed = true
+        shell("locksettings set-pin " + pin)
         Texte.setzeFuerTest("de", emptyMap())
     }
     private fun shell(command: String): String {
@@ -50,7 +53,10 @@ class UiInterruptionTest {
         compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse A ▾").fetchSemanticsNodes().isNotEmpty() || compose.onAllNodesWithText("Kasse B ▾").fetchSemanticsNodes().isNotEmpty() }
     }
     @After fun dismissSystemWindow() {
-        shell("input keyevent 4")
+        if (fixtureAllowed) {
+            shell("input keyevent 4")
+            shell("locksettings clear --old " + pin)
+        }
     }
     private fun fill() {
         compose.onNodeWithText("Betrag in €").performScrollTo().performTextInput("23,50")
