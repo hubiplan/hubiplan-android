@@ -4,6 +4,9 @@ import de.hubiplan.app.data.AdminDepartment
 import de.hubiplan.app.data.AdminUnit
 import de.hubiplan.app.data.TodoItem
 import de.hubiplan.app.data.TodoTarget
+import de.hubiplan.app.data.MemberTodo
+import de.hubiplan.app.data.PortalAccess
+import de.hubiplan.app.data.memberAccess
 import de.hubiplan.app.data.decodeApi
 import de.hubiplan.app.push.PushMessage
 import de.hubiplan.app.ui.showsTodos
@@ -14,6 +17,25 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class TodosTest {
+    @Test fun mitgliederHinweisHatEigenenZugangOhneVerwaltungsFallback() {
+        val target = TodoTarget.fromPush(7, 9, 12, 5)!!
+        assertEquals(TodoTarget("p", 5, 12), target)
+        assertEquals(5, target.memberAccess(listOf(PortalAccess(5, "Musterverein")))?.id)
+        assertNull(target.memberAccess(listOf(PortalAccess(7, "Andere Mitgliedschaft"))))
+        assertFalse(target.permittedBy(AdminUnit(5, "Musterverein", permissions = listOf("todos.edit"))))
+        assertFalse(target.permittedBy(AdminUnit(5, "Ungültige Verwaltungsart", permissions = listOf("todos.edit"), scope = "p")))
+        assertNull(TodoTarget.fromPush(7, null, 12, 0))
+        assertNull(TodoTarget.fromPush(7, null, 12, -1))
+        assertNull(TodoTarget("u", 5, 12).memberAccess(listOf(PortalAccess(5, "Musterverein"))))
+    }
+
+    @Test fun mitgliederErledigungBrauchtNurExplizitesPortalrecht() {
+        assertFalse(decodeApi<MemberTodo>("""{"id":12}""").canComplete)
+        assertTrue(decodeApi<MemberTodo>("""{"id":12,"can_complete":true}""").canComplete)
+        val offered = decodeApi<MemberTodo>("""{"id":12,"can_claim":true,"can_complete":false}""")
+        assertTrue(offered.canClaim)
+        assertFalse(offered.canComplete)
+    }
     @Test fun nurAufgabenrechtErreichtBereichAuchInAbteilung() {
         assertTrue(showsTodos(AdminUnit(7, "Verein", permissions = listOf("todos.view"))))
         assertTrue(showsTodos(AdminDepartment(9, "Gruppe", permissions = listOf("todos.edit")).asUnit()))

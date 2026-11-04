@@ -83,7 +83,7 @@ soweit der Server es erlaubt. Eine zentrale Vorlage für einzelne Zielkopien wir
 als Ganzes erledigt. Wiederöffnen kann bei einer bereits bearbeiteten Folgeausgabe
 abgelehnt werden; dann neu laden. Bei einem Versionskonflikt wird keine Änderung erzwungen.
 
-Push-Hinweise öffnen die konkrete Aufgabe im zugehörigen Konto und Bereich nach der
+Push-Hinweise für Verwaltungsaufgaben öffnen die konkrete Aufgabe im zugehörigen Konto und Bereich nach der
 Verwaltungsentsperrung. Die App lädt Inhalt und Rechte neu; alte Hinweise oder entzogene
 Freigaben geben keinen Zugriff. Auf dem Sperrbildschirm steht standardmäßig nur ein
 neutraler Hinweis. Titel und Versandkanäle kannst du unter „Mein Konto › Benachrichtigungen“
@@ -259,3 +259,12 @@ Die Erlaubnis gilt nur für diese Google-Bibliotheken. Für den eigenen Code der
 alles wie in der AGPL: Wer die App weitergibt, muss ihren Quellcode anbieten. Wer die App
 verändert, darf diese Zusatzerlaubnis für seine Fassung beibehalten oder streichen
 (AGPL § 7 Absatz 3).
+
+
+### Aufgaben im Mitgliederbereich
+
+Der Bereich **Aufgaben** zeigt ausdrücklich zugewiesene Aufgaben und offene Angebote deiner aktuell gewählten Mitgliedschaft. Du kannst ein Angebot übernehmen und, soweit freigegeben, erledigen oder wieder öffnen. Eine noch offene Übernahme kannst du zurückgeben. Dafür ist kein Vorstandszugang nötig; Verwaltungsrechte werden dadurch nicht erteilt. Anhänge öffnest du über den Browser im selben Mitgliederbereich.
+
+Aufgabenhinweise öffnen genau das betroffene Konto und den freigegebenen Mitgliedszugang. Ein nicht mehr verfügbarer Zugang fällt nicht auf eine andere Mitgliedschaft oder die Verwaltung zurück. Die App lädt die Berechtigung und den Aufgabenstand frisch; nach Fehlern werden alte Inhalte verworfen. Aufgaben werden nur im Arbeitsspeicher gehalten. Auch gemeinsame Instanzaufgaben lassen sich bei ausgefallener Quelle nicht scheinbar offline erledigen.
+
+Für Mitgliederaufgaben ist eine HUBIplan-Fassung mit den Portal-Aufgaben-Schnittstellen (PR 135) nötig. Instanzübergreifende Aufgaben werden auf dem eigenen HUBIplan-Server abgeglichen; die App verbindet sich weiterhin nur mit der eigenen Instanz.

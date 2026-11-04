@@ -41,6 +41,35 @@ class TodoClientTest {
 
     @After fun stop() { server.stop(0) }
 
+    @Test fun mitgliederAufgabenBleibenAmZugangUndVersionsstandGebunden() = runBlocking {
+        replies.add(Reply("""{"items":[{"id":12,"can_claim":true}]}"""))
+        assertTrue(api.memberTodos(5).items.single().canClaim)
+        assertEquals("/api/portal/5/todos/", requests.take().path)
+        replies.add(Reply("""{"id":12,"version":4,"can_complete":true,"claimed_by_me":true}"""))
+        assertTrue(api.claimMemberTodo(5, 12, 3, true).claimedByMe)
+        var request = requests.take()
+        assertEquals("PATCH", request.method)
+        assertEquals("/api/portal/5/todos/12/", request.path)
+        assertEquals("claim", json.parseToJsonElement(request.body).jsonObject["action"]?.jsonPrimitive?.content)
+        assertEquals("3", json.parseToJsonElement(request.body).jsonObject["version"]?.jsonPrimitive?.content)
+        replies.add(Reply("""{"id":12,"version":5,"status":"done"}"""))
+        assertEquals("done", api.completeMemberTodo(5, 12, 4, true).status)
+        request = requests.take()
+        assertEquals("done", json.parseToJsonElement(request.body).jsonObject["status"]?.jsonPrimitive?.content)
+        assertEquals("4", json.parseToJsonElement(request.body).jsonObject["version"]?.jsonPrimitive?.content)
+    }
+
+    @Test fun mitgliederKonfliktUndWiderrufSindKeinErfolg() = runBlocking {
+        for (status in listOf(403, 404, 409, 503)) {
+            replies.add(Reply("""{"detail":"Nicht verfügbar"}""", status))
+            try {
+                api.completeMemberTodo(5, 12, 3, false)
+                fail("Fehler erwartet: $status")
+            } catch (e: ApiException) { assertEquals(status, e.status) }
+            assertEquals("/api/portal/5/todos/12/", requests.take().path)
+        }
+    }
+
     @Test fun abteilungLiestUndLegtPrivatAn() = runBlocking {
         val client = AdminClient(api, 9, scope = "d")
         replies.add(Reply("""{"items":[{"id":12,"title":"Probe"}]}"""))
