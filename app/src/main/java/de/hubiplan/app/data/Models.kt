@@ -322,6 +322,14 @@ data class CardState(
     /** Inhalt des QR-Codes (Prüfseite des Ausweises) */
     val url: String? = null,
     val display: CardDisplay? = null,
+    /** Welche Wallet der Betreiber eingerichtet und die Einheit eingeschaltet hat */
+    val wallet: CardWallet? = null,
+)
+
+@Serializable
+data class CardWallet(
+    val google: Boolean = false,
+    val apple: Boolean = false,
 )
 
 @Serializable

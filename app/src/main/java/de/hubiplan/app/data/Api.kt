@@ -475,6 +475,26 @@ class Api(
 
     suspend fun card(accessId: Int): CardState = decodeApi(expect("GET", "/api/portal/$accessId/card/"))
 
+    /** Speicherlink für Google Wallet (überträgt die Passangaben an Google). */
+    suspend fun walletGoogle(accessId: Int): String {
+        val text = expect("POST", "/api/portal/$accessId/card/wallet/google/", "{}")
+        val root = try {
+            json.parseToJsonElement(text) as? JsonObject
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+        val url = (root?.get("url") as? JsonPrimitive)?.content
+        if (url == null || !url.startsWith("https://pay.google.com/")) throw protocolError()
+        return url
+    }
+
+    /** Apple-Wallet-Pass (`.pkpass`), auch für freie Wallet-Apps auf Android. */
+    suspend fun walletApple(accessId: Int): ByteArray {
+        val resp = send("GET", "/api/portal/$accessId/card/wallet/apple/", accept = false, limit = MAX_FILE_BYTES)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return resp.body
+    }
+
     suspend fun photo(accessId: Int): PhotoState = decodeApi(expect("GET", "/api/portal/$accessId/photo/"))
 
     /** Foto hochladen (JPEG, auf dem Gerät verkleinert und ohne EXIF) mit Einwilligung. */
