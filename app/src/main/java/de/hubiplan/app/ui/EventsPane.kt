@@ -149,6 +149,7 @@ private fun EventDetailView(
     var busy by remember { mutableStateOf(false) }
     var attempt by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
+    var notice by remember(access.id, eventId) { mutableStateOf<String?>(null) }
 
     LaunchedEffect(access.id, eventId, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
@@ -161,11 +162,18 @@ private fun EventDetailView(
     }
 
     fun change(action: suspend () -> EventDetail) {
+        if (busy) return
         busy = true
         error = null
+        notice = null
         scope.launch {
             try {
                 event = action()
+                notice = when (event?.rsvp?.mine?.status) {
+                    "yes" -> tr("Deine Zusage ist gespeichert.")
+                    "no" -> tr("Deine Absage ist gespeichert.")
+                    else -> tr("Deine Rückmeldung ist zurückgenommen.")
+                }
                 onChanged()
                 vm.syncSoon()
             } catch (e: ApiException) {
@@ -187,6 +195,7 @@ private fun EventDetailView(
             if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
             return@Column
         }
+        notice?.let { StatusNotice(it) }
         // Datum, Ort und Absage des gewählten Einzeltermins, nicht des ersten der Serie (A05)
         Text(e.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(formatWhen(occ.startsAt, occ.endsAt, occ.allDay), style = MaterialTheme.typography.titleMedium)
@@ -256,8 +265,8 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int)
         }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Button(onClick = { onRespond("yes", guests) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Zusage")) }
-        OutlinedButton(onClick = { onRespond("no", 0) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Absage")) }
+        Button(onClick = { onRespond("yes", guests) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Zusagen")) }
+        OutlinedButton(onClick = { onRespond("no", 0) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Absagen")) }
     }
     if (mine != null) {
         TextButton(onClick = { onRespond(null, 0) }, enabled = !busy) { Text(tr("Rückmeldung zurücknehmen")) }

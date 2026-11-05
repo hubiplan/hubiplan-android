@@ -141,16 +141,23 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
             }
         }
     }
+    var notice by remember(api, access, id) { mutableStateOf<String?>(null) }
     fun change(action: String) {
         val current = task ?: return
         if (busy) return
         busy = true
         error = null
+        notice = null
         scope.launch {
             try {
                 task = if (action == "claim" || action == "release")
                     api.claimMemberTodo(access, id, current.version, action == "claim")
                 else api.completeMemberTodo(access, id, current.version, current.status != "done")
+                notice = when (action) {
+                    "claim" -> tr("Aufgabe übernommen.")
+                    "release" -> tr("Übernahme freigegeben.")
+                    else -> if (task?.status == "done") tr("Aufgabe erledigt.") else tr("Aufgabe wieder geöffnet.")
+                }
                 onChanged()
             } catch (e: ApiException) {
                 task = null
@@ -166,6 +173,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (error != null) TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("Erneut laden")) }
+        notice?.let { StatusNotice(it) }
         task?.let { current ->
             Text(current.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
             Text(if (current.status == "done") tr("Erledigt") else tr("Offen"))

@@ -647,5 +647,15 @@
     "Passwort vergessen? Im Browser zurücksetzen": "Forgot password? Reset in browser",
     "Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.": "First enter your club’s valid HTTPS address, e.g. club.example.org.",
     "Setze dein Passwort auf der Vereinsseite im Browser zurück. Kehre danach zur App zurück und melde dich mit dem neuen Passwort an.": "Reset your password on your club’s website in the browser. Then return to the app and sign in with the new password.",
-    "Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser und kehre danach zur App zurück:": "The browser could not be opened. Open this address in a browser, then return to the app:"
+    "Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser und kehre danach zur App zurück:": "The browser could not be opened. Open this address in a browser, then return to the app:",
+    "Dieses Schreiben mit Anhängen im Browser öffnen": "Open this circular with attachments in the browser",
+    "Falls du dich im Browser anmelden musst, öffnet sich danach dieses Schreiben. Die App bleibt hier geöffnet.": "If you need to sign in in the browser, this circular opens afterwards. The app stays open here.",
+    "Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser:": "The browser could not be opened. Open this address in a browser:",
+    "Deine Zusage ist gespeichert.": "Your acceptance has been saved.",
+    "Deine Absage ist gespeichert.": "Your decline has been saved.",
+    "Deine Rückmeldung ist zurückgenommen.": "Your response has been withdrawn.",
+    "Aufgabe übernommen.": "Task claimed.",
+    "Übernahme freigegeben.": "Claim released.",
+    "Aufgabe erledigt.": "Task completed.",
+    "Aufgabe wieder geöffnet.": "Task reopened."
 }
