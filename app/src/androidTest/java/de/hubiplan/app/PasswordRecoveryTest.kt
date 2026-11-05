@@ -1,5 +1,11 @@
 package de.hubiplan.app
 
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
+import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
+import java.io.File
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -64,5 +70,41 @@ class PasswordRecoveryTest {
             Column(Modifier.verticalScroll(rememberScrollState())) { PasswordLogin(ConnectState(server = "https://verein.example.de", busy = true)) { _, _, _ -> } }
         } }
         compose.onNodeWithText("Forgot password? Reset in browser").performScrollTo().assertIsNotEnabled()
+    }
+    @Test fun uebergibtDieWiederherstellungAlsEchtenAndroidIntent() {
+        Texte.setzeFuerTest("de")
+        compose.setContent { HubiplanTheme(null) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                PasswordLogin(ConnectState(server = "https://verein.example.de")) { _, _, _ -> }
+            }
+        } }
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val intents = mutableListOf<Intent>()
+        val monitor = object : Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent: Intent): Instrumentation.ActivityResult? {
+                if (intent.action != Intent.ACTION_VIEW) return null
+                intents += Intent(intent)
+                return Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null)
+            }
+        }
+        instrumentation.addMonitor(monitor)
+        try {
+            val button = compose.onNodeWithText("Passwort vergessen? Im Browser zurücksetzen")
+            button.performScrollTo().assertIsDisplayed()
+            val directory = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")?.let(::File)
+            if (directory != null) {
+                directory.mkdirs()
+                val image = compose.onRoot().captureToImage().asAndroidBitmap()
+                File(directory, "ux-test-passwort-wiederherstellung.png").outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            }
+            button.performClick()
+            compose.runOnIdle {
+                assertEquals(1, intents.size)
+                assertEquals("https://verein.example.de/passwort-vergessen", intents.single().dataString)
+                assertEquals(null, intents.single().extras)
+            }
+        } finally {
+            instrumentation.removeMonitor(monitor)
+        }
     }
 }

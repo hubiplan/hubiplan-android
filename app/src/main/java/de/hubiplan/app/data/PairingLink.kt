@@ -28,7 +28,7 @@ data class PairingLink(val server: String, val code: String) {
 
 /** Eingegebene Serveradresse vereinheitlichen; nur HTTPS. */
 fun normalizeServer(input: String): String? {
-    var text = input.trim().trimEnd('/')
+    var text = input.trim()
     if (text.isEmpty()) return null
     if (!text.contains("://")) text = "https://$text"
     val uri = try {
