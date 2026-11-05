@@ -1,6 +1,5 @@
 package de.hubiplan.app.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -73,7 +72,7 @@ fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onN
                         supportingContent = {
                             Text(task.dueLabel.ifBlank { tr("ohne Frist") }, color = if (task.highlight || task.overdue) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
                         },
-                        modifier = Modifier.clickable { onOpen(task.id) },
+                        modifier = Modifier.openRow { onOpen(task.id) },
                     )
                     HorizontalDivider()
                 }

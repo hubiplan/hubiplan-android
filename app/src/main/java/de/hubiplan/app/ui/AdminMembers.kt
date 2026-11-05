@@ -1,10 +1,7 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -177,7 +173,7 @@ fun MemberList(
                     supportingContent = {
                         Text(listOfNotNull(row.memberType, row.departments.joinToString(", ").ifBlank { null }, row.city.ifBlank { null }).joinToString(" · "))
                     },
-                    modifier = Modifier.clickable { onOpen(row.id) },
+                    modifier = Modifier.openRow { onOpen(row.id) },
                 )
                 HorizontalDivider()
             }
@@ -211,7 +207,6 @@ fun MemberScreen(
     onChanged: OnChanged,
     reload: Int,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var detail by remember(id) { mutableStateOf<MemberDetail?>(null) }
     var error by remember(id) { mutableStateOf<String?>(null) }
@@ -287,32 +282,7 @@ fun MemberScreen(
             }
         }
         // Kontakt: Anrufen, Mail, Karte
-        d.contact?.let { c ->
-            if (c.phone.isNotBlank()) {
-                ListItem(
-                    headlineContent = { Text(c.phone) },
-                    overlineContent = { Text(tr("Telefon")) },
-                    modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${c.phone}"))) },
-                )
-            }
-            if (c.email.isNotBlank()) {
-                ListItem(
-                    headlineContent = { Text(c.email) },
-                    overlineContent = { Text(tr("E-Mail")) },
-                    modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${c.email}"))) },
-                )
-            }
-            val address = listOf(c.street, "${c.postalCode} ${c.city}".trim()).filter { it.isNotBlank() }.joinToString(", ")
-            if (address.isNotBlank()) {
-                ListItem(
-                    headlineContent = { Text(address) },
-                    overlineContent = { Text(tr("Anschrift")) },
-                    modifier = Modifier.clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(address))))
-                    },
-                )
-            }
-        }
+        d.contact?.let { ContactRows(it) }
         // Vom Mitglied hochgeladenes Foto freigeben
         d.photo?.pending?.let { pending ->
             Card(Modifier.fillMaxWidth()) {
@@ -701,7 +671,7 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
         items(list ?: emptyList(), key = { it.id }) { cr ->
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(cr.memberName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.clickable { onOpen(cr.memberId) })
+                    Text(cr.memberName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                     cr.createdAt?.let { Text(formatDate(it), style = MaterialTheme.typography.bodySmall) }
                     cr.data.forEach { (key, value) ->
                         val new = (value as? JsonPrimitive)?.contentOrNull
@@ -713,6 +683,8 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
                         Button(onClick = { decide(cr, true) }) { Text(tr("Übernehmen")) }
                         OutlinedButton(onClick = { decide(cr, false) }) { Text(tr("Ablehnen")) }
                     }
+                    // Eigener Knopf statt des kleinen antippbaren Namens (UX-Audit 05.11. A-05)
+                    TextButton(onClick = { onOpen(cr.memberId) }) { Text(tr("Mitglied öffnen")) }
                 }
             }
         }
@@ -760,7 +732,7 @@ fun OccasionsSection(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> 
             ListItem(
                 headlineContent = { Text("${row.firstName} ${row.lastName}") },
                 supportingContent = { Text(tr("{x1} · wird {age}", "x1" to formatPlainDate(row.date), "age" to row.age)) },
-                modifier = Modifier.clickable { onOpen(row.memberId) },
+                modifier = Modifier.openRow(tr("Mitglied öffnen")) { onOpen(row.memberId) },
             )
         }
         item { Header(tr("Jubiläen (90 Tage)")) }
@@ -770,7 +742,7 @@ fun OccasionsSection(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> 
             ListItem(
                 headlineContent = { Text("${row.firstName} ${row.lastName}") },
                 supportingContent = { Text(tr("{date} · {years} Jahre {organization}", "date" to formatPlainDate(row.date), "years" to row.years, "organization" to row.organization).trim()) },
-                modifier = Modifier.clickable { onOpen(row.memberId) },
+                modifier = Modifier.openRow(tr("Mitglied öffnen")) { onOpen(row.memberId) },
             )
         }
     }

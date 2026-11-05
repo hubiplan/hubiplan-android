@@ -2,7 +2,6 @@ package de.hubiplan.app.ui
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -106,7 +105,7 @@ private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String
                         items(visible, key = { it.id }) { todo ->
                             ListItem(headlineContent = { Text(todo.title) },
                                 supportingContent = { Text(todo.dueLabel.ifBlank { tr("ohne Frist") }) },
-                                modifier = Modifier.clickable { vm.selectTodo(TodoTarget("p", access, todo.id)) })
+                                modifier = Modifier.openRow { vm.selectTodo(TodoTarget("p", access, todo.id)) })
                             HorizontalDivider()
                         }
                     }

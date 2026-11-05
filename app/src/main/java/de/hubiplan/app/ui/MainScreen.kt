@@ -14,17 +14,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -48,8 +50,27 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.tr
 
-private enum class Tab(val label: String) {
-    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen")), PROFIL(tr("Profil")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Konto")),
+/**
+ * Hauptziele der App. „Mein Konto“ steht nicht in der Navigationsleiste, sondern als Symbol im
+ * Kopf; so bleiben höchstens fünf Ziele (UX-Audit 05.11. A-01). „Ausweis“ statt „Profil“: dort
+ * liegen Ausweis, Foto und eigene Daten (A-02, wie „Mein Bereich › Ausweis“ im Browser).
+ */
+internal enum class Tab(val label: String) {
+    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen")), AUSWEIS(tr("Ausweis")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Mein Konto")),
+}
+
+/** Ziele der Navigationsleiste: nie mehr als fünf, „Mein Konto“ nie (A-01). */
+internal fun barTabs(adminVisible: Boolean, tasksVisible: Boolean): List<Tab> =
+    Tab.entries.filter { it != Tab.KONTO && (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) }
+
+/**
+ * Wohin System-Zurück auf oberster Ebene führt (A-04): aus „Mein Konto“ zum vorherigen Reiter,
+ * aus jedem anderen Reiter zum Startreiter „Termine“; nur dort beendet Zurück die App.
+ */
+internal fun backTarget(tab: Tab, previous: Tab): Tab? = when (tab) {
+    Tab.TERMINE -> null
+    Tab.KONTO -> previous.takeIf { it != Tab.KONTO } ?: Tab.TERMINE
+    else -> Tab.TERMINE
 }
 
 /** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
@@ -65,6 +86,8 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
 @Composable
 private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLeaveGuard) {
     var tab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
+    // Reiter vor „Mein Konto“, damit Zurück dorthin führt
+    var previousTab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, leave.busy) { if (openRequest != null && tab != Tab.MITTEILUNGEN) leave.request(action = { tab = Tab.MITTEILUNGEN }, onStay = vm::openHandled) }
     // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
@@ -104,8 +127,12 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     }
     val adminVisible = admin.visible || pendingTodo?.target?.scope?.let { it != "p" } == true
     val tasksVisible = main.me?.portal?.isNotEmpty() == true || selectedTodo?.scope == "p"
-    val tabs = Tab.entries.filter { (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) }
+    val tabs = barTabs(adminVisible, tasksVisible)
     LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
+    // Zurück auf oberster Ebene: zum Startreiter statt die App zu schließen (A-04). Hier vor dem
+    // Inhalt angelegt, damit Zurück in Listen, Details und Formularen zuerst dort wirkt.
+    val back = backTarget(tab, previousTab)
+    androidx.activity.compose.BackHandler(enabled = back != null) { back?.let { target -> leave.request { tab = target } } }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
         navigationSuiteItems = {
@@ -119,9 +146,9 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                                 Tab.AUFGABEN -> Icons.Filled.CheckCircle
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
-                                Tab.PROFIL -> Icons.Filled.Person
+                                Tab.AUSWEIS -> Icons.Filled.AccountBox
                                 Tab.VERWALTUNG -> Icons.Filled.Build
-                                Tab.KONTO -> Icons.Filled.Settings
+                                Tab.KONTO -> Icons.Filled.AccountCircle
                             },
                             contentDescription = null,
                         )
@@ -135,18 +162,37 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
             TopAppBar(
                 // In der Verwaltung nicht den persönlichen Zugang als Kopf zeigen; welche Einheit
                 // verwaltet wird, steht darunter (UX-Audit 31.10. A04)
-                title = { if (tab == Tab.VERWALTUNG) Text(tr("Verwaltung")) else AccessPicker(main, vm) },
+                title = {
+                    when (tab) {
+                        Tab.VERWALTUNG -> Text(tr("Verwaltung"))
+                        Tab.KONTO -> Text(tr("Mein Konto"))
+                        else -> AccessPicker(main, vm)
+                    }
+                },
                 // Wappen der gewählten Einheit vor dem Namen (Schmuck; der Name steht daneben)
                 navigationIcon = {
                     val logo by vm.logo.collectAsStateWithLifecycle()
                     val image = remember(logo) { logo?.asImageBitmap() }
-                    if (image != null && tab != Tab.VERWALTUNG) {
+                    if (tab == Tab.KONTO) {
+                        IconButton(onClick = { backTarget(tab, previousTab)?.let { target -> leave.request { tab = target } } }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zurück"))
+                        }
+                    } else if (image != null && tab != Tab.VERWALTUNG) {
                         Image(image, contentDescription = null, modifier = Modifier.padding(start = 12.dp).size(36.dp))
+                    }
+                },
+                // „Mein Konto“ oben rechts wie im Browser (A-01)
+                actions = {
+                    if (tab != Tab.KONTO) {
+                        IconButton(onClick = { leave.request { previousTab = tab; tab = Tab.KONTO } }) {
+                            Icon(Icons.Filled.AccountCircle, contentDescription = tr("Mein Konto"))
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = LocalBrand.current.brand,
                     titleContentColor = LocalBrand.current.onBrand,
+                    navigationIconContentColor = LocalBrand.current.onBrand,
                     actionIconContentColor = LocalBrand.current.onBrand,
                 ),
             )
@@ -172,9 +218,9 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     )
                     access != null && tab == Tab.TERMINE -> EventsPane(access, vm)
                     access != null && tab == Tab.MITTEILUNGEN -> CircularsPane(access, vm)
-                    access != null && tab == Tab.PROFIL -> ProfilePane(access, main, vm)
+                    access != null && tab == Tab.AUSWEIS -> ProfilePane(access, main, vm)
                     // Ohne Netz: wenigstens den gespeicherten Ausweis zeigen
-                    main.offline && tab == Tab.PROFIL -> OfflineCardPane(main)
+                    main.offline && tab == Tab.AUSWEIS -> OfflineCardPane(main)
                     // Ohne Netz beim Kaltstart: Hinweis statt leerer Fläche, dazu wartende
                     // Kassenvorgänge dieses Telefons (UX-Audit 31.10. A15, F03)
                     main.offline -> OfflinePane(main, events = tab == Tab.TERMINE)

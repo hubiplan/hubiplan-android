@@ -9,6 +9,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -706,7 +707,7 @@ private fun SignatureBox(lines: List<List<Pair<Float, Float>>>?, hint: String, e
             .height(110.dp)
             .background(Color.White, RoundedCornerShape(8.dp))
             .border(1.dp, Color(0xFFBBBBBB), RoundedCornerShape(8.dp))
-            .clickable(enabled = enabled, onClick = onClick),
+            .clickable(enabled = enabled, onClickLabel = tr("Unterschreiben"), role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         if (lines != null && lines.isNotEmpty()) {

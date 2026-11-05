@@ -7,14 +7,23 @@ import android.content.Intent
 import android.net.Uri
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,7 +35,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
@@ -205,22 +214,28 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
     }
 }
 
-private enum class Section(val label: String) {
-    TASKS(tr("Offene Aufgaben")),
-    TODOS(tr("Aufgaben")),
-    MEMBERS(tr("Mitglieder")),
-    EVENTS(tr("Termine")),
-    FINANCE(tr("Kasse")),
-    BILLING(tr("Beiträge")),
-    OCCASIONS(tr("Anlässe")),
+/**
+ * Bereiche der Verwaltung. Sie stehen untereinander in einer Startliste statt als waagerecht
+ * scrollende Filterchips (UX-Audit 05.11. A-03); „Offene Punkte“ hebt sich von „Aufgaben“ ab.
+ */
+internal enum class Section(val label: String, val hint: String) {
+    TASKS(tr("Offene Punkte"), tr("Änderungsmeldungen, Fotos und Termine, die auf dich warten")),
+    TODOS(tr("Aufgaben"), tr("Aufgaben anlegen, verteilen und erledigen")),
+    MEMBERS(tr("Mitglieder"), tr("Suchen, anrufen, Mitgliedsakte öffnen")),
+    EVENTS(tr("Termine"), tr("Termine anlegen, Zu- und Absagen eintragen")),
+    FINANCE(tr("Kasse"), tr("Buchungen und Quittungen")),
+    BILLING(tr("Beiträge"), tr("Rechnungen und Zahlungsstand")),
+    OCCASIONS(tr("Anlässe"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
 }
 
-/** Bereiche je nach Rechten; Untereinheiten (Zugführung) haben Mitglieder und Termine. */
-private fun sectionsFor(unit: AdminUnit): List<Section> {
+/**
+ * Bereiche je nach Rechten; Untereinheiten (Zugführung) haben Aufgaben, Mitglieder und Termine,
+ * aber keine gemeinsame Liste offener Punkte.
+ */
+internal fun sectionsFor(unit: AdminUnit): List<Section> {
     val p = unit.permissions
     if (unit.isDepartment) {
         return listOfNotNull(
-            Section.TASKS,
             Section.TODOS.takeIf { showsTodos(unit) },
             Section.MEMBERS.takeIf { showsMembers(unit) },
             Section.EVENTS.takeIf { showsEvents(unit) },
@@ -256,7 +271,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val receiptStore = remember(main.account.server, main.account.deviceId) {
         ReceiptStore(context, "${main.account.server}-${main.account.deviceId}")
     }
-    var section by rememberSaveable(unit.key) { mutableStateOf(if (showsTodos(unit)) Section.TODOS else Section.TASKS) }
+    // null = Startliste der Verwaltung
+    var section by rememberSaveable(unit.key) { mutableStateOf<Section?>(null) }
     var todoId by remember(unit.key) { mutableStateOf<Int?>(null) }
     var creatingTodo by remember(unit.key) { mutableStateOf(false) }
     var member by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
@@ -311,7 +327,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     fun requestLeave(action: () -> Unit) { if (leave == null) action() else leave.request(action) }
     val inForm = newBooking || newReceipt || admitting || creatingEvent != null || creatingTodo
     val nested = inForm || invoiceId != null || bookingId != null || eventId != null || member != null || requests || todoId != null
-    androidx.activity.compose.BackHandler(enabled = nested) {
+    // Aus einem Bereich führt Zurück zur Startliste, erst von dort zum Startreiter (A-03/A-04).
+    androidx.activity.compose.BackHandler(enabled = nested || section != null) {
         requestLeave {
             when {
                 creatingTodo -> creatingTodo = false
@@ -325,6 +342,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                 admitting -> admitting = false
                 member != null -> member = null
                 requests -> requests = false
+                else -> section = null
             }
         }
     }
@@ -363,24 +381,11 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             UnitPicker(units, unit) { picked -> if (picked.key != unit.key) requestLeave { unitKey = picked.key } }
-            if (!nested) {
-                Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    sections.forEach { s ->
-                        FilterChip(selected = section == s, onClick = { if (section != s) requestLeave { section = s } }, label = { Text(s.label) })
-                    }
-                    if (hasMembers) TextButton(onClick = {
-                        scanner.launch(
-                            ScanOptions()
-                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                .setPrompt(tr("Mitgliedsausweis scannen"))
-                                .setBeepEnabled(false)
-                                .setOrientationLocked(false),
-                        )
-                    }) { Text(tr("Ausweis prüfen")) }
+            val current = section
+            if (!nested && current != null) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = { requestLeave { section = null } }) { Text(tr("‹ Übersicht")) }
+                    Text(current.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(start = 8.dp))
                 }
             }
             HorizontalDivider()
@@ -398,6 +403,27 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     onChanged(tr("Aufgabe angelegt"), changeSet)
                 }
                 openTodo != null && showsTodos(unit) -> TodoScreen(client, openTodo, errors, reload, onBack = { todoId = null; reload++ }, onChanged = onChanged)
+                current == null && !nested -> AdminStart(
+                    client = client,
+                    sections = sections,
+                    until = until,
+                    vm = vm,
+                    reloadKey = reload,
+                    onScan = if (hasMembers) {
+                        {
+                            scanner.launch(
+                                ScanOptions()
+                                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                    .setPrompt(tr("Mitgliedsausweis scannen"))
+                                    .setBeepEnabled(false)
+                                    .setOrientationLocked(false),
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    onOpen = { section = it },
+                )
                 section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onLock = vm::lockAdmin, onOpen = { todoId = it })
                 openInvoice != null -> InvoiceScreen(client, openInvoice, BILLING_EDIT in unit.permissions, errors, onBack = {
                     invoiceId = null
@@ -529,23 +555,16 @@ private fun TaskList(
                 Footer(until, vm) { reload++ }
             }
             list.isEmpty() -> Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(tr("Keine offenen Aufgaben."))
+                Text(tr("Keine offenen Punkte."))
                 Footer(until, vm) { reload++ }
             }
             else -> LazyColumn(Modifier.fillMaxSize()) {
-                item {
-                    Text(
-                        tr("Offene Aufgaben"),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.asHeading().padding(start = 16.dp, top = 12.dp, end = 16.dp),
-                    )
-                }
                 items(list) { task ->
                     ListItem(
                         overlineContent = { Text(task.kindLabel) },
                         headlineContent = { Text(task.title) },
                         supportingContent = { Text(task.detail) },
-                        modifier = Modifier.clickable { onOpen(task) },
+                        modifier = Modifier.openRow { onOpen(task) },
                     )
                     HorizontalDivider()
                 }
@@ -553,6 +572,78 @@ private fun TaskList(
             }
         }
     }
+}
+
+/**
+ * Startliste der Verwaltung (A-03): „Ausweis prüfen“ ganz oben, weil es am Einlass schnell gehen
+ * muss, darunter „Offene Punkte“ mit Anzahl und alle Bereiche als große Zeilen, ohne seitliches
+ * Wischen. TalkBack sagt „Schaltfläche“ und „Öffnen“, nicht „Filter“.
+ */
+@Composable
+private fun AdminStart(
+    client: AdminClient,
+    sections: List<Section>,
+    until: String?,
+    vm: AppViewModel,
+    reloadKey: Int,
+    onScan: (() -> Unit)?,
+    onOpen: (Section) -> Unit,
+) {
+    var reload by remember { mutableIntStateOf(0) }
+    var openCount by remember(client) { mutableStateOf<Int?>(null) }
+    LaunchedEffect(client, reload, reloadKey) {
+        if (Section.TASKS !in sections) return@LaunchedEffect
+        val api = vm.adminApi() ?: return@LaunchedEffect
+        // Die Anzahl ist nur ein Hinweis; ein Fehler zeigt sich beim Öffnen der Liste.
+        openCount = try { api.adminTasks(client.unitId).items.size } catch (_: ApiException) { null }
+    }
+    LazyColumn(Modifier.fillMaxSize()) {
+        if (onScan != null) {
+            item {
+                Button(
+                    onClick = onScan,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).heightIn(min = 56.dp),
+                ) {
+                    Icon(Icons.Filled.AccountBox, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                    Text(tr("Ausweis prüfen"))
+                }
+            }
+        }
+        item {
+            Text(
+                tr("Was möchtest du tun?"),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.asHeading().padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 4.dp),
+            )
+        }
+        if (sections.isEmpty()) {
+            item { Text(tr("Für diese Einheit sind in der App keine Bereiche freigegeben."), modifier = Modifier.padding(16.dp)) }
+        }
+        items(sections) { s ->
+            val count = openCount
+            ListItem(
+                leadingContent = { Icon(sectionIcon(s), contentDescription = null) },
+                headlineContent = {
+                    Text(if (s == Section.TASKS && count != null) tr("Offene Punkte ({count})", "count" to count) else s.label)
+                },
+                supportingContent = { Text(s.hint) },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+                modifier = Modifier.openRow { onOpen(s) },
+            )
+            HorizontalDivider()
+        }
+        item { Box(Modifier.padding(16.dp)) { Footer(until, vm) { reload++ } } }
+    }
+}
+
+private fun sectionIcon(s: Section) = when (s) {
+    Section.TASKS -> Icons.Filled.Notifications
+    Section.TODOS -> Icons.Filled.CheckCircle
+    Section.MEMBERS -> Icons.Filled.Person
+    Section.EVENTS -> Icons.Filled.DateRange
+    Section.FINANCE -> Icons.Filled.ShoppingCart
+    Section.BILLING -> Icons.AutoMirrored.Filled.List
+    Section.OCCASIONS -> Icons.Filled.Star
 }
 
 @Composable

@@ -1,6 +1,5 @@
 package de.hubiplan.app.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,7 +109,7 @@ fun EventsSection(
                             ).joinToString(" · "),
                         )
                     },
-                    modifier = Modifier.clickable { onOpen(o) },
+                    modifier = Modifier.openRow { onOpen(o) },
                 )
                 HorizontalDivider()
             }
@@ -319,7 +318,7 @@ private fun ResponseLists(r: AdminResponses, canEnter: Boolean, onPick: (EventDi
             ListItem(
                 headlineContent = { Text(o.name) },
                 supportingContent = { if (o.departments.isNotBlank()) Text(o.departments) },
-                modifier = if (canEnter) Modifier.clickable { onPick(EventDialog.Respond(o.membershipId, o.name, null, 0, "")) } else Modifier,
+                modifier = if (canEnter) Modifier.openRow(tr("Rückmeldung eintragen")) { onPick(EventDialog.Respond(o.membershipId, o.name, null, 0, "")) } else Modifier,
             )
             HorizontalDivider()
         }
@@ -336,7 +335,7 @@ private fun ResponseLists(r: AdminResponses, canEnter: Boolean, onPick: (EventDi
                     )
                 },
                 modifier = if (canEnter) {
-                    Modifier.clickable { onPick(EventDialog.Respond(row.membershipId, row.name, row.status, row.guests, row.note)) }
+                    Modifier.openRow(tr("Rückmeldung ändern")) { onPick(EventDialog.Respond(row.membershipId, row.name, row.status, row.guests, row.note)) }
                 } else {
                     Modifier
                 },

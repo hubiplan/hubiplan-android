@@ -4,7 +4,6 @@ import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -180,7 +179,7 @@ private fun InvoiceRow(inv: InvoiceItem, onClick: () -> Unit) {
                 )
             }
         },
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.openRow(onClick = onClick),
     )
 }
 

@@ -30,22 +30,26 @@ Paketname `de.hubiplan.app`, ab Android 9, für Telefon und Tablet.
 
 ## Für Mitglieder
 
+Unten (auf dem Tablet links) stehen höchstens fünf Ziele: Termine, Aufgaben, Mitteilungen,
+Ausweis und – mit Rechten – Verwaltung. „Mein Konto“ öffnet das Symbol oben rechts. Die
+Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schließt sie die App.
+
 - Termine der eigenen Einheiten (Verein, Untereinheit, weitergegebene Termine des
   Dachverbands), Zu- und Absage mit einem Fingertipp
 - Termine im Gerätekalender mit Erinnerungen und Hinweis „Rückmeldung fehlt“
 - Mitteilungen und Rundschreiben lesen
 - Push ohne Google über eine UnifiedPush-App (z. B. ntfy), Inhalt Ende-zu-Ende
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
-- Mitgliedsausweis mit QR-Code im Reiter Profil, auch ohne Netz (verschlüsselt gespeichert);
+- Mitgliedsausweis mit QR-Code unter „Ausweis“, auch ohne Netz (verschlüsselt gespeichert);
   zum Vorzeigen bildschirmfüllend und mit voller Helligkeit
 - eigenes Profil ansehen und Änderungen melden (der Verein prüft sie)
-- „Meine Ergebnisse“ im Profil: eigene Wettbewerbe mit Platz und Wert, Titel und Auszeichnungen
+- „Meine Ergebnisse“ unter „Ausweis“: eigene Wettbewerbe mit Platz und Wert, Titel und Auszeichnungen
   (wenn der Verein das Modul Wettbewerbe nutzt)
 - Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen, mit Einwilligung;
   der Verein gibt es frei, Foto und Einwilligung lassen sich in der App widerrufen
 - Farben und Wappen des Vereins aus HUBIplan; Verknüpfung mit dem Wappen des Vereins auf
   dem Startbildschirm
-- Deutsch oder Englisch (App-Sprache von Android oder Auswahl unter Konto › Sprache)
+- Deutsch oder Englisch (App-Sprache von Android oder Auswahl unter Mein Konto › Sprache)
 - mehrere Konten bei verschiedenen HUBIplan-Instanzen, jedes mit eigenem Geräteschlüssel,
   eigenen Kalendern und eigenem Push
 
@@ -53,7 +57,9 @@ Paketname `de.hubiplan.app`, ab Android 9, für Telefon und Tablet.
 
 Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird einmal mit
 Passwort und Zwei-Faktor-Code freigeschaltet, danach mit Fingerabdruck oder PIN geöffnet;
-Bildschirmfotos sind dort gesperrt.
+Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was möchtest du
+tun?“: oben „Ausweis prüfen“, darunter „Offene Punkte“ mit Anzahl und die Bereiche
+Aufgaben, Mitglieder, Termine, Kasse, Beiträge und Anlässe, je nach Rechten.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
@@ -163,7 +169,7 @@ docs/                          Lizenzen, Veröffentlichen
 `trn(…)` (`Texte.kt`). Die englischen Texte stehen in `app/src/main/assets/texte/en.json`;
 `TexteTest` schlägt fehl, solange einer fehlt. Es gilt die in den Android-Einstellungen gewählte
 App-Sprache (ab Android 13), sonst die Sprache des zuerst verbundenen Kontos (änderbar unter
-Konto › Sprache, wenn der Server Englisch freigeschaltet hat), sonst Deutsch.
+Mein Konto › Sprache, wenn der Server Englisch freigeschaltet hat), sonst Deutsch.
 
 Die Schnittstelle zu HUBIplan (`/api/app/v1/`) beschreibt
 [docs/app.md](https://github.com/hubiplan/hubiplan/blob/main/docs/app.md) in hubiplan.

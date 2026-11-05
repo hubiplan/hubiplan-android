@@ -1,8 +1,5 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.data.AdminClient
@@ -66,7 +62,6 @@ fun DeptMemberScreen(
     onChanged: OnChanged,
     reload: Int,
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var detail by remember(id) { mutableStateOf<DeptMemberDetail?>(null) }
     var error by remember(id) { mutableStateOf<String?>(null) }
@@ -97,32 +92,7 @@ fun DeptMemberScreen(
         if (d.departments.isNotEmpty()) Text(d.departments.joinToString(", "), style = MaterialTheme.typography.bodySmall)
         d.birthDate?.let { Text(tr("geboren {date}", "date" to formatPlainDate(it)), style = MaterialTheme.typography.bodySmall) }
         d.entryDate?.let { Text(tr("eingetreten {date}", "date" to formatPlainDate(it)), style = MaterialTheme.typography.bodySmall) }
-        d.contact?.let { c ->
-            if (c.phone.isNotBlank()) {
-                ListItem(
-                    headlineContent = { Text(c.phone) },
-                    overlineContent = { Text(tr("Telefon")) },
-                    modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${c.phone}"))) },
-                )
-            }
-            if (c.email.isNotBlank()) {
-                ListItem(
-                    headlineContent = { Text(c.email) },
-                    overlineContent = { Text(tr("E-Mail")) },
-                    modifier = Modifier.clickable { context.startActivity(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${c.email}"))) },
-                )
-            }
-            val address = listOf(c.street, "${c.postalCode} ${c.city}".trim()).filter { it.isNotBlank() }.joinToString(", ")
-            if (address.isNotBlank()) {
-                ListItem(
-                    headlineContent = { Text(address) },
-                    overlineContent = { Text(tr("Anschrift")) },
-                    modifier = Modifier.clickable {
-                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(address))))
-                    },
-                )
-            }
-        }
+        d.contact?.let { ContactRows(it) }
         if (canEditDeptMembers(permissions)) OutlinedButton(onClick = { editing = true }) { Text(tr("Kontaktdaten bearbeiten")) }
         Text(tr("Mitgliedsart, Austritt und Beiträge regelt der Verein."), style = MaterialTheme.typography.bodySmall)
     }
