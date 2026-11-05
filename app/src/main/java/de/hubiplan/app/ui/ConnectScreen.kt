@@ -90,7 +90,7 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     return@Column
                 }
                 Text(
-                    tr("Am einfachsten verbindest du die App mit dem QR-Code aus HUBIplan: im Browser unter „Mein Konto › App auf dem Telefon“ auf „App verbinden“ tippen."),
+                    tr("Am einfachsten verbindest du die App mit dem QR-Code aus HUBIplan: im Browser unter „Mein Konto › App & andere Instanzen“ auf „App verbinden“ tippen."),
                 )
                 Button(
                     onClick = {

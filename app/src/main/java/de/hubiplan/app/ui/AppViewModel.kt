@@ -771,7 +771,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val link = PairingLink.parse(text)
         if (link == null) {
             _connect.value = _connect.value.copy(
-                error = tr("Das ist kein QR-Code von HUBIplan. Bitte den Code unter „Mein Konto › App auf dem Telefon“ scannen."),
+                error = tr("Das ist kein QR-Code von HUBIplan. Bitte den Code unter „Mein Konto › App & andere Instanzen“ scannen."),
             )
             return
         }

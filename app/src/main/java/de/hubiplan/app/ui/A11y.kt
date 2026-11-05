@@ -2,6 +2,9 @@ package de.hubiplan.app.ui
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,11 +12,15 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -102,6 +109,50 @@ fun LabeledCheckbox(
     ) {
         Checkbox(checked = checked, onCheckedChange = null, enabled = enabled, modifier = Modifier.padding(end = 12.dp))
         Text(label, style = style ?: MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/**
+ * Antippbare Listenzeile: TalkBack sagt „Schaltfläche“ und „Zum Öffnen doppeltippen“ bzw. die
+ * genannte Aktion statt nur „Zum Aktivieren doppeltippen“ (UX-Audit 05.11. A-05).
+ */
+fun Modifier.openRow(label: String = tr("Öffnen"), onClick: () -> Unit): Modifier =
+    clickable(onClickLabel = label, role = Role.Button, onClick = onClick)
+
+/**
+ * Telefon, E-Mail und Anschrift eines Mitglieds als eigene Zeilen mit Symbol und benannter
+ * Aktion („Anrufen“, „E-Mail schreiben“, „In Karten öffnen“), mindestens 56 dp hoch (A-05).
+ */
+@Composable
+fun ContactRows(contact: de.hubiplan.app.data.Contact) {
+    val context = LocalContext.current
+    fun start(intent: Intent) = runCatching { context.startActivity(intent) }
+    if (contact.phone.isNotBlank()) {
+        ListItem(
+            leadingContent = { Icon(Icons.Filled.Call, contentDescription = null) },
+            headlineContent = { Text(contact.phone) },
+            overlineContent = { Text(tr("Telefon")) },
+            modifier = Modifier.openRow(tr("Anrufen")) { start(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${contact.phone}"))) },
+        )
+    }
+    if (contact.email.isNotBlank()) {
+        ListItem(
+            leadingContent = { Icon(Icons.Filled.Email, contentDescription = null) },
+            headlineContent = { Text(contact.email) },
+            overlineContent = { Text(tr("E-Mail")) },
+            modifier = Modifier.openRow(tr("E-Mail schreiben")) { start(Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:${contact.email}"))) },
+        )
+    }
+    val address = listOf(contact.street, "${contact.postalCode} ${contact.city}".trim()).filter { it.isNotBlank() }.joinToString(", ")
+    if (address.isNotBlank()) {
+        ListItem(
+            leadingContent = { Icon(Icons.Filled.Place, contentDescription = null) },
+            headlineContent = { Text(address) },
+            overlineContent = { Text(tr("Anschrift")) },
+            modifier = Modifier.openRow(tr("In Karten öffnen")) {
+                start(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(address))))
+            },
+        )
     }
 }
 

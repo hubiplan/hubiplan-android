@@ -1,6 +1,5 @@
 package de.hubiplan.app.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -99,7 +98,7 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
 private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) {
     ListItem(
         // Gewählter Termin (Tablet) nicht nur farbig: TalkBack sagt „ausgewählt“ (A-06)
-        modifier = Modifier.clickable(onClick = onClick).semantics { if (isSelected) selected = true },
+        modifier = Modifier.openRow(onClick = onClick).semantics { if (isSelected) selected = true },
         colors = if (isSelected) {
             ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         } else {

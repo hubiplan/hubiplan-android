@@ -9,7 +9,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -388,7 +387,7 @@ private fun BookingRow(b: BookingItem, onClick: () -> Unit) {
             )
         },
         trailingContent = { Text(sign + formatMoney(b.amount)) },
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier.openRow(onClick = onClick),
     )
 }
 
