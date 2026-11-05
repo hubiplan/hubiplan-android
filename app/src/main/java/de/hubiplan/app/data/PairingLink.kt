@@ -47,3 +47,7 @@ internal fun httpsOrigin(uri: URI): String? {
     val origin = "https://$host" + if (uri.port == -1) "" else ":${uri.port}"
     return origin.takeIf { it.toHttpUrlOrNull() != null }
 }
+
+/** Vorhandene Web-Wiederherstellung derselben Instanz; keine Anmeldedaten im Link. */
+fun passwordResetUrl(serverInput: String): String? =
+    normalizeServer(serverInput)?.let { "$it/passwort-vergessen" }
