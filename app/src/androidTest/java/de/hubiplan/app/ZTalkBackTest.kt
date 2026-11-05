@@ -58,22 +58,23 @@ class ZTalkBackTest {
             val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
             waitFor("TalkBack-Dienst ist wirklich aktiv") { manager.getEnabledAccessibilityServiceList(-1).any { it.resolveInfo.serviceInfo.packageName == "com.google.android.marvin.talkback" } }
             fun state(node: AccessibilityNodeInfo) = AccessibilityNodeInfoCompat.wrap(node).stateDescription?.toString()
+            fun focus(label: String) {
+                node(label).performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                waitFor("Accessibility-Fokus: " + label) { node(label).isAccessibilityFocused }
+            }
             ActivityScenario.launch(AccessibilityTestActivity::class.java).use {
-                val picker = node("Account: nothing selected")
                 waitFor("Nativer Dropdown-Zustand collapsed") { state(node("Account: nothing selected")) == "collapsed" }
-                assertTrue(picker.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
-                assertTrue(picker.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                focus("Account: nothing selected")
+                assertTrue(node("Account: nothing selected").performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 val cash = node("Cash")
                 assertTrue(cash.performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 assertEquals("collapsed", state(node("Account: cash")))
-                val event = node("Event notice")
-                assertTrue(event.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
-                assertTrue(event.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                focus("Event notice")
+                assertTrue(node("Event notice").performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 waitFor("Mitteilung ist semantisch ausgewählt") { node("Event notice").isSelected }
                 assertFalse(node("Board notice").isSelected)
-                val save = node("Save")
-                assertTrue(save.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
-                assertTrue(save.performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                focus("Save")
+                assertTrue(node("Save").performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 assertEquals(1, node("Saved.", actionable = false).liveRegion)
                 assertTrue(node("Save").isAccessibilityFocused)
                 assertTrue(manager.getEnabledAccessibilityServiceList(-1).any { it.resolveInfo.serviceInfo.packageName == "com.google.android.marvin.talkback" })
