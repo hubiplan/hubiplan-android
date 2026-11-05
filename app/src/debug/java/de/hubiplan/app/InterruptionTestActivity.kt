@@ -20,6 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityOptionsCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import de.hubiplan.app.data.*
 import de.hubiplan.app.ui.*
 import okhttp3.*
@@ -37,12 +41,19 @@ class InterruptionTestActivity : FragmentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
         fixtureKey = "ui-interruption-" + taskId
         val photo = File(cacheDir, "fixture-receipt.png")
-        Bitmap.createBitmap(40, 40, Bitmap.Config.ARGB_8888).apply { eraseColor(android.graphics.Color.BLUE) }
-            .let { bitmap -> photo.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } }
         val registry = object : ActivityResultRegistryOwner {
             override val activityResultRegistry = object : ActivityResultRegistry() {
                 override fun <I, O> onLaunch(requestCode: Int, contract: ActivityResultContract<I, O>, input: I, options: ActivityOptionsCompat?) {
-                    dispatchResult(requestCode, Activity.RESULT_OK, Intent().setData(Uri.fromFile(photo)))
+                    this@InterruptionTestActivity.lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            val bitmap = Bitmap.createBitmap(40, 40, Bitmap.Config.ARGB_8888)
+                            try {
+                                bitmap.eraseColor(android.graphics.Color.BLUE)
+                                photo.outputStream().use { check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+                            } finally { bitmap.recycle() }
+                        }
+                        dispatchResult(requestCode, Activity.RESULT_OK, Intent().setData(Uri.fromFile(photo)))
+                    }
                 }
             }
         }
