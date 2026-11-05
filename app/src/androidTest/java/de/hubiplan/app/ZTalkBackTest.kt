@@ -29,15 +29,15 @@ class ZTalkBackTest {
             while (!condition() && SystemClock.elapsedRealtime() < end) SystemClock.sleep(100)
             assertTrue(message, condition())
         }
-        fun find(node: AccessibilityNodeInfo?, label: String): AccessibilityNodeInfo? {
+        fun find(node: AccessibilityNodeInfo?, label: String, actionable: Boolean): AccessibilityNodeInfo? {
             if (node == null) return null
-            if (node.text?.toString() == label || node.contentDescription?.toString() == label) return node
-            for (i in 0 until node.childCount) find(node.getChild(i), label)?.let { return it }
+            if ((node.text?.toString() == label || node.contentDescription?.toString() == label) && (!actionable || node.isClickable)) return node
+            for (i in 0 until node.childCount) find(node.getChild(i), label, actionable)?.let { return it }
             return null
         }
-        fun node(label: String): AccessibilityNodeInfo {
-            waitFor("Zugänglicher Knoten: " + label) { find(automation.rootInActiveWindow, label) != null }
-            return requireNotNull(find(automation.rootInActiveWindow, label))
+        fun node(label: String, actionable: Boolean = true): AccessibilityNodeInfo {
+            waitFor("Zugänglicher Knoten: " + label) { find(automation.rootInActiveWindow, label, actionable) != null }
+            return requireNotNull(find(automation.rootInActiveWindow, label, actionable)).also { it.refresh(); android.util.Log.i("HUBIplanA11y", "label=$label class=${it.className} clickable=${it.isClickable} state=${it.stateDescription} selected=${it.isSelected} live=${it.liveRegion}") }
         }
         try {
             shell("settings put secure enabled_accessibility_services com.google.android.marvin.talkback/com.google.android.marvin.talkback.TalkBackService")
@@ -46,7 +46,7 @@ class ZTalkBackTest {
             waitFor("TalkBack-Dienst ist wirklich aktiv") { manager.getEnabledAccessibilityServiceList(-1).any { it.resolveInfo.serviceInfo.packageName == "com.google.android.marvin.talkback" } }
             ActivityScenario.launch(AccessibilityTestActivity::class.java).use {
                 val picker = node("Account: nothing selected")
-                assertEquals("collapsed", picker.stateDescription?.toString())
+                waitFor("Nativer Dropdown-Zustand collapsed") { node("Account: nothing selected").stateDescription?.toString() == "collapsed" }
                 assertTrue(picker.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
                 assertTrue(picker.performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 val cash = node("Cash")
@@ -60,7 +60,7 @@ class ZTalkBackTest {
                 val save = node("Save")
                 assertTrue(save.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
                 assertTrue(save.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-                assertEquals(1, node("Saved.").liveRegion)
+                assertEquals(1, node("Saved.", actionable = false).liveRegion)
                 assertTrue(node("Save").isAccessibilityFocused)
                 assertTrue(manager.getEnabledAccessibilityServiceList(-1).any { it.resolveInfo.serviceInfo.packageName == "com.google.android.marvin.talkback" })
             }
