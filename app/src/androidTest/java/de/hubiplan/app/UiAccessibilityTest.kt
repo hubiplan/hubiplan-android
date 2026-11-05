@@ -1,5 +1,9 @@
 package de.hubiplan.app
 
+import android.graphics.Bitmap
+import java.io.File
+import androidx.compose.ui.graphics.asAndroidBitmap
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
@@ -76,6 +80,12 @@ class UiAccessibilityTest {
                 }
             }
         } }
+        val directory = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")?.let(::File)
+            ?: InstrumentationRegistry.getInstrumentation().targetContext.filesDir
+        check(directory.isDirectory || directory.mkdirs())
+        File(directory, "ux-test-signature-200.png").outputStream().use {
+            compose.onNodeWithTag("signature-fixture").captureToImage().asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
         val root = compose.onNodeWithTag("signature-fixture").fetchSemanticsNode().boundsInRoot
         for (text in listOf("Delete", "Cancel", "Confirm")) {
             val action = compose.onNodeWithText(text)
