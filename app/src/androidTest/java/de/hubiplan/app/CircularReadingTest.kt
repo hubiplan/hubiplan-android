@@ -1,6 +1,9 @@
 package de.hubiplan.app
 
 import android.graphics.Bitmap
+import android.app.Activity
+import android.app.Instrumentation
+import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,7 +43,7 @@ class CircularReadingTest {
         compose.onNodeWithText("Open this circular with attachments in the browser").performScrollTo().performClick()
         compose.runOnIdle {assertEquals(listOf("https://club.example.org/mein-bereich/rundschreiben?zugang=9&schreiben=17"),urls)}
         val out=InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")?.let(::File)
-        if(out!=null){out.mkdirs(); val image=compose.onRoot().captureToImage().asAndroidBitmap(); File(out,"ux-test-circular-reading.png").outputStream().use {image.compress(Bitmap.CompressFormat.PNG,100,it)}}
+        if(out!=null){out.mkdirs(); val image=compose.onRoot().captureToImage().asAndroidBitmap(); File(out,"ux-test-circular-reading-${System.currentTimeMillis()}.png").outputStream().use {image.compress(Bitmap.CompressFormat.PNG,100,it)}}
     }
     @Test fun fehlenderBrowserHatEinenKopierbarenRueckwegUndKeinVeraltetesZiel() {
         val current=mutableStateOf(item)
@@ -52,5 +55,29 @@ class CircularReadingTest {
         compose.onNodeWithText("https://club.example.org/mein-bereich/rundschreiben?zugang=9&schreiben=17").assertExists()
         compose.runOnIdle {current.value=item.copy(id=18)}
         compose.onNodeWithText("https://club.example.org/mein-bereich/rundschreiben?zugang=9&schreiben=17").assertDoesNotExist()
+    }
+    @Test fun produktiverUriHandlerOeffnetDenGenauenBrowserIntentOhneZugangsdaten() {
+        compose.setContent {HubiplanTheme(null) {
+            Column(Modifier.verticalScroll(rememberScrollState())) {CircularContent(item,"https://club.example.org",9)}
+        }}
+        val instrumentation=InstrumentationRegistry.getInstrumentation()
+        val intents=mutableListOf<Intent>()
+        val monitor=object:Instrumentation.ActivityMonitor() {
+            override fun onStartActivity(intent:Intent):Instrumentation.ActivityResult? {
+                if(intent.action!=Intent.ACTION_VIEW)return null
+                intents+=Intent(intent)
+                return Instrumentation.ActivityResult(Activity.RESULT_CANCELED,null)
+            }
+        }
+        instrumentation.addMonitor(monitor)
+        try {
+            compose.onNodeWithText("Open this circular with attachments in the browser").performScrollTo().performClick()
+            compose.runOnIdle {
+                assertEquals(1,intents.size)
+                assertEquals("https://club.example.org/mein-bereich/rundschreiben?zugang=9&schreiben=17",intents.single().dataString)
+                assertEquals(null,intents.single().extras)
+            }
+            compose.onNodeWithText("Invitation.pdf").assertExists()
+        } finally {instrumentation.removeMonitor(monitor)}
     }
 }

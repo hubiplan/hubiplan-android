@@ -24,6 +24,7 @@ class AccessibilityTestActivity : ComponentActivity() {
                 CircularRow(CircularItem(2, "Event notice"), selected == 2) { selected = 2 }
                 Button(onClick = { saved = true }) { Text("Save") }
                 if (saved) StatusNotice(tr("Gespeichert."))
+                Button(onClick = { saved = false }) { Text("Reset") }
             }
         } }
     }

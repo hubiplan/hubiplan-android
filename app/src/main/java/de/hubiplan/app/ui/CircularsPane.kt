@@ -134,9 +134,9 @@ private const val SEND = -1
 
 @Composable
 private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBack: () -> Unit) {
-    var item by remember(id) { mutableStateOf<CircularItem?>(null) }
-    var error by remember(id) { mutableStateOf<String?>(null) }
-    var attempt by remember(id) { mutableStateOf(0) }
+    var item by remember(access.id, id) { mutableStateOf<CircularItem?>(null) }
+    var error by remember(access.id, id) { mutableStateOf<String?>(null) }
+    var attempt by remember(access.id, id) { mutableStateOf(0) }
     LaunchedEffect(access.id, id, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
         error = null

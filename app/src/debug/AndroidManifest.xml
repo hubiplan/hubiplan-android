@@ -4,7 +4,7 @@
         <activity android:name=".InterruptionTestActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".AccessibilityTestActivity" android:exported="false" />
         <service android:name=".SpeechRecorderService" android:label="HUBIplan Prüfsynthese" android:enabled="false" android:exported="true">
-            <intent-filter><action android:name="android.intent.action.TTS_SERVICE" /></intent-filter>
+            <intent-filter><action android:name="android.intent.action.TTS_SERVICE" /><category android:name="android.intent.category.DEFAULT" /></intent-filter>
         </service>
     </application>
 </manifest>

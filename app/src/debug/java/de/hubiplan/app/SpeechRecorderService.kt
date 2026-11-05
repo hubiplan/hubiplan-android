@@ -10,6 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 /** Nur Debug und standardmäßig deaktiviert. Zeichnet TalkBack→TTS auf, kein Hörtest. */
 class SpeechRecorderService : TextToSpeechService() {
     companion object { val utterances = CopyOnWriteArrayList<String>() }
+    override fun onCreate() {super.onCreate();android.util.Log.i("HUBIplanSpeech","Prüfsynthese gestartet")}
     override fun onGetLanguage() = arrayOf("eng", "GBR", "")
     override fun onIsLanguageAvailable(language: String?, country: String?, variant: String?) = TextToSpeech.LANG_COUNTRY_AVAILABLE
     override fun onLoadLanguage(language: String?, country: String?, variant: String?) = TextToSpeech.LANG_COUNTRY_AVAILABLE
