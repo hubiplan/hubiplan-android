@@ -647,5 +647,11 @@
     "Passwort vergessen? Im Browser zurücksetzen": "Forgot password? Reset in browser",
     "Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.": "First enter your club’s valid HTTPS address, e.g. club.example.org.",
     "Setze dein Passwort auf der Vereinsseite im Browser zurück. Kehre danach zur App zurück und melde dich mit dem neuen Passwort an.": "Reset your password on your club’s website in the browser. Then return to the app and sign in with the new password.",
-    "Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser und kehre danach zur App zurück:": "The browser could not be opened. Open this address in a browser, then return to the app:"
+    "Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser und kehre danach zur App zurück:": "The browser could not be opened. Open this address in a browser, then return to the app:",
+ "Zu Google Wallet hinzufügen": "Add to Google Wallet",
+ "Als Wallet-Pass öffnen": "Open as wallet pass",
+ "Der Wallet-Pass zeigt deinen Ausweis an. Ob er gilt, zeigt nur die Prüfung des QR-Codes.": "The wallet pass displays your card. Only checking the QR code shows whether it is valid.",
+ "Dabei werden Name, Verein, Mitgliedsart, Abteilung, Dachverband und QR-Code an Google übertragen. Dein Foto wird nicht übertragen. Die aktuelle Gültigkeit wird beim Scannen online geprüft.": "Your name, club, membership type, department, umbrella association and QR code are sent to Google. Your photo is not sent. Current validity is checked online when scanned.",
+ "Keine App zum Öffnen des Links gefunden.": "No app found to open the link.",
+ "Keine Wallet-App für .pkpass-Dateien gefunden, z. B. WalletPasses oder PassAndroid.": "No wallet app for .pkpass files found, e.g. WalletPasses or PassAndroid."
 }

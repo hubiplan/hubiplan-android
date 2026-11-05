@@ -1,6 +1,11 @@
 package de.hubiplan.app.ui
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.view.WindowManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,8 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -30,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,15 +52,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.content.FileProvider
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CardStore
+import de.hubiplan.app.data.CardWallet
+import de.hubiplan.app.data.LocalAccountData
 import de.hubiplan.app.data.StoredCard
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import de.hubiplan.app.tr
@@ -120,10 +133,105 @@ fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?) {
                 )
             }
             TextButton(onClick = { big = true }) { Text(tr("QR-Code groß zeigen")) }
+            val wallet = card.wallet
+            if (vm != null && !offline && wallet != null && (wallet.google || wallet.apple)) {
+                WalletButtons(vm, accessId, wallet)
+            }
         }
     }
     if (big && current != null && card?.url != null && display != null) {
         BigCardDialog(current, onClose = { big = false })
+    }
+}
+
+/**
+ * Ausweis in eine Wallet legen: Google über den Speicherlink (öffnet Google Wallet oder den
+ * Browser, ohne Google-Bibliothek, also auch in der F-Droid-Fassung), Apple-Pass als Datei für
+ * Wallet-Apps wie WalletPasses oder PassAndroid. Gültig bleibt nur, was die Prüfseite zeigt.
+ */
+@Composable
+private fun WalletButtons(vm: AppViewModel, accessId: Int, wallet: CardWallet) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var confirmGoogle by remember { mutableStateOf(false) }
+    var message by remember { mutableStateOf<String?>(null) }
+
+    fun run(block: suspend (de.hubiplan.app.data.Api) -> Unit) {
+        val api = vm.api() ?: return
+        busy = true
+        message = null
+        scope.launch {
+            try {
+                block(api)
+            } catch (e: ApiException) {
+                if (e.status == 401) vm.deviceRevoked(e) else message = e.message
+            } finally {
+                busy = false
+            }
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (wallet.google) {
+            OutlinedButton(onClick = { confirmGoogle = true }, enabled = !busy) { Text(tr("Zu Google Wallet hinzufügen")) }
+        }
+        if (wallet.apple) {
+            OutlinedButton(
+                onClick = {
+                    run { api ->
+                        val bytes = api.walletApple(accessId)
+                        val file = withContext(Dispatchers.IO) {
+                            File(context.cacheDir, LocalAccountData.WALLET_PASS).apply { mkdirs() }.resolve("mitgliedsausweis.pkpass").apply { writeBytes(bytes) }
+                        }
+                        message = openPass(context, file)
+                    }
+                },
+                enabled = !busy,
+            ) { Text(tr("Als Wallet-Pass öffnen")) }
+        }
+    }
+    Text(
+        tr("Der Wallet-Pass zeigt deinen Ausweis an. Ob er gilt, zeigt nur die Prüfung des QR-Codes."),
+        style = MaterialTheme.typography.bodySmall,
+    )
+    message?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+    if (confirmGoogle) {
+        AlertDialog(
+            onDismissRequest = { confirmGoogle = false },
+            title = { Text(tr("Zu Google Wallet hinzufügen")) },
+            text = {
+                Text(tr("Dabei werden Name, Verein, Mitgliedsart, Abteilung, Dachverband und QR-Code an Google übertragen. Dein Foto wird nicht übertragen. Die aktuelle Gültigkeit wird beim Scannen online geprüft."))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmGoogle = false
+                    run { api ->
+                        val url = api.walletGoogle(accessId)
+                        try {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        } catch (e: ActivityNotFoundException) {
+                            message = tr("Keine App zum Öffnen des Links gefunden.")
+                        }
+                    }
+                }) { Text(tr("Weiter")) }
+            },
+            dismissButton = { TextButton(onClick = { confirmGoogle = false }) { Text(tr("Abbrechen")) } },
+        )
+    }
+}
+
+/** Pass einer Wallet-App übergeben; Fehlertext, wenn keine dafür da ist. */
+private fun openPass(context: Context, file: File): String? {
+    val uri = FileProvider.getUriForFile(context, "${context.packageName}.dateien", file)
+    val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.apple.pkpass")
+    intent.clipData = ClipData.newRawUri(file.name, uri)
+    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    return try {
+        context.startActivity(intent)
+        null
+    } catch (e: ActivityNotFoundException) {
+        tr("Keine Wallet-App für .pkpass-Dateien gefunden, z. B. WalletPasses oder PassAndroid.")
     }
 }
 
