@@ -39,6 +39,7 @@ object LocalAccountData {
     fun forget(context: Context, accountKey: String) {
         FOLDERS.forEach { dir(context, it, accountKey).deleteRecursively() }
         ReceiptCache.forget(context.cacheDir, accountKey)
+        File(context.cacheDir, WALLET_PASS).deleteRecursively()
         DraftCrypto.deleteKey(alias(accountKey))
     }
 
@@ -50,6 +51,7 @@ object LocalAccountData {
     fun retire(context: Context, accountKey: String, server: String = "", email: String = "") {
         dir(context, "ausweise", accountKey).deleteRecursively()
         ReceiptCache.forget(context.cacheDir, accountKey)
+        File(context.cacheDir, WALLET_PASS).deleteRecursively()
         var kept = false
         for (folder in listOf("entwuerfe", "quittungen")) {
             val source = dir(context, folder, accountKey)
@@ -72,6 +74,9 @@ object LocalAccountData {
     }
 
     private const val OWNER = ".konto"
+
+    /** Cache-Ordner für den zuletzt geöffneten Wallet-Pass (wird beim nächsten Öffnen überschrieben). */
+    const val WALLET_PASS = "ausweis"
 
     /** Nach dieser Zeit fragt die App, ob alte Belege aus der Quarantäne gelöscht werden dürfen. */
     const val STALE_DAYS = 90L
