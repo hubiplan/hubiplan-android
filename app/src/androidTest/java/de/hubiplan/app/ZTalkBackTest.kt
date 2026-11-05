@@ -7,6 +7,7 @@ import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.view.accessibility.AccessibilityManager
 import android.view.accessibility.AccessibilityNodeInfo
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.*
@@ -50,14 +51,15 @@ class ZTalkBackTest {
             shell("settings put secure accessibility_enabled 1")
             val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE) as AccessibilityManager
             waitFor("TalkBack-Dienst ist wirklich aktiv") { manager.getEnabledAccessibilityServiceList(-1).any { it.resolveInfo.serviceInfo.packageName == "com.google.android.marvin.talkback" } }
+            fun state(node: AccessibilityNodeInfo) = AccessibilityNodeInfoCompat.wrap(node).stateDescription?.toString()
             ActivityScenario.launch(AccessibilityTestActivity::class.java).use {
                 val picker = node("Account: nothing selected")
-                waitFor("Nativer Dropdown-Zustand collapsed") { node("Account: nothing selected").stateDescription?.toString() == "collapsed" }
+                waitFor("Nativer Dropdown-Zustand collapsed") { state(node("Account: nothing selected")) == "collapsed" }
                 assertTrue(picker.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
                 assertTrue(picker.performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 val cash = node("Cash")
                 assertTrue(cash.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-                assertEquals("collapsed", node("Account: cash").stateDescription?.toString())
+                assertEquals("collapsed", state(node("Account: cash")))
                 val event = node("Event notice")
                 assertTrue(event.performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS))
                 assertTrue(event.performAction(AccessibilityNodeInfo.ACTION_CLICK))
