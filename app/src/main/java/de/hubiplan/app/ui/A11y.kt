@@ -44,8 +44,14 @@ fun Modifier.asHeading(): Modifier = semantics { heading() }
  */
 fun Modifier.dropdown(label: String, value: String, open: Boolean): Modifier = semantics {
     contentDescription = if (label.isBlank()) value else "$label: $value"
-    stateDescription = if (open) "aufgeklappt" else "zugeklappt"
+    stateDescription = if (open) tr("aufgeklappt") else tr("zugeklappt")
     role = Role.DropdownList
+}
+
+/** Erfolg als einzelne höfliche Live-Region, ohne den Bedienfokus zu versetzen. */
+@Composable
+fun StatusNotice(text: String, modifier: Modifier = Modifier) {
+    Text(text, color = MaterialTheme.colorScheme.primary, modifier = modifier.announce())
 }
 
 /** Statusmeldung, die TalkBack von selbst vorliest (Fehler dringlicher als Hinweise). */

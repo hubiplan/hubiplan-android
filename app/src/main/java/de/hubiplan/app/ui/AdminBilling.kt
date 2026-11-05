@@ -55,6 +55,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import de.hubiplan.app.tr
+import de.hubiplan.app.trn
 
 // Verwaltung in der App, Schritt B5: offene Rechnungen suchen, bar kassieren, Quittung teilen
 
@@ -117,7 +118,7 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
                         when {
                             list.isEmpty() && openOnly -> tr("Keine offenen Rechnungen gefunden.")
                             list.isEmpty() -> tr("Keine Rechnungen gefunden.")
-                            else -> "$count Rechnungen"
+                            else -> trn("{n} Rechnung", "{n} Rechnungen", count)
                         },
                         style = MaterialTheme.typography.bodySmall,
                     )

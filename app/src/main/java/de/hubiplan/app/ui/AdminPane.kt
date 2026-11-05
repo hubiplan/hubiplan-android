@@ -70,6 +70,14 @@ import de.hubiplan.app.data.ReceiptStore
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
 
+/** Derselbe Zustandshalter für die produktive Sicherheitssperre und deren Gerätetest. */
+@Composable
+internal fun rememberAdminDraftState(key: String): androidx.compose.runtime.saveable.SaveableStateHolder {
+    val retained = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
+    rememberFormDraft(Unit, onDiscard = { retained.removeState(key) })
+    return retained
+}
+
 /**
  * Reiter „Verwaltung“ (Schritt A8): nur für Konten mit Verwaltungsrechten. Erst nach dem
  * Freischalten (Passwort + 2FA) und jedes Mal nach Fingerabdruck/PIN; keine Bildschirmfotos.
@@ -78,9 +86,8 @@ import de.hubiplan.app.tr
 fun AdminPane(main: Screen.Main, vm: AppViewModel) {
     val context = LocalContext.current
     val state by vm.admin.collectAsStateWithLifecycle()
-    val retained = androidx.compose.runtime.saveable.rememberSaveableStateHolder()
     val retainedKey = "${main.account.server}-${main.account.deviceId}"
-    rememberFormDraft(Unit, onDiscard = { retained.removeState(retainedKey) })
+    val retained = rememberAdminDraftState(retainedKey)
     // Im Verwaltungsbereich keine Bildschirmfotos und keine Vorschau im App-Wechsler
     DisposableEffect(Unit) {
         val window = context.findActivity()?.window

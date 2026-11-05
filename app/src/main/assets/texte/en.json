@@ -639,5 +639,9 @@
  "Untereinheit": "Sub-unit",
  "Unterschriftsfeld: {name}": "Signature field: {name}",
  "Name": "Name",
- "Datenschutzerklärung der App": "App privacy policy"
+ "Datenschutzerklärung der App": "App privacy policy",
+ "aufgeklappt": "expanded",
+ "zugeklappt": "collapsed",
+ "{n} Rechnung": "{n} invoice",
+ "{n} Rechnungen": "{n} invoices"
 }

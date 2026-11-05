@@ -129,7 +129,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-        notice?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        notice?.let { StatusNotice(it) }
         // Ausweis zuerst: er soll auch ohne Netz und ohne geladenes Profil erscheinen
         MemberCardSection(cardStore, access.id, vm)
         HorizontalDivider()
@@ -210,6 +210,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                     if (sending) return@ChangeForm
                     val api = vm.api() ?: return@ChangeForm
                     sending = true
+                    notice = null
                     error = null
                     scope.launch {
                         try {
@@ -248,6 +249,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                 if (sending) return@PhotoUploadDialog
                 val api = vm.api() ?: return@PhotoUploadDialog
                 sending = true
+                notice = null
                 photoError = null
                 scope.launch {
                     try {
@@ -280,6 +282,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
+                    notice = null
                     val api = vm.api() ?: return@TextButton
                     scope.launch {
                         try {
