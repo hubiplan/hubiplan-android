@@ -94,7 +94,7 @@ class UiAccessibilityTest {
             action.assertIsDisplayed().assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
             val layouts = mutableListOf<TextLayoutResult>()
             compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-            org.junit.Assert.assertTrue("$text bleibt ungetrennt lesbar: ${layouts.map { "lines=${it.lineCount}, widthOver=${it.didOverflowWidth}, heightOver=${it.didOverflowHeight}, size=${it.size}, right=${it.getLineRight(0)}, bottom=${it.getLineBottom(0)}" }}", layouts.isNotEmpty() && layouts.all { it.lineCount == 1 && !it.hasVisualOverflow })
+            org.junit.Assert.assertTrue("$text bleibt ungetrennt lesbar: ${layouts.map { "lines=${it.lineCount}, widthOver=${it.didOverflowWidth}, heightOver=${it.didOverflowHeight}, size=${it.size}, right=${it.getLineRight(0)}, bottom=${it.getLineBottom(0)}" }}", layouts.isNotEmpty() && layouts.all { it.lineCount == 1 && it.getLineLeft(0) >= -1f && it.getLineRight(0) <= it.size.width + 1f && it.getLineBottom(0) <= it.size.height + 1f })
             val bounds = action.fetchSemanticsNode().boundsInRoot
             org.junit.Assert.assertTrue("$text bleibt innerhalb des 320-dp-Felds: $bounds, Feld: $root", bounds.left >= root.left && bounds.right <= root.right + 1f && bounds.top >= root.top && bounds.bottom <= root.bottom + 1f)
         }

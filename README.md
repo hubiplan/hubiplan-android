@@ -72,6 +72,10 @@ Bildschirmfotos sind dort gesperrt.
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,
   Belegnummer aus dem Kassenbuch)
 
+Beim Unterschreiben passen sich die Aktionsknöpfe dem verfügbaren Platz an. Bei großer Schrift stehen sie bei Bedarf in mehreren Zeilen; die Beschriftungen bleiben zusammenhängend. Die Hilfslinie bleibt oberhalb der Rollenbezeichnung. Du kannst weiterhin hochkant unterschreiben.
+
+English: signature actions adapt to the available space and move onto additional rows with large text, keeping each label intact. The guide line stays above the role label. Signing in portrait remains available.
+
 ### Aufgaben auf dem Telefon
 
 Unter **Verwaltung › Aufgaben** wählst du die Einheit oder Abteilung und „Offen“ oder
