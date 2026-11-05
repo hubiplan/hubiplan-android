@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
@@ -70,17 +71,17 @@ class UiAccessibilityTest {
         compose.setContent { HubiplanTheme(null) {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
-                Box(Modifier.requiredSize(320.dp, 480.dp)) {
+                Box(Modifier.requiredSize(320.dp, 480.dp).testTag("signature-fixture")) {
                     SignatureFullscreen("Treasurer", "Test receipt", "ui-a11y-signature", onConfirm = {}, onCancel = {})
                 }
             }
         } }
-        val root = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val root = compose.onNodeWithTag("signature-fixture").fetchSemanticsNode().boundsInRoot
         for (text in listOf("Delete", "Cancel", "Confirm")) {
             val action = compose.onNodeWithText(text)
-            action.assertIsDisplayed()
+            action.assertIsDisplayed().assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
             val bounds = action.fetchSemanticsNode().boundsInRoot
-            org.junit.Assert.assertTrue("$text bleibt innerhalb des Felds", bounds.left >= root.left && bounds.right <= root.right + 1f)
+            org.junit.Assert.assertTrue("$text bleibt innerhalb des 320-dp-Felds: $bounds, Feld: $root", bounds.left >= root.left && bounds.right <= root.right + 1f && bounds.top >= root.top && bounds.bottom <= root.bottom + 1f)
         }
     }
 
