@@ -59,9 +59,13 @@ class UiInterruptionTest {
         val entered = Build.VERSION.SDK_INT >= 30 && requireNotNull(editable(instrumentation.uiAutomation.rootInActiveWindow))
             .performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
         if (!entered) shell("input keyevent 66")
-        val returned = SystemClock.elapsedRealtime()
-        while (instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() != instrumentation.targetContext.packageName && SystemClock.elapsedRealtime() - returned < 20_000) SystemClock.sleep(100)
-        assertEquals(instrumentation.targetContext.packageName, instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString())
+        // Der aktive Accessibility-Knoten kann noch zur Systemleiste gehören.
+        // Entscheidend sind das bedienbare App-Fenster und die durch echte Authentifizierung geöffnete Form.
+        compose.waitUntil(20_000) {
+            var focused = false
+            compose.activityRule.scenario.onActivity { focused = it.window.decorView.hasWindowFocus() }
+            focused
+        }
         compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse A ▾").fetchSemanticsNodes().isNotEmpty() || compose.onAllNodesWithText("Kasse B ▾").fetchSemanticsNodes().isNotEmpty() }
     }
     @After fun dismissSystemWindow() {
@@ -98,6 +102,10 @@ class UiInterruptionTest {
         compose.onNodeWithText("23,50").assertExists()
         compose.onNodeWithText("Kasse B ▾").assertExists()
         compose.onNodeWithContentDescription("Beleg").assertExists()
+        compose.onNodeWithText("Testauslagen").assertExists()
+        compose.onNodeWithText("Buchungstext").performScrollTo().performClick().performTextReplacement("Testauslagen fortgesetzt")
+        compose.onNodeWithText("Testauslagen fortgesetzt").assertExists()
+        closeSoftKeyboard()
     }
     @Test fun zweihundertProzentSchriftUndBildschirmtastaturLassenDieBuchungBedienbar() {
         compose.activityRule.scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
