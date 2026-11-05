@@ -69,10 +69,16 @@ class ZTalkBackTest {
                 val cash = node("Cash")
                 assertTrue(cash.performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 assertEquals("collapsed", state(node("Account: cash")))
+                // Auswahl kann nativ als Flag oder als lokalisierte Zustandsbeschreibung ankommen.
+                val initialSelection = node("Board notice")
+                val selectedDescription = state(initialSelection)?.takeIf { description -> description.isNotBlank() }
+                assertTrue(initialSelection.isSelected || selectedDescription != null)
+                fun selected(item: AccessibilityNodeInfo) = item.isSelected || (selectedDescription != null && state(item) == selectedDescription)
+                assertFalse(selected(node("Event notice")))
                 focus("Event notice")
                 assertTrue(node("Event notice").performAction(AccessibilityNodeInfo.ACTION_CLICK))
-                waitFor("Mitteilung ist semantisch ausgewählt") { node("Event notice").isSelected }
-                assertFalse(node("Board notice").isSelected)
+                waitFor("Mitteilung ist semantisch ausgewählt") { selected(node("Event notice")) }
+                assertFalse(selected(node("Board notice")))
                 focus("Save")
                 assertTrue(node("Save").performAction(AccessibilityNodeInfo.ACTION_CLICK))
                 assertEquals(1, node("Saved.", actionable = false).liveRegion)
