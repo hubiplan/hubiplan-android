@@ -31,7 +31,13 @@ class ZTalkBackTest {
         }
         fun find(node: AccessibilityNodeInfo?, label: String, actionable: Boolean): AccessibilityNodeInfo? {
             if (node == null) return null
-            if ((node.text?.toString() == label || node.contentDescription?.toString() == label) && (!actionable || node.isClickable)) return node
+            if (node.text?.toString() == label || node.contentDescription?.toString() == label) {
+                if (!actionable) return node
+                // Compose kann die Beschriftung als nicht klickbaren virtuellen Kindknoten liefern.
+                var owner: AccessibilityNodeInfo? = node
+                while (owner != null && !owner.isClickable) owner = owner.parent
+                if (owner != null) return owner
+            }
             for (i in 0 until node.childCount) find(node.getChild(i), label, actionable)?.let { return it }
             return null
         }
