@@ -41,6 +41,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -131,6 +132,7 @@ private class Strokes {
 /** Zeichenfeld: Finger oder Stift, Linie unten mit Beschriftung. */
 @Composable
 private fun SignaturePad(strokes: Strokes, label: String, modifier: Modifier = Modifier) {
+    var captionHeightPx by remember { mutableIntStateOf(0) }
     Box(
         modifier
             .background(Color.White, RoundedCornerShape(8.dp))
@@ -163,7 +165,7 @@ private fun SignaturePad(strokes: Strokes, label: String, modifier: Modifier = M
                     }
                 },
         ) {
-            val lineY = size.height - 28.dp.toPx()
+            val lineY = (size.height - captionHeightPx - 16.dp.toPx()).coerceAtLeast(0f)
             drawLine(Color(0xFF999999), Offset(16.dp.toPx(), lineY), Offset(size.width - 16.dp.toPx(), lineY), 1.dp.toPx())
             val style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
             (strokes.lines + listOf(strokes.current)).forEach { line ->
@@ -179,7 +181,7 @@ private fun SignaturePad(strokes: Strokes, label: String, modifier: Modifier = M
             label,
             style = MaterialTheme.typography.labelSmall,
             color = Color(0xFF666666),
-            modifier = Modifier.align(Alignment.BottomStart).padding(start = 16.dp, bottom = 8.dp),
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = 16.dp, end = 16.dp, bottom = 8.dp).onSizeChanged { captionHeightPx = it.height },
         )
     }
 }
@@ -228,6 +230,7 @@ private tailrec fun Context.activity(): Activity? = when (this) {
  * Vollbild zum Unterschreiben: quer, ohne Statusleiste, oben steht, was bestätigt wird.
  * „Zurück“ fragt, ob die Unterschrift verworfen werden soll.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun SignatureFullscreen(title: String, text: String, accountKey: String, onConfirm: (SignatureStrokes) -> Unit, onCancel: () -> Unit) {
     val context = LocalContext.current
