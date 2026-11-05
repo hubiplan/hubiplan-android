@@ -116,6 +116,10 @@ Im Browser unter **Mein Konto › App & andere Instanzen › App auf dem Telefon
 und ggf. Zwei-Faktor-Code anmelden. Die App erhält einen eigenen Geräteschlüssel, der nur
 für den Mitgliederbereich gilt und sich jederzeit unter „Mein Konto“ abmelden lässt.
 
+**Passwort vergessen:** Trage unter „Oder mit E-Mail und Passwort anmelden“ zuerst die gültige Adresse deines Vereins ein. „Passwort vergessen? Im Browser zurücksetzen“ öffnet die vorhandene Passwortwiederherstellung genau dieser Instanz. E-Mail und Passwort werden nicht im Browserlink mitgegeben. Setze das Passwort dort zurück, kehre zur App zurück und melde dich mit dem neuen Passwort an. Ist kein Browser verfügbar, zeigt die App die kopierbare Zieladresse. Bei einer leeren, ungültigen oder unverschlüsselten HTTP-Adresse bleibt die Aktion deaktiviert; während der Anmeldung ebenfalls.
+
+**Forgot password:** Under “Or sign in with email and password”, first enter your club’s valid address. “Forgot password? Reset in browser” opens that instance’s existing password recovery page without adding your email or password to the link. Reset the password there, return to the app and sign in with the new password. If no browser is available, the app displays a selectable destination address. The action is disabled for empty, invalid or unencrypted HTTP addresses, and while signing in.
+
 ## Varianten
 
 | Variante | Vertrieb | Push |

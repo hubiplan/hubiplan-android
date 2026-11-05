@@ -1,5 +1,9 @@
 package de.hubiplan.app.ui
 
+import android.content.ActivityNotFoundException
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.platform.LocalUriHandler
+import de.hubiplan.app.data.passwordResetUrl
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -103,7 +107,7 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(tr("Mit QR-Code verbinden")) }
                 HorizontalDivider()
-                PasswordLogin(state, vm)
+                PasswordLogin(state, vm::login)
                 if (state.adding) {
                     TextButton(onClick = vm::cancelAdd, enabled = !state.busy) { Text(tr("Abbrechen, zurück zum bisherigen Konto")) }
                 }
@@ -114,14 +118,17 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
 }
 
 @Composable
-private fun PasswordLogin(state: ConnectState, vm: AppViewModel) {
+internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String) -> Unit) {
     var server by rememberSaveable { mutableStateOf(state.server.removePrefix("https://")) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    val uriHandler = LocalUriHandler.current
+    val recoveryUrl = passwordResetUrl(server)
+    var browserError by rememberSaveable { mutableStateOf(false) }
     Text(tr("Oder mit E-Mail und Passwort anmelden"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     OutlinedTextField(
         value = server,
-        onValueChange = { server = it },
+        onValueChange = { server = it; browserError = false },
         label = { Text(tr("Adresse von HUBIplan")) },
         placeholder = { Text("verein.example.de") },
         singleLine = true,
@@ -146,10 +153,40 @@ private fun PasswordLogin(state: ConnectState, vm: AppViewModel) {
         modifier = Modifier.fillMaxWidth(),
     )
     OutlinedButton(
-        onClick = { vm.login(server, email, password) },
+        onClick = { onLogin(server, email, password) },
         enabled = !state.busy && server.isNotBlank() && email.isNotBlank() && password.isNotEmpty(),
         modifier = Modifier.fillMaxWidth(),
     ) { Text(tr("Anmelden")) }
+    TextButton(
+        onClick = {
+            val url = recoveryUrl ?: return@TextButton
+            browserError = false
+            try {
+                uriHandler.openUri(url)
+            } catch (_: IllegalArgumentException) {
+                browserError = true
+            } catch (_: ActivityNotFoundException) {
+                browserError = true
+            } catch (_: SecurityException) {
+                browserError = true
+            }
+        },
+        enabled = !state.busy && recoveryUrl != null,
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(tr("Passwort vergessen? Im Browser zurücksetzen")) }
+    Text(
+        if (recoveryUrl == null) tr("Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.")
+        else tr("Setze dein Passwort auf der Vereinsseite im Browser zurück. Kehre danach zur App zurück und melde dich mit dem neuen Passwort an."),
+        style = MaterialTheme.typography.bodySmall,
+    )
+    if (browserError && recoveryUrl != null) {
+        Text(
+            tr("Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser und kehre danach zur App zurück:"),
+            color = MaterialTheme.colorScheme.error,
+            modifier = Modifier.announce(urgent = true),
+        )
+        SelectionContainer { Text(recoveryUrl) }
+    }
 }
 
 @Composable
