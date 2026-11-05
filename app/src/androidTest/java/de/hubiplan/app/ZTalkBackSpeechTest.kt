@@ -105,12 +105,24 @@ class ZTalkBackSpeechTest {
                     assertTrue(find(automation.rootInActiveWindow,"Save")?.isAccessibilityFocused==true)
                     android.util.Log.i("HUBIplanSpeechResult","PASS success="+SpeechRecorderService.utterances.joinToString(" | "))
                 }
+                fun reset(wanted:String) {
+                    fun focusButton(label:String) {
+                        SpeechRecorderService.utterances.clear()
+                        requireNotNull(find(automation.rootInActiveWindow,label)).performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
+                        waitFor("Fokus auf $label") {find(automation.rootInActiveWindow,label)?.isAccessibilityFocused==true}
+                        waitFor("TalkBack liest $label") {SpeechRecorderService.utterances.any {it.contains(label) && !it.contains(wanted)}}
+                    }
+                    // Die Fixture wie mit TalkBack bedienen: erst das Reset-Ziel
+                    // fokussieren, danach die nächste Aktion wieder aufsuchen.
+                    focusButton("Reset")
+                    assertTrue(requireNotNull(find(automation.rootInActiveWindow,"Reset")).performAction(AccessibilityNodeInfo.ACTION_CLICK))
+                    waitFor("Vorheriger Erfolg entfernt") {find(automation.rootInActiveWindow,wanted)==null}
+                    focusButton("Save")
+                }
                 verify("Saved.")
-                assertTrue(requireNotNull(find(automation.rootInActiveWindow,"Reset")).performAction(AccessibilityNodeInfo.ACTION_CLICK))
-                waitFor("Vorheriger Erfolg entfernt") {find(automation.rootInActiveWindow,"Saved.")==null}
+                reset("Saved.")
                 verify("Saved.")
-                assertTrue(requireNotNull(find(automation.rootInActiveWindow,"Reset")).performAction(AccessibilityNodeInfo.ACTION_CLICK))
-                waitFor("Vorheriger Erfolg erneut entfernt") {find(automation.rootInActiveWindow,"Saved.")==null}
+                reset("Saved.")
                 Texte.setzeFuerTest("de")
                 requireNotNull(find(automation.rootInActiveWindow,"Save")).performAction(AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS)
                 waitFor("Aktionsfokus für zweite Rückmeldung") {find(automation.rootInActiveWindow,"Save")?.isAccessibilityFocused==true}
