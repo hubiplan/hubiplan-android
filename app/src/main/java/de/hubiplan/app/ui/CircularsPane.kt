@@ -1,7 +1,5 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.hubiplan.app.data.ApiException
@@ -49,7 +46,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
     var error by remember(access.id) { mutableStateOf<String?>(null) }
     var selected by rememberSaveable(access.id) { mutableStateOf<Int?>(null) }
     val canSend by vm.canSend.collectAsStateWithLifecycle()
-    var notice by remember { mutableStateOf<String?>(null) }
+    var notice by remember(access.id) { mutableStateOf<String?>(null) }
     var reload by remember { mutableStateOf(0) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, access.id, leave?.busy) {
@@ -79,7 +76,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
             Column(Modifier.fillMaxSize()) {
                 if (canSend) {
                     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Button(onClick = { if (selected != SEND) { if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
+                        Button(onClick = { if (selected != SEND) { notice = null; if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
                     }
                 }
                 notice?.let { StatusNotice(it, Modifier.padding(horizontal = 16.dp)) }
@@ -137,10 +134,9 @@ private const val SEND = -1
 
 @Composable
 private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBack: () -> Unit) {
-    var item by remember(id) { mutableStateOf<CircularItem?>(null) }
-    var error by remember(id) { mutableStateOf<String?>(null) }
-    var attempt by remember(id) { mutableStateOf(0) }
-    val context = LocalContext.current
+    var item by remember(access.id, id) { mutableStateOf<CircularItem?>(null) }
+    var error by remember(access.id, id) { mutableStateOf<String?>(null) }
+    var attempt by remember(access.id, id) { mutableStateOf(0) }
     LaunchedEffect(access.id, id, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
         error = null
@@ -163,16 +159,6 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         }
         Text(c.subject, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(listOf(c.sender, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-        // Einfache Auszeichnung (**fett**, Listen) vorerst als Text; Anhänge im Browser
-        Text(c.body.orEmpty())
-        // Anhänge und Gestaltung gibt es im Mitgliederbereich im Browser (UX-Audit 31.10. A06)
-        val server = (vm.screen.value as? Screen.Main)?.account?.server
-        if (!server.isNullOrBlank()) {
-            OutlinedButton(onClick = {
-                runCatching {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(server.trimEnd('/') + "/mein-bereich/rundschreiben")))
-                }
-            }) { Text(tr("Mit Anhängen im Browser öffnen")) }
-        }
+        CircularContent(c, (vm.screen.value as? Screen.Main)?.account?.server, access.id)
     }
 }

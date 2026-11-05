@@ -241,6 +241,7 @@ data class CircularItem(
     @SerialName("kind_label") val kindLabel: String = "",
     @SerialName("sent_at") val sentAt: String? = null,
     val body: String? = null,
+    val attachments: List<CircularFile> = emptyList(),
     // Versandweg: app, mail, letter, portal
     val channel: String = "",
 )
@@ -365,3 +366,6 @@ data class LanguageState(
     val default: String = "de",
     val language: String? = null,
 )
+
+@Serializable
+data class CircularFile(val id: Int, val name: String, val size: Long = 0)

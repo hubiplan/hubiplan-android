@@ -290,3 +290,11 @@ Der Bereich **Aufgaben** zeigt ausdrücklich zugewiesene Aufgaben und offene Ang
 Aufgabenhinweise öffnen genau das betroffene Konto und den freigegebenen Mitgliedszugang. Ein nicht mehr verfügbarer Zugang fällt nicht auf eine andere Mitgliedschaft oder die Verwaltung zurück. Die App lädt die Berechtigung und den Aufgabenstand frisch; nach Fehlern werden alte Inhalte verworfen. Aufgaben werden nur im Arbeitsspeicher gehalten. Auch gemeinsame Instanzaufgaben lassen sich bei ausgefallener Quelle nicht scheinbar offline erledigen.
 
 Für Mitgliederaufgaben ist eine HUBIplan-Fassung mit den Portal-Aufgaben-Schnittstellen (PR 135) nötig. Instanzübergreifende Aufgaben werden auf dem eigenen HUBIplan-Server abgeglichen; die App verbindet sich weiterhin nur mit der eigenen Instanz.
+
+### Mitteilungen lesen und Anhänge öffnen
+
+Der Eingang **Mitteilungen** enthält dieselben empfangenen Schreiben wie **Mein Bereich → Rundschreiben** im Web. Absätze, fett/kursiv, Listen und sichere Web-/E-Mail-Links werden nativ dargestellt. Die Dateinamen der Anhänge stehen beim Schreiben. **Dieses Schreiben mit Anhängen im Browser öffnen** führt zum ausgewählten Schreiben und Mitgliederzugang. Eine nötige Browseranmeldung bleibt unabhängig von der App und führt danach zum Ziel zurück. Fehlt ein Browser, lässt sich die angezeigte Zieladresse kopieren.
+
+Terminantworten und Aufgabenaktionen bestätigen einen erfolgreichen Serverabschluss als höfliche Statusmeldung. Fehler entfernen vorherige Erfolge und bleiben mit Korrektur- oder Wiederholungsmöglichkeit sichtbar.
+
+Der zusätzliche `ZTalkBackSpeechTest` protokolliert auf einem ausdrücklich freigegebenen, eigenen Emulator den echten TalkBack-Ausgabetext an eine stumme Prüfsynthese. Der nur im Debug-Build vorhandene TTS-Dienst ist standardmäßig deaktiviert; der Test aktiviert ihn vorübergehend und stellt die vorherigen Einstellungen wieder her. Das prüft die tatsächliche Textübergabe, ersetzt aber weder eine Hörprüfung noch Tests mit Betroffenen.
