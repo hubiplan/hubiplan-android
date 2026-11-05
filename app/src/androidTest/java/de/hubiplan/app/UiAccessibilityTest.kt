@@ -15,6 +15,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.*
@@ -90,6 +92,9 @@ class UiAccessibilityTest {
         for (text in listOf("Delete", "Cancel", "Confirm")) {
             val action = compose.onNodeWithText(text)
             action.assertIsDisplayed().assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
+            val layouts = mutableListOf<TextLayoutResult>()
+            compose.onNodeWithText(text, useUnmergedTree = true).performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            org.junit.Assert.assertTrue("$text bleibt ungetrennt lesbar: ${layouts.map { it.lineCount }}", layouts.isNotEmpty() && layouts.all { it.lineCount == 1 && !it.hasVisualOverflow })
             val bounds = action.fetchSemanticsNode().boundsInRoot
             org.junit.Assert.assertTrue("$text bleibt innerhalb des 320-dp-Felds: $bounds, Feld: $root", bounds.left >= root.left && bounds.right <= root.right + 1f && bounds.top >= root.top && bounds.bottom <= root.bottom + 1f)
         }

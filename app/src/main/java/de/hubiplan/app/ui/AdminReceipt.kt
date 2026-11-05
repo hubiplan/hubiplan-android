@@ -14,6 +14,8 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -279,7 +281,7 @@ internal fun SignatureFullscreen(title: String, text: String, accountKey: String
             Text(tr("Tipp: Telefon quer halten, dann ist mehr Platz."), style = MaterialTheme.typography.bodySmall, color = Color(0xFF444444))
         }
         SignaturePad(strokes, title, Modifier.fillMaxWidth().weight(1f))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             TextButton(onClick = { strokes.clear() }, enabled = !strokes.isEmpty) { Text(tr("Löschen")) }
             OutlinedButton(onClick = { if (strokes.isEmpty) cancel() else askCancel = true }) { Text(tr("Abbrechen")) }
             Button(onClick = { strokes.toStrokes()?.let { signatureSaved(); attachments.delete(strokeKey); onConfirm(it) } }, enabled = !strokes.isEmpty) { Text(tr("Bestätigen")) }

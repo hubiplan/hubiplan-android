@@ -2,6 +2,7 @@ package de.hubiplan.app
 
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Bundle
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
@@ -35,17 +36,26 @@ class UiInterruptionTest {
         val fd = instrumentation.uiAutomation.executeShellCommand(command)
         return ParcelFileDescriptor.AutoCloseInputStream(fd).bufferedReader().use { it.readText() }
     }
-    private fun editable(node: AccessibilityNodeInfo?): Boolean {
-        if (node == null) return false
-        if (node.isEditable) return true
-        return (0 until node.childCount).any { editable(node.getChild(it)) }
+    private fun editable(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (node == null) return null
+        if (node.isEditable && node.isVisibleToUser) return node
+        for (i in 0 until node.childCount) editable(node.getChild(i))?.let { return it }
+        return null
     }
     private fun unlock() {
         compose.onNodeWithText("Unlock fixture").performClick()
         val start = SystemClock.elapsedRealtime()
-        while (!editable(instrumentation.uiAutomation.rootInActiveWindow) && SystemClock.elapsedRealtime() - start < 20_000) SystemClock.sleep(100)
-        assertTrue("System-PIN-Feld muss erscheinen", editable(instrumentation.uiAutomation.rootInActiveWindow))
-        shell("input text " + pin)
+        while (editable(instrumentation.uiAutomation.rootInActiveWindow) == null && SystemClock.elapsedRealtime() - start < 20_000) SystemClock.sleep(100)
+        val field = requireNotNull(editable(instrumentation.uiAutomation.rootInActiveWindow)) { "Sichtbares System-PIN-Feld muss erscheinen" }
+        field.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+        val focusStart = SystemClock.elapsedRealtime()
+        while (editable(instrumentation.uiAutomation.rootInActiveWindow)?.isFocused != true && SystemClock.elapsedRealtime() - focusStart < 10_000) SystemClock.sleep(100)
+        assertTrue("System-PIN-Feld erhält Eingabefokus", editable(instrumentation.uiAutomation.rootInActiveWindow)?.isFocused == true)
+        val arguments = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, pin) }
+        if (!requireNotNull(editable(instrumentation.uiAutomation.rootInActiveWindow)).performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)) {
+            shell("input keyevent 67 67 67 67 67 67")
+            shell("input text " + pin)
+        }
         shell("input keyevent 66")
         val returned = SystemClock.elapsedRealtime()
         while (instrumentation.uiAutomation.rootInActiveWindow?.packageName?.toString() != instrumentation.targetContext.packageName && SystemClock.elapsedRealtime() - returned < 20_000) SystemClock.sleep(100)
