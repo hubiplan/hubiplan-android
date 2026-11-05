@@ -25,9 +25,15 @@ class ZTalkBackTest {
         val oldEnabled = shell("settings get secure accessibility_enabled").trim()
         val context = instrumentation.targetContext
         Texte.setzeFuerTest("en", context.assets.open("texte/en.json").bufferedReader().use { Texte.parse(it.readText()) })
+        fun dump(node: AccessibilityNodeInfo?, depth: Int = 0) {
+            if (node == null || depth > 7) return
+            android.util.Log.i("HUBIplanA11y", "$depth class=${node.className} text=${node.text} desc=${node.contentDescription} state=${AccessibilityNodeInfoCompat.wrap(node).stateDescription} clickable=${node.isClickable} actions=${node.actionList.map { it.id }} package=${node.packageName}")
+            for (i in 0 until node.childCount) dump(node.getChild(i), depth + 1)
+        }
         fun waitFor(message: String, condition: () -> Boolean) {
             val end = SystemClock.elapsedRealtime() + 20_000
             while (!condition() && SystemClock.elapsedRealtime() < end) SystemClock.sleep(100)
+            if (!condition()) dump(automation.rootInActiveWindow)
             assertTrue(message, condition())
         }
         fun find(node: AccessibilityNodeInfo?, label: String, actionable: Boolean): AccessibilityNodeInfo? {
@@ -44,7 +50,7 @@ class ZTalkBackTest {
         }
         fun node(label: String, actionable: Boolean = true): AccessibilityNodeInfo {
             waitFor("Zugänglicher Knoten: " + label) { find(automation.rootInActiveWindow, label, actionable) != null }
-            return requireNotNull(find(automation.rootInActiveWindow, label, actionable)).also { it.refresh(); android.util.Log.i("HUBIplanA11y", "label=$label class=${it.className} clickable=${it.isClickable} state=${it.stateDescription} selected=${it.isSelected} live=${it.liveRegion}") }
+            return requireNotNull(find(automation.rootInActiveWindow, label, actionable)).also { it.refresh(); android.util.Log.i("HUBIplanA11y", "label=$label class=${it.className} clickable=${it.isClickable} state=${AccessibilityNodeInfoCompat.wrap(it).stateDescription} selected=${it.isSelected} live=${it.liveRegion}") }
         }
         try {
             shell("settings put secure enabled_accessibility_services com.google.android.marvin.talkback/com.google.android.marvin.talkback.TalkBackService")
