@@ -58,8 +58,8 @@ Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schlie
 Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird einmal mit
 Passwort und Zwei-Faktor-Code freigeschaltet, danach mit Fingerabdruck oder PIN geöffnet;
 Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was möchtest du
-tun?“: oben „Ausweis prüfen“, darunter „Offene Punkte“ mit Anzahl und die Bereiche
-Aufgaben, Mitglieder, Termine, Kasse, Beiträge und Anlässe, je nach Rechten.
+tun?“: oben „Ausweis prüfen“, darunter „Zu erledigen“ mit Anzahl und die Bereiche
+Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburtstage, je nach Rechten.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
@@ -73,7 +73,7 @@ Aufgaben, Mitglieder, Termine, Kasse, Beiträge und Anlässe, je nach Rechten.
 - Änderungsmeldungen und Fotos freigeben, Mitgliedsausweis per QR-Code prüfen
 - Termine mit Zu- und Absagen, Rückmeldung für Mitglieder eintragen, einfache Termine
   anlegen und absagen
-- Kasse mit Belegfoto (ohne Netz als verschlüsselter Entwurf)
+- Kassenbuch mit Belegfoto (ohne Netz als verschlüsselter Entwurf)
 - offene Rechnungen suchen, Barzahlung verbuchen, Quittung als PDF teilen
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,
   Belegnummer aus dem Kassenbuch)
