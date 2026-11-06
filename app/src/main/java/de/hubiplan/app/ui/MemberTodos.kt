@@ -53,7 +53,7 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
     val portalTarget = target?.takeIf { it.scope == "p" }
     val access = if (portalTarget != null) portalTarget.memberAccess(main.me?.portal.orEmpty()) else main.access
     if (access == null) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
             Text(tr("Die Aufgabe ist nicht mehr verfügbar oder nicht freigegeben."))
             TextButton(onClick = { vm.selectTodo(null) }) { Text(tr("‹ Zurück")) }
         }
@@ -98,19 +98,19 @@ private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String
         emptyDetail = tr("Aufgabe auswählen"),
         list = {
             Column(Modifier.fillMaxSize()) {
-                Text(tr("Aufgaben"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(16.dp))
+                Text(tr("Aufgaben"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(Abstand.rand))
                 switch?.invoke()
-                Text(tr("Für dich freigegebene Aufgaben und offene Angebote deiner Einheit."), modifier = Modifier.padding(horizontal = 16.dp))
-                Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(tr("Für dich freigegebene Aufgaben und offene Angebote deiner Einheit."), modifier = Modifier.padding(horizontal = Abstand.rand))
+                Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
                     FilterChip(selected = done, onClick = { done = true }, label = { Text(tr("Erledigt")) })
                     TextButton(onClick = { reload++ }) { Text(tr("Aktualisieren")) }
                 }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
                 if (rows == null && error == null) Loading()
                 rows?.let { current ->
                     val visible = current.filter { (it.status == "done") == done }
-                    if (visible.isEmpty()) Text(tr("Keine Aufgaben in dieser Ansicht."), modifier = Modifier.padding(16.dp))
+                    if (visible.isEmpty()) Text(tr("Keine Aufgaben in dieser Ansicht."), modifier = Modifier.padding(Abstand.rand))
                     LazyColumn {
                         items(visible, key = { it.id }) { todo ->
                             ListItem(headlineContent = { Text(todo.title) },
@@ -177,7 +177,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
             } finally { busy = false }
         }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())

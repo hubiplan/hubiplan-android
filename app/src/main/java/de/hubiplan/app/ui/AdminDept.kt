@@ -80,7 +80,7 @@ fun DeptMemberScreen(
             error = errors.message(e)
         } finally { loading = false }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         if (detail == null) Text(tr("Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy || loading) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -134,7 +134,7 @@ private fun ContactDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Kontaktdaten")) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                 CONTACT_KEYS.forEach { k ->

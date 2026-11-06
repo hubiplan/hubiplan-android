@@ -70,7 +70,7 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
         emptyDetail = tr("Termin auswählen"),
         list = {
             when {
-                error != null -> Column(Modifier.padding(16.dp)) {
+                error != null -> Column(Modifier.padding(Abstand.rand)) {
                     Text(error ?: "", color = MaterialTheme.colorScheme.error)
                     TextButton(onClick = { reloadKey++ }) { Text(tr("Erneut laden")) }
                 }
@@ -185,8 +185,8 @@ private fun EventDetailView(
 
     val e = event
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -247,14 +247,14 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int)
         return
     }
     if (rsvp.guestsAllowed) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             AssistChip(
                 onClick = { if (guests > 0) guests-- },
                 label = { Text("−") },
                 enabled = !busy,
                 modifier = Modifier.semantics { contentDescription = tr("Begleitperson entfernen") },
             )
-            Text(tr("Begleitpersonen: {guests}", "guests" to guests), Modifier.padding(top = 14.dp))
+            Text(tr("Begleitpersonen: {guests}", "guests" to guests), Modifier.padding(top = Abstand.rand))
             AssistChip(
                 onClick = { if (guests < rsvp.maxGuests) guests++ },
                 label = { Text("+") },
@@ -263,7 +263,7 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int)
             )
         }
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         Button(onClick = { onRespond("yes", guests) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Zusagen")) }
         OutlinedButton(onClick = { onRespond("no", 0) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Absagen")) }
     }

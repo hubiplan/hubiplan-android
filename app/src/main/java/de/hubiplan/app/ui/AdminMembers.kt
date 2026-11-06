@@ -142,10 +142,10 @@ fun MemberList(
             },
             label = { Text(tr("Suchen (Name, Nummer, E-Mail)")) },
             singleLine = true,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein),
         )
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            Modifier.fillMaxWidth().padding(horizontal = Abstand.rand),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -158,14 +158,14 @@ fun MemberList(
                 }),
             ) {
                 Text(tr("Ehemalige"), style = MaterialTheme.typography.bodySmall)
-                Switch(checked = former, onCheckedChange = null, modifier = Modifier.padding(start = 8.dp))
+                Switch(checked = former, onCheckedChange = null, modifier = Modifier.padding(start = Abstand.klein))
             }
         }
         onAdmit?.let { admit ->
-            TextButton(onClick = admit, modifier = Modifier.padding(horizontal = 8.dp)) { Text(tr("+ Neues Mitglied")) }
+            TextButton(onClick = admit, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("+ Neues Mitglied")) }
         }
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
         LazyColumn(Modifier.fillMaxSize()) {
             items(rows, key = { it.id }) { row ->
                 ListItem(
@@ -179,7 +179,7 @@ fun MemberList(
             }
             if (hasMore) {
                 item {
-                    TextButton(onClick = { page += 1 }, enabled = !loading, modifier = Modifier.padding(16.dp)) { Text(tr("Weitere laden")) }
+                    TextButton(onClick = { page += 1 }, enabled = !loading, modifier = Modifier.padding(Abstand.rand)) { Text(tr("Weitere laden")) }
                 }
             }
         }
@@ -250,7 +250,7 @@ fun MemberScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -264,7 +264,7 @@ fun MemberScreen(
             return@Column
         }
         val todayIso = today().toString()
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.rand)) {
             RemoteImage(d.photo?.approved?.thumbnailUrl, client::image, tr("Foto"), Modifier.width(84.dp).height(108.dp))
             Column {
                 Text(d.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
@@ -286,11 +286,11 @@ fun MemberScreen(
         // Vom Mitglied hochgeladenes Foto freigeben
         d.photo?.pending?.let { pending ->
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Neues Foto vom Mitglied"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                     RemoteImage(pending.url, client::image, tr("Neues Foto"), Modifier.width(140.dp).height(180.dp))
                     if (canEditPhotos(permissions)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                             Button(onClick = {
                                 launchChange {
                                     val r = client.decidePhoto(id, true)
@@ -392,7 +392,7 @@ private fun ConfirmDialog(preview: Preview, onDismiss: () -> Unit, onConfirm: ()
         onDismissRequest = onDismiss,
         title = { Text(preview.title.ifBlank { tr("Änderung bestätigen") }) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Das passiert:"), style = MaterialTheme.typography.labelLarge)
                 preview.consequences.forEach { Text("• $it") }
                 Text(tr("Danach lässt sich die Änderung rückgängig machen."), style = MaterialTheme.typography.bodySmall)
@@ -428,7 +428,7 @@ private fun EditDialog(d: MemberDetail, saving: Boolean, saveError: String?, onD
         onDismissRequest = onDismiss,
         title = { Text(tr("Stammdaten und Kontakt")) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 (error ?: saveError)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                 for (key in listOf("first_name", "last_name", "birth_date", "club_number", "email", "phone", "street", "postal_code", "city", "country")) {
@@ -528,7 +528,7 @@ private fun ChangeTypeDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Mitgliedsart wechseln")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Bisher: {x1}", "x1" to (d.currentType?.memberTypeName ?: tr("keine"))))
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 Picker(tr("Neue Mitgliedsart"), types.map { it to it.name }, chosen, { it.name }) { chosen = it }
@@ -574,7 +574,7 @@ private fun MoveDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Untereinheit wechseln")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Bisher: ") + d.currentDepartments(today().toString()).joinToString(", ") { it.departmentName }.ifBlank { "keine" })
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 Picker(tr("Neu"), units.map { it to it.label }, chosen, { it.label }) { chosen = it }
@@ -606,7 +606,7 @@ private fun ExitDialog(d: MemberDetail, onDismiss: () -> Unit, onNext: (String, 
         onDismissRequest = onDismiss,
         title = { Text(tr("Austritt von {name}", "name" to d.name)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 DateField(tr("Austritt zum"), date) { date = it }
                 Picker(tr("Grund"), d.exitReasons.map { it.value to it.label }, reason, { v -> d.exitReasons.first { it.value == v }.label }) { reason = it }
@@ -658,7 +658,7 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
         }
     }
 
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         item { TextButton(onClick = onBack) { Text(tr("‹ Zurück")) } }
         item { Text(tr("Änderungsmeldungen"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading()) }
         error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
@@ -670,7 +670,7 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
         }
         items(list ?: emptyList(), key = { it.id }) { cr ->
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(cr.memberName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                     cr.createdAt?.let { Text(formatDate(it), style = MaterialTheme.typography.bodySmall) }
                     cr.data.forEach { (key, value) ->
@@ -679,7 +679,7 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
                         Text("${FIELD_LABELS[key] ?: key}: ${displayValue(key, old)} → ${displayValue(key, new)}")
                     }
                     if (cr.message.isNotBlank()) Text("„${cr.message}“", style = MaterialTheme.typography.bodySmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Button(onClick = { decide(cr, true) }) { Text(tr("Übernehmen")) }
                         OutlinedButton(onClick = { decide(cr, false) }) { Text(tr("Ablehnen")) }
                     }
@@ -723,11 +723,11 @@ fun OccasionsSection(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> 
         }
     }
     LazyColumn(Modifier.fillMaxSize()) {
-        error?.let { item { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(16.dp)) } }
+        error?.let { item { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(Abstand.rand)) } }
         item { Header(tr("Geburtstage (30 Tage)")) }
         val b = birthdays
-        if (b == null && error == null) item { LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp)) }
-        if (b != null && b.isEmpty()) item { Text(tr("Keine."), modifier = Modifier.padding(horizontal = 16.dp)) }
+        if (b == null && error == null) item { LinearProgressIndicator(Modifier.fillMaxWidth().padding(Abstand.rand)) }
+        if (b != null && b.isEmpty()) item { Text(tr("Keine."), modifier = Modifier.padding(horizontal = Abstand.rand)) }
         items(b ?: emptyList()) { row ->
             ListItem(
                 headlineContent = { Text("${row.firstName} ${row.lastName}") },
@@ -737,7 +737,7 @@ fun OccasionsSection(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> 
         }
         item { Header(tr("Jubiläen (90 Tage)")) }
         val j = jubilees
-        if (j != null && j.isEmpty()) item { Text(tr("Keine."), modifier = Modifier.padding(horizontal = 16.dp)) }
+        if (j != null && j.isEmpty()) item { Text(tr("Keine."), modifier = Modifier.padding(horizontal = Abstand.rand)) }
         items(j ?: emptyList()) { row ->
             ListItem(
                 headlineContent = { Text("${row.firstName} ${row.lastName}") },
@@ -750,7 +750,7 @@ fun OccasionsSection(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> 
 
 @Composable
 private fun Header(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 4.dp))
+    Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(start = Abstand.rand, top = Abstand.rand, end = Abstand.rand, bottom = Abstand.eng))
 }
 
 // --- Ausweis prüfen ---
@@ -767,7 +767,7 @@ fun CardResultDialog(check: CardCheck, loadPublic: suspend (String) -> ByteArray
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein), horizontalAlignment = Alignment.CenterHorizontally) {
                 RemoteImage(check.photoUrl, loadPublic, tr("Foto"), Modifier.width(140.dp).height(180.dp))
                 listOfNotNull(check.firstName, check.lastName).joinToString(" ").takeIf { it.isNotBlank() }?.let {
                     Text(it, style = MaterialTheme.typography.titleLarge)

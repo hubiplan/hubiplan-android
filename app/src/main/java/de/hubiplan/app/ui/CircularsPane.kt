@@ -75,14 +75,14 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
             val list = items
             Column(Modifier.fillMaxSize()) {
                 if (canSend) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
                         Button(onClick = { if (selected != SEND) { notice = null; if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
                     }
                 }
-                notice?.let { StatusNotice(it, Modifier.padding(horizontal = 16.dp)) }
+                notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
                 when {
                     // Fehler mit erneutem Versuch statt leerer Liste (UX-Audit 31.10. A07)
-                    error != null -> Column(Modifier.padding(16.dp)) {
+                    error != null -> Column(Modifier.padding(Abstand.rand)) {
                         Text(error ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true))
                         TextButton(onClick = { reload++ }) { Text(tr("Erneut laden")) }
                     }
@@ -147,8 +147,8 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         }
     }
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }

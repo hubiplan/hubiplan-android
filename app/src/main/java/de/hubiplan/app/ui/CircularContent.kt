@@ -85,7 +85,7 @@ internal fun CircularBody(text: String, onOpen: (String) -> Unit) {
     val blocks = remember(text) { circularBlocks(text) }
     val style = TextLinkStyles(SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline))
     SelectionContainer {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             for (block in blocks) {
                 if (block.kind == "p") Text(circularInline(block.lines.joinToString("\n"), style, onOpen))
                 else Column(Modifier.semantics { collectionInfo = CollectionInfo(block.lines.size, 1) }) {

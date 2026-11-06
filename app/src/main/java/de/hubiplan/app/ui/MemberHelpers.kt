@@ -30,7 +30,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -49,7 +48,7 @@ import kotlinx.coroutines.launch
 /** Umschalter im Reiter „Aufgaben“, wenn der Verein Helferdienste nutzt. */
 @Composable
 internal fun TaskSwitch(helpers: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         FilterChip(selected = !helpers, onClick = { onChange(false) }, label = { Text(tr("Aufgaben")) })
         FilterChip(selected = helpers, onClick = { onChange(true) }, label = { Text(tr("Helferdienste")) })
     }
@@ -125,24 +124,24 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
     val current = data
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            Text(tr("Helferdienste"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(16.dp))
+            Text(tr("Helferdienste"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(Abstand.rand))
             switch()
-            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("Aktualisieren")) }
                 TextButton(onClick = {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$server/mein-bereich/helferdienste?zugang=$access")))
                 }) { Text(tr("Im Browser öffnen")) }
             }
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = 16.dp))
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
-            notice?.let { StatusNotice(it, Modifier.padding(horizontal = 16.dp)) }
-            if (current == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
+            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand))
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
+            notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
+            if (current == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth().padding(Abstand.rand))
         }
         if (current != null) {
             item {
                 Text(tr("Meine Dienste"), style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.asHeading().padding(start = 16.dp, end = 16.dp, top = 16.dp))
-                if (current.mine.isEmpty()) Text(tr("Du hast noch keine Dienste."), modifier = Modifier.padding(16.dp))
+                    modifier = Modifier.asHeading().padding(start = Abstand.rand, end = Abstand.rand, top = Abstand.rand))
+                if (current.mine.isEmpty()) Text(tr("Du hast noch keine Dienste."), modifier = Modifier.padding(Abstand.rand))
             }
             items(current.mine, key = { "m${it.id}" }) { shift ->
                 MyShiftRow(shift, current.canCancel(shift.id), busy) { cancel = shift }
@@ -151,8 +150,8 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
             val plans = current.plans.filter { plan -> plan.duties.any { duty -> duty.shifts.any { !it.past } } }
             item {
                 Text(tr("Dienstpläne"), style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.asHeading().padding(start = 16.dp, end = 16.dp, top = 24.dp))
-                if (plans.isEmpty()) Text(tr("Zurzeit gibt es keine offenen Dienstpläne."), modifier = Modifier.padding(16.dp))
+                    modifier = Modifier.asHeading().padding(start = Abstand.rand, end = Abstand.rand, top = Abstand.gross))
+                if (plans.isEmpty()) Text(tr("Zurzeit gibt es keine offenen Dienstpläne."), modifier = Modifier.padding(Abstand.rand))
             }
             items(plans, key = { "p${it.id}" }) { plan ->
                 PlanCard(plan, busy) { shift ->
@@ -183,7 +182,7 @@ private fun MyShiftRow(shift: MyShift, canCancel: Boolean, busy: Boolean, onCanc
 
 @Composable
 private fun PlanCard(plan: HelperPlan, busy: Boolean, onSignup: (HelperShift) -> Unit) {
-    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         Text(plan.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
         val info = listOf(plan.unit, plan.eventTitle).filter { it.isNotBlank() }
         if (info.isNotEmpty()) Text(info.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
@@ -198,7 +197,7 @@ private fun PlanCard(plan: HelperPlan, busy: Boolean, onSignup: (HelperShift) ->
             Text(dutyLine(duty), style = MaterialTheme.typography.titleSmall)
             if (duty.description.isNotBlank()) Text(duty.description, style = MaterialTheme.typography.bodySmall)
             open.forEach { shift ->
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
                     Text(formatWhen(shift.startsAt, shift.endsAt, false))
                     Text(shiftFreeLabel(shift), style = MaterialTheme.typography.bodySmall)
                     if (shift.note.isNotBlank()) Text(shift.note, style = MaterialTheme.typography.bodySmall)

@@ -49,21 +49,21 @@ fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onN
         try { rows = client.todos().items } catch (e: ApiException) { error = errors.message(e) }
     }
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
             FilterChip(selected = done, onClick = { done = true }, label = { Text(tr("Erledigt")) })
         }
-        Row(Modifier.padding(horizontal = 8.dp)) {
+        Row(Modifier.padding(horizontal = Abstand.klein)) {
             TextButton(onClick = onNew) { Text(tr("Neue Aufgabe")) }
             TextButton(onClick = { reload++ }) { Text(tr("Aktualisieren")) }
         }
-        TextButton(onClick = onLock, modifier = Modifier.padding(horizontal = 8.dp)) { Text(tr("Verwaltung auf diesem Telefon sperren")) }
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
+        TextButton(onClick = onLock, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("Verwaltung auf diesem Telefon sperren")) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
         val list = rows
         if (list == null && error == null) Loading()
         if (list != null) {
             val visible = list.filter { (it.status == "done") == done }
-            if (visible.isEmpty()) Text(tr("Keine Aufgaben in dieser Ansicht."), modifier = Modifier.padding(16.dp))
+            if (visible.isEmpty()) Text(tr("Keine Aufgaben in dieser Ansicht."), modifier = Modifier.padding(Abstand.rand))
             LazyColumn {
                 items(visible, key = { it.id }) { task ->
                     ListItem(
@@ -93,7 +93,7 @@ fun TodoScreen(client: AdminClient, id: Int, errors: AdminErrors, reloadKey: Int
         error = null
         try { task = client.todo(id) } catch (e: ApiException) { error = errors.message(e) }
     }
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -150,7 +150,7 @@ fun TodoCreateScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Uni
     rememberFormDraft(title, description, date, time, busy = busy, retainOnDispose = false)
     val fields = rememberServerFields()
     val body = todoInput(title, description, date, time)
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neue Aufgabe"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Die neue Aufgabe ist zunächst privat. Teilen, Anhänge und Serien verwaltest du im Browser."))
