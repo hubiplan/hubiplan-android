@@ -172,7 +172,7 @@ private fun WalletButtons(vm: AppViewModel, accessId: Int, wallet: CardWallet) {
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
         if (wallet.google) {
             OutlinedButton(onClick = { confirmGoogle = true }, enabled = !busy) { Text(tr("Zu Google Wallet hinzufügen")) }
         }
@@ -250,9 +250,9 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         Row(
-            Modifier.fillMaxWidth().background(primary).padding(horizontal = 12.dp, vertical = 8.dp),
+            Modifier.fillMaxWidth().background(primary).padding(horizontal = Abstand.mittel, vertical = Abstand.klein),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(Abstand.mittel),
         ) {
             logo?.let { Image(it.asImageBitmap(), contentDescription = null, modifier = Modifier.size(36.dp)) }
             Column {
@@ -260,7 +260,7 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
                 Text(tr("Mitgliedsausweis"), color = onPrimary, style = MaterialTheme.typography.labelSmall)
             }
         }
-        Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(Modifier.fillMaxWidth().padding(Abstand.mittel), horizontalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
             photo?.let {
                 Image(
                     it.asImageBitmap(),
@@ -269,7 +269,7 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
                     modifier = Modifier.width(72.dp).aspectRatio(3f / 4f).clip(RoundedCornerShape(4.dp)),
                 )
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Abstand.zeile)) {
                 Text(display.firstName, style = MaterialTheme.typography.bodyMedium)
                 Text(display.lastName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 CardLine(display.departmentLabel, display.departments.joinToString(", "))
@@ -324,9 +324,9 @@ private fun BigCardDialog(stored: StoredCard, onClose: () -> Unit) {
     Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(Modifier.fillMaxSize().background(Color.White).clickable(onClickLabel = tr("Schließen"), onClick = onClose), contentAlignment = Alignment.Center) {
             Column(
-                Modifier.padding(24.dp),
+                Modifier.padding(Abstand.gross),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
             ) {
                 Text(display.club, color = Color.Black, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                 Text(

@@ -61,7 +61,7 @@ fun BookingDraftFixDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Entwurf korrigieren")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text("${formatPlainDate(draft.date)} · ${formatMoney(draft.amount)} · ${draft.text}")
                 draft.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 if (accounts.isEmpty()) Text(tr("Konten lassen sich gerade nicht laden; bitte mit Verbindung erneut öffnen."))
@@ -105,7 +105,7 @@ fun ReceiptDraftFixDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Quittung korrigieren")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text("${formatMoney(draft.amount)} · ${draft.counterpartyName} · ${draft.purpose}")
                 draft.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
                 Text(

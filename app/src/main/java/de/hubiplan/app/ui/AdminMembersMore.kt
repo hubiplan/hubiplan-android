@@ -148,7 +148,7 @@ fun AwardsSection(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
             onDismissRequest = { ending = null },
             title = { Text("„${award.titleName}“ beenden") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     (problem ?: dialogError)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                     if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                     DateInput(tr("Endet am"), until) { until = it }
@@ -195,7 +195,7 @@ private fun AddAwardDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Ehrung hinzufügen")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 (error ?: saveError)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                 ChoicePicker(tr("Ehrung"), titles.map { it to it.name }, chosen, { it.name }) { chosen = it }
@@ -306,7 +306,7 @@ fun FieldsButton(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminEr
             onDismissRequest = { open = false },
             title = { Text(tr("Zusatzfelder")) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     problem?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                     if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                     list.filterNot { it.definition.repeatable }.forEach { entry ->
@@ -406,7 +406,7 @@ fun BankSection(client: AdminClient, d: MemberDetail, permissions: List<String>,
         Text("${m.holder}: ${if (full && m.iban != null) formatIban(m.iban) else m.ibanMasked}")
         Text(tr("Mandat {reference}, unterschrieben {x1}", "reference" to m.reference, "x1" to formatPlainDate(m.signedOn)), style = MaterialTheme.typography.bodySmall)
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         if (active.isNotEmpty() && !full) {
             TextButton(onClick = {
                 // Ganze IBAN nur nach erneuter Gerätesperre
@@ -469,7 +469,7 @@ private fun BankDialog(
         onDismissRequest = onDismiss,
         title = { Text(tr("Neue Bankverbindung")) },
         text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Neues SEPA-Mandat auf Papier (vom Mitglied unterschrieben)."), style = MaterialTheme.typography.bodySmall)
                 (error ?: saveError)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 OutlinedTextField(value = holder, onValueChange = { holder = it.take(70) }, label = { Text(tr("Kontoinhaber")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -499,7 +499,7 @@ fun ConfirmChangeDialog(preview: Preview, onDismiss: () -> Unit, onConfirm: () -
         onDismissRequest = onDismiss,
         title = { Text(preview.title.ifBlank { tr("Änderung bestätigen") }) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Das passiert:"), style = MaterialTheme.typography.labelLarge)
                 preview.consequences.forEach { Text("• $it") }
                 Text(tr("Danach lässt sich die Änderung rückgängig machen."), style = MaterialTheme.typography.bodySmall)
@@ -559,7 +559,7 @@ fun ReentryDialog(client: AdminClient, d: MemberDetail, errors: AdminErrors, onD
         onDismissRequest = onDismiss,
         title = { Text(tr("Wiedereintritt von {name}", "name" to d.name)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Neuer Zeitraum; frühere Zeiten und Nummern bleiben erhalten."), style = MaterialTheme.typography.bodySmall)
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 ChoicePicker(tr("Mitgliedsart"), types.map { it to it.name }, chosen, { it.name }) { chosen = it }
@@ -647,7 +647,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neues Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -707,7 +707,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
             onDismissRequest = { duplicates = null },
             title = { Text(tr("Gibt es die Person schon?")) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     found.forEach { p ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.weight(1f)) {

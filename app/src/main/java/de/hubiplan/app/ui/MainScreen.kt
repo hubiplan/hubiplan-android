@@ -178,7 +178,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zurück"))
                         }
                     } else if (image != null && tab != Tab.VERWALTUNG) {
-                        Image(image, contentDescription = null, modifier = Modifier.padding(start = 12.dp).size(36.dp))
+                        Image(image, contentDescription = null, modifier = Modifier.padding(start = Abstand.mittel).size(36.dp))
                     }
                 },
                 // „Mein Konto“ oben rechts wie im Browser (A-01)
@@ -200,9 +200,9 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 Text(
                     tr("Keine Verbindung zu HUBIplan. Bitte später erneut versuchen."),
                     color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.announce().padding(16.dp),
+                    modifier = Modifier.announce().padding(Abstand.rand),
                 )
-                TextButton(onClick = vm::reload, modifier = Modifier.padding(horizontal = 8.dp)) { Text(tr("Erneut laden")) }
+                TextButton(onClick = vm::reload, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("Erneut laden")) }
             }
             val access = main.access
             val offer by vm.shortcutOffer.collectAsStateWithLifecycle()
@@ -233,14 +233,14 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
 /** Einmaliges Angebot nach dem Verbinden: Verknüpfung mit Wappen und Namen anlegen. */
 @Composable
 private fun ShortcutOffer(name: String, vm: AppViewModel) {
-    Card(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Card(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein)) {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
             Text(tr("„{name}“ auf den Startbildschirm legen?", "name" to name), style = MaterialTheme.typography.titleSmall)
             Text(
                 tr("Eine Verknüpfung mit Wappen und Namen öffnet die App direkt hier. Im App-Menü heißt die App weiter HUBIplan."),
                 style = MaterialTheme.typography.bodySmall,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 TextButton(onClick = { vm.pinShortcut() }) { Text(tr("Ja, ablegen")) }
                 TextButton(onClick = vm::dismissShortcutOffer) { Text(tr("Nein, danke")) }
             }
@@ -309,7 +309,7 @@ fun ListDetail(
 
 @Composable
 fun Message(text: String) {
-    Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize().padding(Abstand.gross), contentAlignment = Alignment.Center) {
         Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }
@@ -331,8 +331,8 @@ private fun OfflineCardPane(main: Screen.Main) {
     }
     val accessId = main.account.selectedAccess
     Column(
-        Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         if (accessId == null) {
             Text(tr("Ohne Netz ist noch kein Ausweis gespeichert."))
@@ -345,8 +345,8 @@ private fun OfflineCardPane(main: Screen.Main) {
 @Composable
 private fun OfflinePane(main: Screen.Main, events: Boolean) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         Text(
             if (events) {
@@ -377,7 +377,7 @@ fun PendingLocalCard(main: Screen.Main) {
     }
     if (count == 0) return
     androidx.compose.material3.Card(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Text(
                 pendingCountText(count),
                 style = MaterialTheme.typography.titleSmall,

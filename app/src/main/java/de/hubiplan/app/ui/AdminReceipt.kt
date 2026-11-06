@@ -182,7 +182,7 @@ private fun SignaturePad(strokes: Strokes, label: String, modifier: Modifier = M
             label,
             style = MaterialTheme.typography.labelSmall,
             color = Color(0xFF666666),
-            modifier = Modifier.align(Alignment.BottomStart).padding(start = 16.dp, end = 16.dp, bottom = 8.dp).onSizeChanged { captionHeightPx = it.height },
+            modifier = Modifier.align(Alignment.BottomStart).padding(start = Abstand.rand, end = Abstand.rand, bottom = Abstand.klein).onSizeChanged { captionHeightPx = it.height },
         )
     }
 }
@@ -276,8 +276,8 @@ internal fun SignatureFullscreen(title: String, text: String, accountKey: String
         if (strokes.isEmpty) cancel() else askCancel = true
     }
     Column(
-        Modifier.fillMaxSize().background(Color.White).safeDrawingPadding().padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.fillMaxSize().background(Color.White).safeDrawingPadding().padding(Abstand.mittel),
+        verticalArrangement = Arrangement.spacedBy(Abstand.klein),
     ) {
         restoreError?.let { Text(it, color = Color(0xFFB00020), modifier = Modifier.announce(urgent = true)) }
         Text(text, style = MaterialTheme.typography.titleMedium, color = Color(0xFF222222))
@@ -285,7 +285,7 @@ internal fun SignatureFullscreen(title: String, text: String, accountKey: String
             Text(tr("Tipp: Telefon quer halten, dann ist mehr Platz."), style = MaterialTheme.typography.bodySmall, color = Color(0xFF444444))
         }
         SignaturePad(strokes, title, Modifier.fillMaxWidth().weight(1f))
-        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Abstand.klein, Alignment.End), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             TextButton(onClick = { strokes.clear() }, enabled = !strokes.isEmpty) { Text(tr("Löschen")) }
             OutlinedButton(onClick = { if (strokes.isEmpty) cancel() else askCancel = true }) { Text(tr("Abbrechen")) }
             Button(onClick = { strokes.toStrokes()?.let { signatureSaved(); attachments.delete(strokeKey); onConfirm(it) } }, enabled = !strokes.isEmpty) { Text(tr("Bestätigen")) }
@@ -523,8 +523,8 @@ fun ReceiptScreen(
     }
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.klein),
     ) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Quittung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
@@ -534,11 +534,11 @@ fun ReceiptScreen(
         val result = done
         if (result != null) {
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Quittung {number} abgeschlossen", "number" to result.number), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
                     Text("${formatMoney(result.amount)} · ${result.counterpartyName}")
                     Text(tr("Gebucht in der {accountName}. Das PDF hängt als Beleg an der Buchung.", "accountName" to result.accountName), style = MaterialTheme.typography.bodySmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Button(onClick = { pdf(result.id, true, result.number) }, enabled = !busy) { Text(tr("Quittung teilen")) }
                         OutlinedButton(onClick = { pdf(result.id, false, result.number) }, enabled = !busy) { Text(tr("Ansehen")) }
                     }
@@ -549,7 +549,7 @@ fun ReceiptScreen(
         }
         if (waiting) {
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Ohne Netz gespeichert"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
                     Text(
                         tr("Die Quittung liegt verschlüsselt auf diesem Telefon und bekommt ihre Belegnummer, sobald wieder Netz da ist (unter Kasse, spätestens nach 30 Tagen). Das Datum ist der Zeitpunkt der Unterschrift."),
@@ -571,7 +571,7 @@ fun ReceiptScreen(
             return@Column
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             FilterChip(selected = receives, onClick = {
                 if (!receives) {
                     receives = true
@@ -682,7 +682,7 @@ fun ReceiptScreen(
             onDismissRequest = { askDecline = false },
             title = { Text(tr("Zahler unterschreibt nicht")) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Dann gilt nur deine Unterschrift als Kassierer, wie bei einer Papierquittung."))
                     ServerTextField(field = "no_signature_reason", errors = fields, enabled = !busy, value = declineText, onValueChange = { declineText = it }, label = { Text(tr("Grund")) })
                 }
@@ -728,15 +728,15 @@ fun PendingReceipts(
     onDiscard: (ReceiptDraft) -> Unit,
 ) {
     if (drafts.isEmpty()) return
-    Card(Modifier.fillMaxWidth().padding(16.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Card(Modifier.fillMaxWidth().padding(Abstand.rand)) {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Text(tr("Quittungen ohne Belegnummer ({size})", "size" to drafts.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
             Text(tr("Unterschrieben, liegen verschlüsselt auf diesem Telefon, bis sie abgeschlossen sind."), style = MaterialTheme.typography.bodySmall)
             drafts.forEach { d ->
                 Text("${formatPlainDate(d.counterpartyAt.ifBlank { d.treasurerAt })} · ${formatMoney(d.amount)} · ${d.counterpartyName}")
                 d.error?.let {
                     Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.announce(urgent = true))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         // Schon auf dem Server angelegt: dort ist die Zuordnung festgelegt
                         if (d.serverId == null) OutlinedButton(onClick = { onFix(d) }) { Text(tr("Korrigieren")) }
                         TextButton(onClick = { onDiscard(d) }) { Text(tr("Verwerfen …")) }

@@ -59,7 +59,7 @@ fun MyResultsSection(access: PortalAccess, vm: AppViewModel) {
     }
     val shown = if (all) d.starts else d.starts.take(SHORT_LIST)
     shown.forEach { s ->
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Abstand.zeile)) {
             Text(s.title, style = MaterialTheme.typography.titleSmall)
             val meta = listOf(formatPlainDate(s.date), s.unitName, if (s.status == "endgueltig") "" else s.statusLabel)
                 .filter { it.isNotBlank() }

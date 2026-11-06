@@ -55,7 +55,7 @@ fun LicensesDialog(onClose: () -> Unit) {
         Surface(Modifier.fillMaxSize()) {
             val text = shown
             if (text != null) {
-                Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.fillMaxSize().padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     TextButton(onClick = { shown = null }) { Text(tr("‹ Zurück zu den Lizenzen")) }
                     Text(text.first, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
                     Text(
@@ -70,8 +70,8 @@ fun LicensesDialog(onClose: () -> Unit) {
                 return@Surface
             }
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+                verticalArrangement = Arrangement.spacedBy(Abstand.klein),
             ) {
                 Text(tr("Lizenzen"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
                 Text(
