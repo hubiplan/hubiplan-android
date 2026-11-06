@@ -28,6 +28,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -61,12 +62,20 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
     // Ein anderes Konto oder ein anderer Mitgliedszugang besitzt einen neuen Ansichtsbaum.
     key(main.account.server, main.account.deviceId, main.account.generation, access.id) {
         val api = remember(main.account) { Api(main.account.server, main.account.token) }
-        MemberTaskList(api, access.id, portalTarget?.todoId, main.account.server, vm)
+        // Helferdienste als zweite Ansicht im selben Reiter (höchstens fünf Ziele in der Leiste)
+        var helpers by rememberSaveable(access.id) { mutableStateOf(false) }
+        val withHelpers = access.helpersEnabled && portalTarget == null
+        val switch: (@Composable () -> Unit)? = if (withHelpers) {
+            { TaskSwitch(helpers) { helpers = it } }
+        } else null
+        if (withHelpers && helpers) MemberHelpers(api, access.id, main.account.server, vm) { switch?.invoke() }
+        else MemberTaskList(api, access.id, portalTarget?.todoId, main.account.server, vm, switch)
     }
 }
 
 @Composable
-private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String, vm: AppViewModel) {
+private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String, vm: AppViewModel,
+    switch: (@Composable () -> Unit)? = null) {
     var rows by remember { mutableStateOf<List<MemberTodo>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     var done by remember { mutableStateOf(false) }
@@ -90,6 +99,7 @@ private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String
         list = {
             Column(Modifier.fillMaxSize()) {
                 Text(tr("Aufgaben"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(16.dp))
+                switch?.invoke()
                 Text(tr("Für dich freigegebene Aufgaben und offene Angebote deiner Einheit."), modifier = Modifier.padding(horizontal = 16.dp))
                 Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
