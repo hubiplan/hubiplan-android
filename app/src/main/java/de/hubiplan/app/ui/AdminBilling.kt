@@ -94,7 +94,7 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
     }
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 OutlinedTextField(
                     value = search,
                     onValueChange = { search = it },
@@ -102,7 +102,7 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     FilterChip(selected = openOnly, onClick = { openOnly = true }, label = { Text(tr("Offen")) })
                     FilterChip(selected = !openOnly, onClick = { openOnly = false }, label = { Text(tr("Alle")) })
                 }
@@ -146,7 +146,7 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
                             loadingMore = false
                         }
                     }
-                }, enabled = !loadingMore, modifier = Modifier.padding(8.dp)) {
+                }, enabled = !loadingMore, modifier = Modifier.padding(Abstand.klein)) {
                     Text(if (loadingMore) tr("Wird geladen …") else tr("Weitere laden"))
                 }
             }
@@ -155,7 +155,7 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
             Text(
                 tr("Beitragsläufe, Mahnungen und SEPA im Browser."),
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(Abstand.rand),
             )
         }
     }
@@ -238,7 +238,7 @@ fun InvoiceScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -268,9 +268,9 @@ fun InvoiceScreen(
         val newPayment = lastPayment
         if (newPayment != null) {
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Bar kassiert und gebucht."), style = MaterialTheme.typography.titleSmall)
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Button(onClick = { receipt(newPayment, share = true) }, enabled = !busy) { Text(tr("Quittung teilen")) }
                         OutlinedButton(onClick = { receipt(newPayment, share = false) }, enabled = !busy) { Text(tr("Ansehen")) }
                     }
@@ -280,7 +280,7 @@ fun InvoiceScreen(
 
         if (canEdit && d.status == "open" && d.outstanding.toBigDecimalOrNull()?.signum() == 1) {
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Bar kassiert"), style = MaterialTheme.typography.titleSmall)
                     val accounts = cashAccounts
                     when {

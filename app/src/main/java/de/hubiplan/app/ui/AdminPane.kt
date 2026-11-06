@@ -136,8 +136,8 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
             ) {}
             !state.sealed -> UnlockForm(state, vm)
             state.token == null -> Column(
-                Modifier.widthIn(max = 520.dp).padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                Modifier.widthIn(max = 520.dp).padding(Abstand.gross),
+                verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
             ) {
                 Text(tr("Verwaltung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
                 Text(tr("Zum Öffnen mit Fingerabdruck, Gesicht oder Geräte-PIN entsperren."))
@@ -156,7 +156,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
 
 @Composable
 private fun Notice(text: String, action: String?, onAction: () -> Unit) {
-    Column(Modifier.widthIn(max = 520.dp).padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(Modifier.widthIn(max = 520.dp).padding(Abstand.gross), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         Text(tr("Verwaltung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(text)
         action?.let { OutlinedButton(onClick = onAction) { Text(it) } }
@@ -170,8 +170,8 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
     var code by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     Column(
-        Modifier.widthIn(max = 520.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.widthIn(max = 520.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(Abstand.gross),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         Text(tr("Verwaltung freischalten"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(
@@ -383,13 +383,13 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             UnitPicker(units, unit) { picked -> if (picked.key != unit.key) requestLeave { unitKey = picked.key } }
             val current = section
             if (!nested && current != null) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { requestLeave { section = null } }) { Text(tr("‹ Übersicht")) }
-                    Text(current.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(start = 8.dp))
+                    Text(current.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(start = Abstand.klein))
                 }
             }
             HorizontalDivider()
-            cardError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
+            cardError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
             val open = member
             val openEvent = eventId
             val rsvpAllowed = creatingEvent
@@ -545,16 +545,16 @@ private fun TaskList(
         }
     }
     Column(Modifier.fillMaxSize()) {
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
         val list = tasks
         when {
             list == null && error == null -> Loading()
             // Fehler ohne Liste ist nicht „keine Aufgaben“ (UX-Audit 31.10. A07)
-            list == null -> Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            list == null -> Column(Modifier.padding(horizontal = Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 TextButton(onClick = { reload++ }) { Text(tr("Erneut laden")) }
                 Footer(until, vm) { reload++ }
             }
-            list.isEmpty() -> Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            list.isEmpty() -> Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Nichts zu erledigen."))
                 Footer(until, vm) { reload++ }
             }
@@ -568,7 +568,7 @@ private fun TaskList(
                     )
                     HorizontalDivider()
                 }
-                item { Box(Modifier.padding(16.dp)) { Footer(until, vm) { reload++ } } }
+                item { Box(Modifier.padding(Abstand.rand)) { Footer(until, vm) { reload++ } } }
             }
         }
     }
@@ -602,9 +602,9 @@ private fun AdminStart(
             item {
                 Button(
                     onClick = onScan,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp).heightIn(min = 56.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.mittel).heightIn(min = 56.dp),
                 ) {
-                    Icon(Icons.Filled.AccountBox, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
+                    Icon(Icons.Filled.AccountBox, contentDescription = null, modifier = Modifier.padding(end = Abstand.klein))
                     Text(tr("Ausweis prüfen"))
                 }
             }
@@ -613,11 +613,11 @@ private fun AdminStart(
             Text(
                 tr("Was möchtest du tun?"),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.asHeading().padding(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 4.dp),
+                modifier = Modifier.asHeading().padding(start = Abstand.rand, top = Abstand.mittel, end = Abstand.rand, bottom = Abstand.eng),
             )
         }
         if (sections.isEmpty()) {
-            item { Text(tr("Für diese Einheit sind in der App keine Bereiche freigegeben."), modifier = Modifier.padding(16.dp)) }
+            item { Text(tr("Für diese Einheit sind in der App keine Bereiche freigegeben."), modifier = Modifier.padding(Abstand.rand)) }
         }
         items(sections) { s ->
             val count = openCount
@@ -632,7 +632,7 @@ private fun AdminStart(
             )
             HorizontalDivider()
         }
-        item { Box(Modifier.padding(16.dp)) { Footer(until, vm) { reload++ } } }
+        item { Box(Modifier.padding(Abstand.rand)) { Footer(until, vm) { reload++ } } }
     }
 }
 
@@ -648,7 +648,7 @@ private fun sectionIcon(s: Section) = when (s) {
 
 @Composable
 private fun Footer(until: String?, vm: AppViewModel, onReload: () -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
         TextButton(onClick = onReload) { Text(tr("Aktualisieren")) }
         until?.let { Text(tr("Freigeschaltet bis {x1}", "x1" to formatDate(it)), style = MaterialTheme.typography.bodySmall) }
         TextButton(onClick = vm::lockAdmin) { Text(tr("Verwaltung auf diesem Telefon sperren")) }
@@ -658,10 +658,10 @@ private fun Footer(until: String?, vm: AppViewModel, onReload: () -> Unit) {
 @Composable
 private fun UnitPicker(units: List<AdminUnit>, current: AdminUnit, onPick: (AdminUnit) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    Box(Modifier.padding(horizontal = 8.dp)) {
+    Box(Modifier.padding(horizontal = Abstand.klein)) {
         // Welche Einheit verwaltet wird, steht ausdrücklich da (UX-Audit 31.10. A04)
         if (units.size == 1) {
-            Text(tr("Verwaltung · {name}", "name" to current.name), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(8.dp))
+            Text(tr("Verwaltung · {name}", "name" to current.name), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Abstand.klein))
         } else {
             TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Verwaltete Einheit"), current.name, open)) {
                 Text(tr("Verwaltung · {name} ▾", "name" to current.name), style = MaterialTheme.typography.titleMedium)

@@ -88,8 +88,8 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
     }
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         TextButton(enabled = !busy, onClick = { if (leave == null) onCancel() else leave.request(onCancel) }) { Text(tr("‹ Zurück")) }
         Text(tr("Kurzmitteilung senden"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
@@ -133,7 +133,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 supportingText = { Text(tr("{length} von {maxBody} Zeichen", "length" to body.length, "maxBody" to maxBody)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Button(
                     onClick = { call(confirm = false) },
                     enabled = !busy && sender != null && subject.isNotBlank() && body.isNotBlank(),

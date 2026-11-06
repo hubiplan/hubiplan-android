@@ -125,8 +125,8 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     }
 
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         notice?.let { StatusNotice(it) }
@@ -150,7 +150,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         // --- Foto ---
         Text(tr("Foto"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
         val state = photo
-        Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.rand), verticalAlignment = Alignment.CenterVertically) {
             image?.let {
                 Image(
                     it.asImageBitmap(),
@@ -169,7 +169,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                 modifier = Modifier.weight(1f),
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             OutlinedButton(onClick = {
                 error = null
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
@@ -315,7 +315,7 @@ private fun PhotoUploadDialog(
         onDismissRequest = onCancel,
         title = { Text(tr("Foto senden")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 error?.let { Text(tr("Nicht gesendet: {it}", "it" to it), color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (sending) LinearProgressIndicator(Modifier.fillMaxWidth())
                 Image(
@@ -364,7 +364,7 @@ private fun ChangeForm(profile: Profile, sending: Boolean, onCancel: () -> Unit,
     // Eingaben überstehen Drehen und Reiterwechsel nicht mit remember allein (UX-Audit 31.10. A02)
     var values by rememberSaveable { mutableStateOf(start) }
     var message by rememberSaveable { mutableStateOf("") }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         labels.forEach { (key, label) ->
             OutlinedTextField(
                 value = values[key] ?: "",
@@ -381,7 +381,7 @@ private fun ChangeForm(profile: Profile, sending: Boolean, onCancel: () -> Unit,
             modifier = Modifier.fillMaxWidth(),
         )
         val changed = changedFields(start, values)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Button(onClick = { onSend(changed, message) }, enabled = changed.isNotEmpty() && !sending) {
                 Text(if (sending) tr("Wird gesendet …") else tr("Senden"))
             }

@@ -73,7 +73,7 @@ fun SettingsSection(vm: AppViewModel) {
 
     val languages by vm.languages.collectAsStateWithLifecycle()
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         if (languages.size > 1) {
             Text(tr("Sprache"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
             Text(tr("Gilt für die App und dein Konto im Browser."), style = MaterialTheme.typography.bodySmall)
@@ -83,11 +83,11 @@ fun SettingsSection(vm: AppViewModel) {
                         selected = Texte.sprache == option.code,
                         onClick = { vm.setLanguage(option.code) },
                         role = Role.RadioButton,
-                    ).padding(vertical = 4.dp),
+                    ).padding(vertical = Abstand.eng),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButton(selected = Texte.sprache == option.code, onClick = null)
-                    Text(option.name, Modifier.padding(start = 8.dp))
+                    Text(option.name, Modifier.padding(start = Abstand.klein))
                 }
             }
             if (Texte.systemSprache(context) != null) {
@@ -127,7 +127,7 @@ fun SettingsSection(vm: AppViewModel) {
 
         PushSection(vm)
 
-        Text(tr("Hinweise"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = 8.dp))
+        Text(tr("Hinweise"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
         SwitchRow(
             label = tr("Hinweis, wenn eine Rückmeldung fehlt"),
             checked = settings.rsvpHints && Notifications.allowed(context),
@@ -210,7 +210,7 @@ private fun PushSection(vm: AppViewModel) {
         notificationsAllowed = ok || Notifications.allowed(context)
     }
 
-    Text(tr("Mitteilungen"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = 8.dp))
+    Text(tr("Mitteilungen"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
     when {
         push.active -> {
             val label = distributors.firstOrNull { it.packageName == push.distributor }?.label ?: push.distributor
@@ -242,7 +242,7 @@ private fun PushSection(vm: AppViewModel) {
         )
     }
     push.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.announce(urgent = true)) }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         if (distributors.isNotEmpty()) {
             Box {
                 OutlinedButton(onClick = {

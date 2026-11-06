@@ -48,8 +48,8 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
         }
     }
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         Text(main.account.display.ifBlank { main.account.email }, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(main.account.email)
@@ -118,7 +118,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(
                         tr("Auf diesem Telefon liegen noch nicht gesendete Vorgänge der Kasse. Erst senden oder verwerfen? Beim Abmelden ohne Senden werden sie gelöscht und lassen sich nicht wiederherstellen."),
                     )

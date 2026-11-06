@@ -85,7 +85,7 @@ fun LabeledSwitch(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(label, Modifier.weight(1f).padding(end = 12.dp))
+        Text(label, Modifier.weight(1f).padding(end = Abstand.mittel))
         Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
@@ -107,7 +107,7 @@ fun LabeledCheckbox(
             .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onCheckedChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = checked, onCheckedChange = null, enabled = enabled, modifier = Modifier.padding(end = 12.dp))
+        Checkbox(checked = checked, onCheckedChange = null, enabled = enabled, modifier = Modifier.padding(end = Abstand.mittel))
         Text(label, style = style ?: MaterialTheme.typography.bodyLarge)
     }
 }

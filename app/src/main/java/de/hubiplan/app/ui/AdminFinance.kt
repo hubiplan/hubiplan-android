@@ -260,22 +260,22 @@ fun FinanceSection(
 
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(start = Abstand.rand, end = Abstand.klein, top = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
                 Text(tr("Kassenbuch"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().weight(1f))
                 TextButton(onClick = { refresh++ }) { Text(tr("Aktualisieren")) }
                 if (canEdit) Button(onClick = onNew) { Text(tr("Neue Buchung")) }
             }
             if (canEdit) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.klein), horizontalArrangement = Arrangement.End) {
                     OutlinedButton(onClick = onReceipt) { Text(tr("Quittung mit Unterschrift")) }
                 }
             }
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(horizontal = 16.dp)) }
+            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(horizontal = Abstand.rand)) }
         }
         if (unreadable > 0) {
             item {
-                Card(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Card(Modifier.fillMaxWidth().padding(Abstand.rand)) {
+                    Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Text(
                             if (unreadable == 1) tr("1 Vorgang ist nicht mehr lesbar") else tr("{unreadable} Vorgänge sind nicht mehr lesbar", "unreadable" to unreadable),
                             color = MaterialTheme.colorScheme.error,
@@ -304,15 +304,15 @@ fun FinanceSection(
         }
         if (drafts.isNotEmpty()) {
             item {
-                Card(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Card(Modifier.fillMaxWidth().padding(Abstand.rand)) {
+                    Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Text(tr("Noch nicht gesendet ({size})", "size" to drafts.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                         Text(tr("Liegen verschlüsselt auf diesem Telefon, bis sie gebucht sind."), style = MaterialTheme.typography.bodySmall)
                         drafts.forEach { d ->
                             Text("${formatPlainDate(d.date)} · ${formatMoney(d.amount)} · ${d.text}")
                             d.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.announce(urgent = true)) }
                             if (d.error != null) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                                     OutlinedButton(onClick = { fixDraft = d }) { Text(tr("Korrigieren")) }
                                     TextButton(onClick = { discardDraft = d }) { Text(tr("Verwerfen …")) }
                                 }
@@ -325,7 +325,7 @@ fun FinanceSection(
             }
         }
         val list = accounts
-        if (list == null && error == null) item { LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp)) }
+        if (list == null && error == null) item { LinearProgressIndicator(Modifier.fillMaxWidth().padding(Abstand.rand)) }
         list?.let { accs ->
             items(accs, key = { "konto-${it.id}" }) { a ->
                 ListItem(
@@ -337,11 +337,11 @@ fun FinanceSection(
         }
         item {
             HorizontalDivider()
-            Row(Modifier.padding(horizontal = 12.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.padding(horizontal = Abstand.mittel, vertical = Abstand.eng), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 FilterChip(selected = !withoutReceipt, onClick = { withoutReceipt = false }, label = { Text(tr("Letzte Buchungen")) })
                 FilterChip(selected = withoutReceipt, onClick = { withoutReceipt = true }, label = { Text(tr("Ohne Beleg")) })
             }
-            if (bookings.isEmpty() && list != null) Text(if (withoutReceipt) tr("Alle Buchungen haben einen Beleg.") else tr("Noch keine Buchungen."), Modifier.padding(16.dp))
+            if (bookings.isEmpty() && list != null) Text(if (withoutReceipt) tr("Alle Buchungen haben einen Beleg.") else tr("Noch keine Buchungen."), Modifier.padding(Abstand.rand))
         }
         items(bookings, key = { "buchung-${it.id}" }) { b ->
             BookingRow(b) { onOpen(b.id) }
@@ -349,7 +349,7 @@ fun FinanceSection(
         }
         if (hasMore) {
             item {
-                TextButton(modifier = Modifier.padding(8.dp), onClick = {
+                TextButton(modifier = Modifier.padding(Abstand.klein), onClick = {
                     scope.launch {
                         try {
                             val next = client.bookings(page + 1, withoutReceipt)
@@ -471,7 +471,7 @@ fun BookingScreen(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
         }
     }, onError = { error = it })
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         if (booking == null) Text(tr("Buchung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy || loading) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -502,7 +502,7 @@ fun BookingScreen(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
             }
         }
         if (canEdit) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 OutlinedButton(onClick = picker.camera, enabled = !busy) { Text(tr("Beleg fotografieren")) }
                 OutlinedButton(onClick = picker.gallery, enabled = !busy) { Text(tr("Aus der Galerie")) }
             }
@@ -585,18 +585,18 @@ fun BookingForm(
     val ready = photo != null && amountValue != null && dateValue != null && account != null && text.isNotBlank() &&
         (kindCategories.isEmpty() || category != null)
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neue Buchung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Wird sofort gebucht, nur mit Belegfoto. Ändern und Storno im Browser."), style = MaterialTheme.typography.bodySmall)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         photo?.let { Image(it.asImageBitmap(), contentDescription = tr("Beleg"), contentScale = ContentScale.Fit, modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp)) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Button(onClick = picker.camera, enabled = !busy) { Text(if (photo == null) tr("Beleg fotografieren") else tr("Neu fotografieren")) }
             OutlinedButton(onClick = picker.gallery, enabled = !busy) { Text(tr("Aus der Galerie")) }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             FilterChip(enabled = !busy, selected = kind == "expense", onClick = { kind = "expense"; categoryId = null }, label = { Text(tr("Ausgabe")) })
             FilterChip(enabled = !busy, selected = kind == "income", onClick = { kind = "income"; categoryId = null }, label = { Text(tr("Einnahme")) })
         }

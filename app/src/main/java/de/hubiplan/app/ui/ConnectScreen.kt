@@ -53,7 +53,7 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
             onDismissRequest = vm::cancelPairing,
             title = { Text(tr("Mit dieser Adresse verbinden?")) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(link.server.removePrefix("https://"), style = MaterialTheme.typography.titleMedium)
                     Text(
                         tr("Verbinde die App nur, wenn das die Adresse deines Vereins ist und du den QR-Code selbst gerade im Browser erzeugt hast."),
@@ -71,8 +71,8 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     .widthIn(max = 520.dp)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(Abstand.gross),
+                verticalArrangement = Arrangement.spacedBy(Abstand.rand),
             ) {
                 Text("HUBIplan", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
                 if (state.adding) {

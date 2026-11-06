@@ -77,7 +77,7 @@ fun EventsSection(
         }
     }
     Column(Modifier.fillMaxSize()) {
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(16.dp)) }
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
         val list = data
         if (list == null) {
             if (error == null) Loading()
@@ -86,7 +86,7 @@ fun EventsSection(
         LazyColumn(Modifier.fillMaxSize()) {
             item {
                 Row(
-                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp),
+                    Modifier.fillMaxWidth().padding(start = Abstand.rand, end = Abstand.klein, top = Abstand.klein),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(tr("Kommende Termine"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().weight(1f))
@@ -94,7 +94,7 @@ fun EventsSection(
                     if (list.canManage) Button(onClick = { onCreate(list.rsvpAllowed) }) { Text(tr("Neuer Termin")) }
                 }
             }
-            if (list.items.isEmpty()) item { Text(tr("Keine Termine im nächsten halben Jahr."), Modifier.padding(16.dp)) }
+            if (list.items.isEmpty()) item { Text(tr("Keine Termine im nächsten halben Jahr."), Modifier.padding(Abstand.rand)) }
             items(list.items, key = { it.key.ifBlank { "${it.eventId}-${it.startsAt}" } }) { o ->
                 ListItem(
                     overlineContent = { Text(formatWhen(o.startsAt, o.endsAt, o.allDay)) },
@@ -173,7 +173,7 @@ fun EventScreen(
         }
     }
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -201,7 +201,7 @@ fun EventScreen(
         }
         if (e.description.isNotBlank()) Text(e.description)
         if (e.canEdit) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 if (!cancelled) {
                     OutlinedButton(onClick = { dialog = EventDialog.Cancel }, enabled = !busy) {
                         Text(if (single != null) tr("Diesen Termin absagen") else tr("Absagen"))
@@ -225,7 +225,7 @@ fun EventScreen(
         val rsvp = e.rsvp
         if (rsvp.enabled || responses != null) {
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
                     Text(tr("Zu- und Absagen"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                     val s = responses?.summary ?: rsvp.summary
                     s?.let { Text(responseSummary(it.yes, it.no, it.persons, it.open)) }
@@ -293,7 +293,7 @@ private enum class ListTab(val label: String) { YES(tr("Zusagen")), NO(tr("Absag
 private fun ResponseLists(r: AdminResponses, canEnter: Boolean, onPick: (EventDialog.Respond) -> Unit) {
     var tab by remember { mutableStateOf(ListTab.YES) }
     var search by remember { mutableStateOf("") }
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         ListTab.entries.forEach { t ->
             val count = when (t) {
                 ListTab.YES -> r.summary.yes
@@ -353,7 +353,7 @@ private fun CancelDialog(series: Boolean, saving: Boolean, saveError: String?, o
         onDismissRequest = onDismiss,
         title = { Text(if (series) tr("Diesen Termin absagen?") else tr("Termin absagen?")) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                 Text(
@@ -392,15 +392,15 @@ private fun RespondDialog(
         onDismissRequest = onDismiss,
         title = { Text(d.name) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 saveError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     FilterChip(selected = status == "yes", onClick = { status = "yes" }, label = { Text(tr("Zusage")) })
                     FilterChip(selected = status == "no", onClick = { status = "no" }, label = { Text(tr("Absage")) })
                 }
                 if (guestsAllowed && status == "yes") {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Text(tr("Begleitung"), Modifier.weight(1f))
                         TextButton(
                             onClick = { guests = (guests - 1).coerceAtLeast(0) },
@@ -455,7 +455,7 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
     // Zu- und Absagen nur bei Terminen für Mitglieder (wie im Browser)
     val canRsvp = rsvpAllowed && visibility != "board"
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
         Text(tr("Neuer Termin"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Einmaliger Termin. Serien, Anhänge und Weitergabe an andere Einheiten im Browser."), style = MaterialTheme.typography.bodySmall)
@@ -473,7 +473,7 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
         )
         LabeledSwitch(tr("Ganztägig"), allDay, { allDay = it })
         if (!allDay) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 ServerTextField(field = "starts_at", errors = fields, enabled = !busy, value = start,
                     onValueChange = { start = it },
                     label = { Text(tr("Beginn (HH:MM)")) },
