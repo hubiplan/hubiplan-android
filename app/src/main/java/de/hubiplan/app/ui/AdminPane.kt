@@ -216,16 +216,16 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
 
 /**
  * Bereiche der Verwaltung. Sie stehen untereinander in einer Startliste statt als waagerecht
- * scrollende Filterchips (UX-Audit 05.11. A-03); „Offene Punkte“ hebt sich von „Aufgaben“ ab.
+ * scrollende Filterchips (UX-Audit 05.11. A-03); „Zu erledigen“ hebt sich von „Aufgaben“ ab (Begriff wie auf der Web-Startseite).
  */
 internal enum class Section(val label: String, val hint: String) {
-    TASKS(tr("Offene Punkte"), tr("Änderungsmeldungen, Fotos und Termine, die auf dich warten")),
+    TASKS(tr("Zu erledigen"), tr("Änderungsmeldungen, Fotos und Termine, die auf dich warten")),
     TODOS(tr("Aufgaben"), tr("Aufgaben anlegen, verteilen und erledigen")),
     MEMBERS(tr("Mitglieder"), tr("Suchen, anrufen, Mitgliedsakte öffnen")),
     EVENTS(tr("Termine"), tr("Termine anlegen, Zu- und Absagen eintragen")),
-    FINANCE(tr("Kasse"), tr("Buchungen und Quittungen")),
-    BILLING(tr("Beiträge"), tr("Rechnungen und Zahlungsstand")),
-    OCCASIONS(tr("Anlässe"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
+    FINANCE(tr("Kassenbuch"), tr("Buchungen und Quittungen")),
+    BILLING(tr("Rechnungen"), tr("Offene und bezahlte Rechnungen der Mitglieder")),
+    OCCASIONS(tr("Jubiläen und Geburtstage"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
 }
 
 /**
@@ -555,7 +555,7 @@ private fun TaskList(
                 Footer(until, vm) { reload++ }
             }
             list.isEmpty() -> Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(tr("Keine offenen Punkte."))
+                Text(tr("Nichts zu erledigen."))
                 Footer(until, vm) { reload++ }
             }
             else -> LazyColumn(Modifier.fillMaxSize()) {
@@ -576,7 +576,7 @@ private fun TaskList(
 
 /**
  * Startliste der Verwaltung (A-03): „Ausweis prüfen“ ganz oben, weil es am Einlass schnell gehen
- * muss, darunter „Offene Punkte“ mit Anzahl und alle Bereiche als große Zeilen, ohne seitliches
+ * muss, darunter „Zu erledigen“ mit Anzahl und alle Bereiche als große Zeilen, ohne seitliches
  * Wischen. TalkBack sagt „Schaltfläche“ und „Öffnen“, nicht „Filter“.
  */
 @Composable
@@ -624,7 +624,7 @@ private fun AdminStart(
             ListItem(
                 leadingContent = { Icon(sectionIcon(s), contentDescription = null) },
                 headlineContent = {
-                    Text(if (s == Section.TASKS && count != null) tr("Offene Punkte ({count})", "count" to count) else s.label)
+                    Text(if (s == Section.TASKS && count != null) tr("Zu erledigen ({count})", "count" to count) else s.label)
                 },
                 supportingContent = { Text(s.hint) },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },

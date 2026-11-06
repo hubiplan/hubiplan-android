@@ -44,7 +44,7 @@ class UxAudit0511Test {
         val src = File("src/main/java/de/hubiplan/app/ui/AdminPane.kt").readText()
         assertFalse("Bereiche nicht als FilterChip", "FilterChip(" in src)
         assertFalse("keine waagerecht scrollende Bereichszeile", "horizontalScroll" in src)
-        assertEquals("Offene Punkte", Section.TASKS.label)
+        assertEquals("Zu erledigen", Section.TASKS.label)
         assertTrue(Section.entries.all { it.hint.isNotBlank() })
     }
 
