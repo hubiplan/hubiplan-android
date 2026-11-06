@@ -297,6 +297,16 @@ Aufgabenhinweise öffnen genau das betroffene Konto und den freigegebenen Mitgli
 
 Für Mitgliederaufgaben ist eine HUBIplan-Fassung mit den Portal-Aufgaben-Schnittstellen (PR 135) nötig. Instanzübergreifende Aufgaben werden auf dem eigenen HUBIplan-Server abgeglichen; die App verbindet sich weiterhin nur mit der eigenen Instanz.
 
+### Helferdienste im Mitgliederbereich
+
+Nutzt der Verein Helferdienste, schaltet der Bereich **Aufgaben** oben zwischen „Aufgaben“ und
+„Helferdienste“ um. Unter **Meine Dienste** stehen die eigenen Schichten; bis zur Frist des
+Plans lassen sie sich mit **Dienst absagen** zurückgeben, danach nur über die Verwaltung. Darunter
+zeigen die veröffentlichten Dienstpläne freie Schichten mit Ort und Mindestalter; mit
+**Mich eintragen** trägst du dich ein, wenn der Plan das Selbsteintragen erlaubt. Die
+Kalenderdatei „Meine Dienste“ gibt es über **Im Browser öffnen**. Inhalte werden nur im
+Arbeitsspeicher gehalten. Benötigt HUBIplan mit Helferdiensten (Schritte H1–H3).
+
 ### Mitteilungen lesen und Anhänge öffnen
 
 Der Eingang **Mitteilungen** enthält dieselben empfangenen Schreiben wie **Mein Bereich → Rundschreiben** im Web. Absätze, fett/kursiv, Listen und sichere Web-/E-Mail-Links werden nativ dargestellt. Die Dateinamen der Anhänge stehen beim Schreiben. **Dieses Schreiben mit Anhängen im Browser öffnen** führt zum ausgewählten Schreiben und Mitgliederzugang. Eine nötige Browseranmeldung bleibt unabhängig von der App und führt danach zum Ziel zurück. Fehlt ein Browser, lässt sich die angezeigte Zieladresse kopieren.

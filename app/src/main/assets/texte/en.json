@@ -684,5 +684,21 @@
  "Mitglied öffnen": "Open member",
  "Rückmeldung eintragen": "Enter reply",
  "Rückmeldung ändern": "Change reply",
- "Unterschreiben": "Sign"
+ "Unterschreiben": "Sign",
+ "Absage nur über die Verwaltung": "Cancel only via the administration",
+ "Dienst abgesagt.": "Duty cancelled.",
+ "Dienst absagen": "Cancel duty",
+ "Dienstpläne": "Duty rosters",
+ "Du bist eingetragen.": "You are signed up.",
+ "Du hast noch keine Dienste.": "You have no duties yet.",
+ "Helferdienste": "Volunteer duties",
+ "Höchstens {n} Schichten je Person.": "At most {n} shifts per person.",
+ "Im Browser öffnen": "Open in browser",
+ "In diesen Plan trägt nur die Verwaltung ein.": "Only the administration assigns people in this roster.",
+ "Meine Dienste": "My duties",
+ "Mich eintragen": "Sign me up",
+ "Zurzeit gibt es keine offenen Dienstpläne.": "There are no open duty rosters at the moment.",
+ "ab {age} Jahren": "aged {age} and over",
+ "besetzt": "full",
+ "{free} von {needed} frei": "{free} of {needed} free"
 }

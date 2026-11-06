@@ -131,6 +131,8 @@ data class PortalAccess(
     @SerialName("imprint_key") val imprintKey: String? = null,
     /** Modul Wettbewerbe an: „Meine Ergebnisse“ im Profil (ältere HUBIplan-Stände: aus) */
     @SerialName("competitions_enabled") val competitionsEnabled: Boolean = false,
+    /** Modul Helferdienste an: Umschalter „Helferdienste“ im Reiter Aufgaben (ältere Stände: aus) */
+    @SerialName("helpers_enabled") val helpersEnabled: Boolean = false,
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
 }

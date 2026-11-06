@@ -521,6 +521,19 @@ class Api(
     suspend fun myResults(accessId: Int): MyResults =
         decodeApi(expect("GET", "/api/portal/$accessId/results/"))
 
+    // --- Helferdienste im Mitgliederbereich (HUBIplan Schritt H2) ---
+
+    suspend fun memberHelpers(accessId: Int): HelperOverview =
+        decodeApi(expect("GET", "/api/portal/$accessId/helpers/"))
+
+    suspend fun signupShift(accessId: Int, shiftId: Int) {
+        expect("POST", "/api/portal/$accessId/helpers/shifts/$shiftId/signup/", "{}")
+    }
+
+    suspend fun cancelShift(accessId: Int, assignmentId: Int) {
+        expect("POST", "/api/portal/$accessId/helpers/assignments/$assignmentId/cancel/", "{}")
+    }
+
     suspend fun circulars(accessId: Int): List<CircularItem> =
         decodeApi(expect("GET", "/api/portal/$accessId/circulars/"))
 
