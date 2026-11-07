@@ -137,8 +137,28 @@ data class PortalAccess(
     /** "organization": Zugang als Ansprechpartner einer Organisation (ältere Stände: fehlt) */
     @SerialName("member_kind") val memberKind: String = "person",
     @SerialName("member_name") val memberName: String = "",
+    /** Eingeschaltete Module der Einheit (Modulverzeichnis; ältere Stände: fehlt) */
+    val modules: List<String>? = null,
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
+
+    /**
+     * Ist das Modul eingeschaltet? Ältere HUBIplan-Stände liefern keine Modulliste; dann gilt
+     * der einzelne Schalter ([fallback]).
+     */
+    fun moduleOn(id: String, fallback: Boolean = true): Boolean = modules?.contains(id) ?: fallback
+
+    /** „Meine Ergebnisse“ im Profil */
+    val hasResults: Boolean get() = moduleOn("competitions", competitionsEnabled)
+
+    /** Umschalter „Helferdienste“ im Reiter Aufgaben */
+    val hasHelpers: Boolean get() = moduleOn("helpers", helpersEnabled)
+
+    /** Aufgaben im Mitgliederbereich */
+    val hasTodos: Boolean get() = moduleOn("todos")
+
+    /** Mitgliedsausweis im Reiter Ausweis */
+    val hasCard: Boolean get() = moduleOn("cards")
 
     val isContact: Boolean get() = memberKind == ORGANIZATION && memberName.isNotBlank()
 

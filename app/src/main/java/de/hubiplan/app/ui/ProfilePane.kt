@@ -131,8 +131,10 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         notice?.let { StatusNotice(it) }
         // Ausweis zuerst: er soll auch ohne Netz und ohne geladenes Profil erscheinen
-        MemberCardSection(cardStore, access.id, vm)
-        HorizontalDivider()
+        if (access.hasCard) {
+            MemberCardSection(cardStore, access.id, vm)
+            HorizontalDivider()
+        }
         val p = profile
         if (p == null) {
             if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
@@ -245,7 +247,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                 },
             )
         }
-        if (access.competitionsEnabled) {
+        if (access.hasResults) {
             HorizontalDivider()
             MyResultsSection(access, vm)
         }
