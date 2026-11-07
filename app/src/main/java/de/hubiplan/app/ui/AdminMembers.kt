@@ -187,14 +187,6 @@ fun MemberList(
         }
         onAdmit?.let { admit ->
             TextButton(onClick = admit, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("+ Neues Mitglied")) }
-            // Organisationen legt vorerst nur der Browser an (Konzept J8)
-            if (kind == "organisation") {
-                Text(
-                    tr("Organisationen bitte im Browser aufnehmen."),
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(horizontal = Abstand.rand),
-                )
-            }
         }
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }

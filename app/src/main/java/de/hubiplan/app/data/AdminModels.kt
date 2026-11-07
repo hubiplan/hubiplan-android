@@ -256,6 +256,7 @@ data class DuplicateItem(
     @SerialName("first_name") val firstName: String = "",
     @SerialName("birth_date") val birthDate: String? = null,
     @SerialName("already_member_here") val alreadyMemberHere: Boolean = false,
+    val kind: String = "person",
 )
 
 // --- B3: Termine der Einheit und Rückmeldungen ---
