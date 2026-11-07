@@ -59,7 +59,14 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             val key = a.imprintKey?.let { "/$it" } ?: ""
             TextButton(onClick = { open("${main.account.server}/datenschutz$key") }) { Text(tr("Datenschutzhinweise")) }
             TextButton(onClick = { open("${main.account.server}/impressum$key") }) { Text(tr("Impressum")) }
-            Text(tr("Angemeldet als Mitglied von {title}", "title" to a.title), style = MaterialTheme.typography.bodySmall)
+            Text(
+                if (a.isContact) {
+                    tr("Angemeldet als Ansprechpartner von {member} in {title}", "member" to a.memberName, "title" to a.title)
+                } else {
+                    tr("Angemeldet als Mitglied von {title}", "title" to a.title)
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
         ShortcutSection(main, vm)
         androidx.compose.material3.HorizontalDivider()

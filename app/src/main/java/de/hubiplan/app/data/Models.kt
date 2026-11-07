@@ -2,6 +2,7 @@ package de.hubiplan.app.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import de.hubiplan.app.tr
 
 // Antworten von HUBIplan (/api/app/v1/ und Mitgliederbereich /api/portal/…).
 // Unbekannte Felder werden ignoriert, damit neue Server-Versionen die App nicht stören.
@@ -133,9 +134,21 @@ data class PortalAccess(
     @SerialName("competitions_enabled") val competitionsEnabled: Boolean = false,
     /** Modul Helferdienste an: Umschalter „Helferdienste“ im Reiter Aufgaben (ältere Stände: aus) */
     @SerialName("helpers_enabled") val helpersEnabled: Boolean = false,
+    /** "organization": Zugang als Ansprechpartner einer Organisation (ältere Stände: fehlt) */
+    @SerialName("member_kind") val memberKind: String = "person",
+    @SerialName("member_name") val memberName: String = "",
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
+
+    val isContact: Boolean get() = memberKind == ORGANIZATION && memberName.isNotBlank()
+
+    /** Für die Auswahl: bei Ansprechpartnern auch die Organisation. */
+    val label: String
+        get() = if (isContact) tr("{club}: {member} (Ansprechpartner)", "club" to title, "member" to memberName) else title
 }
+
+/** Wert von `kind` für Organisationsmitglieder (Firma, Verein, Behörde …). */
+const val ORGANIZATION = "organization"
 
 /** „Meine Ergebnisse“: eigene Starts und Titel (GET /api/portal/<Zugang>/results/). */
 @Serializable
@@ -293,6 +306,8 @@ data class ChangeRequestItem(
 /** Eigene Daten im Mitgliederbereich. */
 @Serializable
 data class Profile(
+    val kind: String = "person",
+    @SerialName("display_name") val displayName: String = "",
     @SerialName("first_name") val firstName: String = "",
     @SerialName("last_name") val lastName: String = "",
     @SerialName("birth_date") val birthDate: String? = null,
@@ -304,7 +319,11 @@ data class Profile(
     val status: String = "",
     @SerialName("contact_changes_need_approval") val changesNeedApproval: Boolean = false,
     @SerialName("change_requests") val changeRequests: List<ChangeRequestItem> = emptyList(),
-)
+) {
+    val isOrganization: Boolean get() = kind == ORGANIZATION
+
+    val name: String get() = if (isOrganization) displayName.ifBlank { lastName } else "$firstName $lastName".trim()
+}
 
 @Serializable
 data class PhotoVersion(val url: String, @SerialName("thumbnail_url") val thumbnailUrl: String = "")
@@ -336,6 +355,8 @@ data class CardWallet(
 
 @Serializable
 data class CardDisplay(
+    /** "organization": Ausweis einer Organisation, Name ganz in [lastName], Logo statt Foto */
+    val kind: String = "person",
     @SerialName("first_name") val firstName: String = "",
     @SerialName("last_name") val lastName: String = "",
     /** "active", "future" oder "inactive" */
@@ -350,7 +371,11 @@ data class CardDisplay(
     @SerialName("photo_url") val photoUrl: String? = null,
     @SerialName("logo_url") val logoUrl: String? = null,
     val theme: CardTheme? = null,
-)
+) {
+    val isOrganization: Boolean get() = kind == ORGANIZATION
+
+    val name: String get() = "$firstName $lastName".trim()
+}
 
 @Serializable
 data class CardTheme(

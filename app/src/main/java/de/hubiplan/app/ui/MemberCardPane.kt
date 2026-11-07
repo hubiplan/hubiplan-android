@@ -262,15 +262,25 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
         }
         Row(Modifier.fillMaxWidth().padding(Abstand.mittel), horizontalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
             photo?.let {
-                Image(
-                    it.asImageBitmap(),
-                    contentDescription = tr("Foto"),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.width(72.dp).aspectRatio(3f / 4f).clip(RoundedCornerShape(4.dp)),
-                )
+                if (display.isOrganization) {
+                    // Logo der Organisation: ganz zeigen, nicht beschneiden
+                    Image(
+                        it.asImageBitmap(),
+                        contentDescription = tr("Logo"),
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.width(88.dp).aspectRatio(4f / 3f),
+                    )
+                } else {
+                    Image(
+                        it.asImageBitmap(),
+                        contentDescription = tr("Foto"),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.width(72.dp).aspectRatio(3f / 4f).clip(RoundedCornerShape(4.dp)),
+                    )
+                }
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Abstand.zeile)) {
-                Text(display.firstName, style = MaterialTheme.typography.bodyMedium)
+                Text(cardFirstLine(display), style = MaterialTheme.typography.bodyMedium)
                 Text(display.lastName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 CardLine(display.departmentLabel, display.departments.joinToString(", "))
                 CardLine(tr("Mitgliedsnummer"), display.clubNumber)
@@ -293,6 +303,10 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
         }
     }
 }
+
+/** Erste Zeile im Ausweis: Vorname, bei Organisationen „Organisationsmitglied“. */
+fun cardFirstLine(display: de.hubiplan.app.data.CardDisplay): String =
+    if (display.isOrganization) tr("Organisationsmitglied") else display.firstName
 
 @Composable
 private fun CardLine(label: String, value: String) {
@@ -330,7 +344,7 @@ private fun BigCardDialog(stored: StoredCard, onClose: () -> Unit) {
             ) {
                 Text(display.club, color = Color.Black, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
                 Text(
-                    "${display.firstName} ${display.lastName}",
+                    display.name,
                     color = Color.Black,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,

@@ -47,6 +47,8 @@ Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schlie
   (wenn der Verein das Modul Wettbewerbe nutzt)
 - Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen, mit Einwilligung;
   der Verein gibt es frei, Foto und Einwilligung lassen sich in der App widerrufen
+- Ansprechpartner einer Organisation (Firma, Verein, Behörde …) melden sich wie Mitglieder an;
+  die Auswahl zeigt „Verein: Organisation (Ansprechpartner)“, der Ausweis das Logo der Organisation
 - Farben und Wappen des Vereins aus HUBIplan; Verknüpfung mit dem Wappen des Vereins auf
   dem Startbildschirm
 - Deutsch oder Englisch (App-Sprache von Android oder Auswahl unter Mein Konto › Sprache)
@@ -70,6 +72,9 @@ Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburt
 - Mitglieder suchen, anrufen und bearbeiten (Stammdaten, Mitgliedsart, Untereinheit,
   Beitrag, Austritt, Wiedereintritt, Ehrungen, Zusatzfelder, Bankverbindung) mit
   Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen
+- Organisationsmitglieder: Filter „Personen/Organisationen“ in der Liste, Akte mit Rechtsform,
+  Ansprechpartnern (anrufen, mailen) und Rechnungsanschrift; Organisationen aufnehmen und
+  Ansprechpartner pflegen im Browser
 - Änderungsmeldungen und Fotos freigeben, Mitgliedsausweis per QR-Code prüfen
 - Termine mit Zu- und Absagen, Rückmeldung für Mitglieder eintragen, einfache Termine
   anlegen und absagen

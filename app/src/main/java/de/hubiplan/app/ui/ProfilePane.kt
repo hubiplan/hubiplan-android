@@ -138,7 +138,15 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
             if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
             return@Column
         }
-        Text("${p.firstName} ${p.lastName}", style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        val organization = p.isOrganization
+        Text(p.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        if (organization && access.isContact) {
+            // Ansprechpartner: die Mitgliedschaft gehört der Organisation (J5)
+            Text(
+                tr("Angemeldet als Ansprechpartner: {name}", "name" to "${access.firstName} ${access.lastName}".trim()),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         val facts = buildList {
             p.memberType?.let { add(it) }
             if (p.departments.isNotEmpty()) add(p.departments.joinToString(", "))
@@ -148,19 +156,22 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         if (facts.isNotEmpty()) Text(facts.joinToString(" · "), style = MaterialTheme.typography.bodyMedium)
 
         // --- Foto ---
-        Text(tr("Foto"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+        Text(if (organization) tr("Logo") else tr("Foto"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
         val state = photo
         Row(horizontalArrangement = Arrangement.spacedBy(Abstand.rand), verticalAlignment = Alignment.CenterVertically) {
             image?.let {
                 Image(
                     it.asImageBitmap(),
-                    contentDescription = tr("Dein Foto"),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.width(105.dp).height(135.dp),
+                    contentDescription = if (organization) tr("Logo") else tr("Dein Foto"),
+                    contentScale = if (organization) ContentScale.Fit else ContentScale.Crop,
+                    modifier = if (organization) Modifier.width(135.dp).height(100.dp) else Modifier.width(105.dp).height(135.dp),
                 )
             }
             Text(
                 when {
+                    organization && state?.pending != null -> tr("Neues Logo wartet auf Freigabe durch den Vorstand.")
+                    organization && state?.approved != null -> tr("Dieses Logo steht im Mitgliedsausweis der Organisation.")
+                    organization -> tr("Noch kein Logo. Es erscheint nach der Freigabe im Mitgliedsausweis.")
                     state?.pending != null -> tr("Neues Foto wartet auf Freigabe durch den Vorstand.")
                     state?.approved != null -> tr("Dieses Foto steht in deinem Mitgliedsausweis.")
                     else -> tr("Noch kein Foto. Es erscheint nach der Freigabe im Mitgliedsausweis.")
@@ -184,7 +195,9 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
             }) { Text(tr("Aus der Galerie")) }
         }
         if (state?.consentAt != null || state?.approved != null || state?.pending != null) {
-            TextButton(onClick = { confirmDelete = true }) { Text(tr("Einwilligung widerrufen und Foto löschen")) }
+            TextButton(onClick = { confirmDelete = true }) {
+                Text(if (organization) tr("Logo löschen") else tr("Einwilligung widerrufen und Foto löschen"))
+            }
         }
 
         HorizontalDivider()
@@ -204,6 +217,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         } else {
             ChangeForm(
                 p,
+                organization = organization,
                 sending = sending,
                 onCancel = { editing = false },
                 onSend = { values, message ->
@@ -241,6 +255,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         PhotoUploadDialog(
             bitmap,
             organization = access.title,
+            logo = profile?.isOrganization == true,
             sending = sending,
             error = photoError,
             onRotate = { draft = PhotoPrep.rotate(bitmap, 90) },
@@ -255,7 +270,11 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                     try {
                         val bytes = withContext(Dispatchers.Default) { PhotoPrep.jpeg(bitmap) }
                         photo = api.uploadPhoto(access.id, bytes)
-                        notice = tr("Foto gesendet. Es erscheint, sobald der Vorstand es freigibt.")
+                        notice = if (profile?.isOrganization == true) {
+                            tr("Logo gesendet. Es erscheint, sobald der Vorstand es freigibt.")
+                        } else {
+                            tr("Foto gesendet. Es erscheint, sobald der Vorstand es freigibt.")
+                        }
                         draft = null
                         reload++
                     } catch (e: ApiException) {
@@ -277,8 +296,16 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text(tr("Foto löschen?")) },
-            text = { Text(tr("Deine Einwilligung wird widerrufen und alle deine Fotos werden gelöscht, auch im Mitgliedsausweis.")) },
+            title = { Text(if (profile?.isOrganization == true) tr("Logo löschen?") else tr("Foto löschen?")) },
+            text = {
+                Text(
+                    if (profile?.isOrganization == true) {
+                        tr("Das Logo wird gelöscht, auch im Mitgliedsausweis.")
+                    } else {
+                        tr("Deine Einwilligung wird widerrufen und alle deine Fotos werden gelöscht, auch im Mitgliedsausweis.")
+                    },
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
@@ -288,7 +315,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                         try {
                             photo = api.deletePhoto(access.id)
                             image = null
-                            notice = tr("Foto gelöscht und Einwilligung widerrufen.")
+                            notice = if (profile?.isOrganization == true) tr("Logo gelöscht.") else tr("Foto gelöscht und Einwilligung widerrufen.")
                         } catch (e: ApiException) {
                             fail(e)
                         }
@@ -304,16 +331,18 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
 private fun PhotoUploadDialog(
     bitmap: Bitmap,
     organization: String,
+    logo: Boolean,
     sending: Boolean,
     error: String?,
     onRotate: () -> Unit,
     onCancel: () -> Unit,
     onUpload: () -> Unit,
 ) {
-    var consent by remember { mutableStateOf(false) }
+    // Logo einer Organisation: keine Einwilligung einer Person nötig (wie im Browser, J5)
+    var consent by remember { mutableStateOf(logo) }
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text(tr("Foto senden")) },
+        title = { Text(if (logo) tr("Logo senden") else tr("Foto senden")) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 error?.let { Text(tr("Nicht gesendet: {it}", "it" to it), color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -325,7 +354,7 @@ private fun PhotoUploadDialog(
                     modifier = Modifier.fillMaxWidth().height(220.dp),
                 )
                 TextButton(onClick = onRotate, enabled = !sending) { Text(tr("Drehen")) }
-                LabeledCheckbox(
+                if (!logo) LabeledCheckbox(
                     tr("Ich willige ein, dass {organization} dieses Foto für meinen Mitgliedsausweis und die Mitgliederverwaltung verwendet. Ich kann die Einwilligung jederzeit widerrufen.", "organization" to organization),
                     consent,
                     { consent = it },
@@ -343,7 +372,13 @@ private fun PhotoUploadDialog(
 }
 
 @Composable
-private fun ChangeForm(profile: Profile, sending: Boolean, onCancel: () -> Unit, onSend: (Map<String, String>, String) -> Unit) {
+private fun ChangeForm(
+    profile: Profile,
+    organization: Boolean,
+    sending: Boolean,
+    onCancel: () -> Unit,
+    onSend: (Map<String, String>, String) -> Unit,
+) {
     val c = profile.contact
     val start = mapOf(
         "email" to (c?.email ?: ""),
@@ -359,7 +394,7 @@ private fun ChangeForm(profile: Profile, sending: Boolean, onCancel: () -> Unit,
         "street" to tr("Straße und Hausnummer"),
         "postal_code" to tr("PLZ"),
         "city" to tr("Ort"),
-        "last_name" to tr("Nachname"),
+        "last_name" to if (organization) tr("Name der Organisation") else tr("Nachname"),
     )
     // Eingaben überstehen Drehen und Reiterwechsel nicht mit remember allein (UX-Audit 31.10. A02)
     var values by rememberSaveable { mutableStateOf(start) }
