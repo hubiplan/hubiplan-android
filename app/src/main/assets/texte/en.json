@@ -732,5 +732,6 @@
  "erhält Rechnungen": "receives invoices",
  "erhält Rundschreiben": "receives circulars",
  "vertritt in Versammlungen": "represents at meetings",
- "{club}: {member} (Ansprechpartner)": "{club}: {member} (contact person)"
+ "{club}: {member} (Ansprechpartner)": "{club}: {member} (contact person)",
+ "{club} nutzt keine Aufgaben.": "{club} does not use tasks."
 }

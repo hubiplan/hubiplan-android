@@ -59,16 +59,22 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
         }
         return
     }
+    if (!access.hasTodos && !access.hasHelpers) {
+        Text(tr("{club} nutzt keine Aufgaben.", "club" to access.title), Modifier.padding(Abstand.rand))
+        return
+    }
     // Ein anderes Konto oder ein anderer Mitgliedszugang besitzt einen neuen Ansichtsbaum.
     key(main.account.server, main.account.deviceId, main.account.generation, access.id) {
         val api = remember(main.account) { Api(main.account.server, main.account.token) }
         // Helferdienste als zweite Ansicht im selben Reiter (höchstens fünf Ziele in der Leiste)
         var helpers by rememberSaveable(access.id) { mutableStateOf(false) }
-        val withHelpers = access.helpersEnabled && portalTarget == null
-        val switch: (@Composable () -> Unit)? = if (withHelpers) {
+        val withHelpers = access.hasHelpers && portalTarget == null
+        // Ohne Modul Aufgaben bleiben nur die Helferdienste
+        val onlyHelpers = withHelpers && !access.hasTodos
+        val switch: (@Composable () -> Unit)? = if (withHelpers && !onlyHelpers) {
             { TaskSwitch(helpers) { helpers = it } }
         } else null
-        if (withHelpers && helpers) MemberHelpers(api, access.id, main.account.server, vm) { switch?.invoke() }
+        if (withHelpers && (helpers || onlyHelpers)) MemberHelpers(api, access.id, main.account.server, vm) { switch?.invoke() }
         else MemberTaskList(api, access.id, portalTarget?.todoId, main.account.server, vm, switch)
     }
 }

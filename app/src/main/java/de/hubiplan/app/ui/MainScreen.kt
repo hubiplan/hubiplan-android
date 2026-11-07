@@ -127,7 +127,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
         }, onStay = vm::clearDeferredCircular)
     }
     val adminVisible = admin.visible || pendingTodo?.target?.scope?.let { it != "p" } == true
-    val tasksVisible = main.me?.portal?.isNotEmpty() == true || selectedTodo?.scope == "p"
+    val tasksVisible = main.me?.portal?.any { it.hasTodos || it.hasHelpers } == true || selectedTodo?.scope == "p"
     val tabs = barTabs(adminVisible, tasksVisible)
     LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
     // Zurück auf oberster Ebene: zum Startreiter statt die App zu schließen (A-04). Hier vor dem
