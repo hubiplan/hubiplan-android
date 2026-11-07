@@ -31,6 +31,20 @@ val FIELD_LABELS: Map<String, String> get() = mapOf(
     "country" to tr("Land"),
 )
 
+/** Felder im Dialog „Stammdaten und Kontakt“; Organisationen ohne Vorname, Geburtsdatum, Geschlecht. */
+fun masterDataKeys(organization: Boolean): List<String> =
+    listOf("first_name", "last_name", "birth_date", "club_number", "email", "phone", "street", "postal_code", "city", "country")
+        .filterNot { organization && it in PERSON_ONLY }
+
+private val PERSON_ONLY = setOf("first_name", "birth_date", "gender")
+
+/** Beschriftung eines Stammdatenfelds; bei Organisationen heißt der Nachname „Name der Organisation“. */
+fun masterDataLabel(key: String, organization: Boolean): String = when {
+    key == "birth_date" -> tr("Geburtsdatum (TT.MM.JJJJ)")
+    organization && key == "last_name" -> tr("Name der Organisation")
+    else -> FIELD_LABELS[key] ?: key
+}
+
 val GENDERS: List<Pair<String, String>> get() = listOf("" to tr("keine Angabe"), "männlich" to tr("männlich"), "weiblich" to tr("weiblich"), "divers" to tr("divers"))
 
 fun genderLabel(value: String): String = GENDERS.firstOrNull { it.first == value }?.second ?: value

@@ -22,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
@@ -88,17 +89,27 @@ private val INPUT_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.y
 private fun todayText(): String = today().format(INPUT_DATE)
 
 @Composable
-fun RemoteImage(path: String?, load: suspend (String) -> ByteArray?, description: String, modifier: Modifier) {
+fun RemoteImage(
+    path: String?,
+    load: suspend (String) -> ByteArray?,
+    description: String,
+    modifier: Modifier,
+    contentScale: ContentScale = ContentScale.Crop,
+) {
     var bitmap by remember(path) { mutableStateOf<Bitmap?>(null) }
     LaunchedEffect(path) {
         bitmap = path?.let { p ->
             load(p)?.let { bytes -> withContext(Dispatchers.Default) { de.hubiplan.app.data.SafeBitmap.decode(bytes, 1600) } }
         }
     }
-    bitmap?.let { Image(it.asImageBitmap(), contentDescription = description, contentScale = ContentScale.Crop, modifier = modifier) }
+    bitmap?.let { Image(it.asImageBitmap(), contentDescription = description, contentScale = contentScale, modifier = modifier) }
 }
 
 // --- Mitgliederliste ---
+
+/** Filter der Liste: Wert für `typ` und Beschriftung. */
+private val MEMBER_KINDS: List<Pair<String, String>>
+    get() = listOf("" to tr("Alle"), "person" to tr("Personen"), "organisation" to tr("Organisationen"))
 
 @Composable
 fun MemberList(
@@ -112,17 +123,19 @@ fun MemberList(
     // Suchbegriff bleibt nach dem Öffnen einer Akte erhalten (UX-Audit 31.10. A02)
     var search by remember { mutableStateOf(initialSearch) }
     var former by remember { mutableStateOf(false) }
+    // Personen, Organisationen oder alle (J7)
+    var kind by rememberSaveable { mutableStateOf("") }
     var rows by remember { mutableStateOf<List<MemberRow>>(emptyList()) }
     var page by remember { mutableIntStateOf(1) }
     var hasMore by remember { mutableStateOf(false) }
     var count by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(search, former, page) {
+    LaunchedEffect(search, former, kind, page) {
         if (page == 1) delay(300) // erst nach einer kurzen Tipp-Pause suchen
         loading = true
         try {
-            val result = client.members(search, page, if (former) "ehemalig" else "aktiv")
+            val result = client.members(search, page, if (former) "ehemalig" else "aktiv", kind)
             rows = if (page == 1) result.results else rows + result.results
             hasMore = result.next != null
             count = result.count
@@ -161,15 +174,35 @@ fun MemberList(
                 Switch(checked = former, onCheckedChange = null, modifier = Modifier.padding(start = Abstand.klein))
             }
         }
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = Abstand.rand),
+            horizontalArrangement = Arrangement.spacedBy(Abstand.klein),
+        ) {
+            for ((value, label) in MEMBER_KINDS) {
+                FilterChip(selected = kind == value, onClick = {
+                    kind = value
+                    page = 1
+                }, label = { Text(label) })
+            }
+        }
         onAdmit?.let { admit ->
             TextButton(onClick = admit, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("+ Neues Mitglied")) }
+            // Organisationen legt vorerst nur der Browser an (Konzept J8)
+            if (kind == "organisation") {
+                Text(
+                    tr("Organisationen bitte im Browser aufnehmen."),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = Abstand.rand),
+                )
+            }
         }
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
         LazyColumn(Modifier.fillMaxSize()) {
             items(rows, key = { it.id }) { row ->
                 ListItem(
-                    headlineContent = { Text("${row.lastName}, ${row.firstName}") },
+                    overlineContent = if (row.isOrganization) ({ Text(tr("Organisation")) }) else null,
+                    headlineContent = { Text(row.listName) },
                     supportingContent = {
                         Text(listOfNotNull(row.memberType, row.departments.joinToString(", ").ifBlank { null }, row.city.ifBlank { null }).joinToString(" · "))
                     },
@@ -265,8 +298,14 @@ fun MemberScreen(
         }
         val todayIso = today().toString()
         Row(horizontalArrangement = Arrangement.spacedBy(Abstand.rand)) {
-            RemoteImage(d.photo?.approved?.thumbnailUrl, client::image, tr("Foto"), Modifier.width(84.dp).height(108.dp))
+            if (d.isOrganization) {
+                // Logo statt Foto, nicht beschnitten
+                RemoteImage(d.photo?.approved?.thumbnailUrl, client::image, tr("Logo"), Modifier.width(108.dp).height(84.dp), ContentScale.Fit)
+            } else {
+                RemoteImage(d.photo?.approved?.thumbnailUrl, client::image, tr("Foto"), Modifier.width(84.dp).height(108.dp))
+            }
             Column {
+                if (d.isOrganization) Text(tr("Organisation"), style = MaterialTheme.typography.labelMedium)
                 Text(d.name, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
                 Text(
                     listOfNotNull(
@@ -281,8 +320,17 @@ fun MemberScreen(
                 d.birthDate?.let { Text(tr("geboren {date}", "date" to formatPlainDate(it)), style = MaterialTheme.typography.bodySmall) }
             }
         }
+        d.organization?.let { OrganizationFacts(it) }
         // Kontakt: Anrufen, Mail, Karte
         d.contact?.let { ContactRows(it) }
+        if (d.isOrganization) ContactPersonsSection(d)
+        d.billingAddress?.let { BillingAddressSection(it) }
+        if (d.contactFor.isNotEmpty()) {
+            Text(
+                tr("Ansprechpartner für: {names}", "names" to d.contactFor.joinToString(", ") { it.name }),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         // Vom Mitglied hochgeladenes Foto freigeben
         d.photo?.pending?.let { pending ->
             Card(Modifier.fillMaxWidth()) {
@@ -386,6 +434,60 @@ fun MemberScreen(
     }
 }
 
+// --- Organisationen (J7): Angaben, Ansprechpartner, Rechnungsanschrift; ändern im Browser ---
+
+@Composable
+private fun OrganizationFacts(org: de.hubiplan.app.data.OrganizationData) {
+    val lines = listOfNotNull(
+        org.legalFormLabel.ifBlank { null }?.let { tr("Rechtsform: {x}", "x" to it) },
+        org.register.ifBlank { null }?.let { tr("Register: {x}", "x" to it) },
+        org.vatId.ifBlank { null }?.let { tr("USt-IdNr.: {x}", "x" to it) },
+        org.website.ifBlank { null },
+    )
+    lines.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+}
+
+@Composable
+private fun ContactPersonsSection(d: MemberDetail) {
+    HorizontalDivider()
+    Text(tr("Ansprechpartner"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+    if (d.contactPersons.isEmpty()) {
+        Text(tr("Noch kein Ansprechpartner. Ansprechpartner im Browser eintragen."), style = MaterialTheme.typography.bodySmall)
+        return
+    }
+    d.contactPersons.forEach { p ->
+        Card(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(Abstand.klein)) {
+                Text(p.displayName, style = MaterialTheme.typography.titleSmall)
+                contactRoles(p).takeIf { it.isNotBlank() }?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                if (p.accessEmail.isNotBlank()) {
+                    Text(tr("Mitgliederbereich: {email}", "email" to p.accessEmail), style = MaterialTheme.typography.bodySmall)
+                }
+                ContactRows(de.hubiplan.app.data.Contact(email = p.contactEmail, phone = p.contactPhone))
+            }
+        }
+    }
+}
+
+/** Funktion und Rollen eines Ansprechpartners in einer Zeile. */
+fun contactRoles(p: de.hubiplan.app.data.ContactPersonItem): String =
+    listOfNotNull(
+        p.function.ifBlank { null },
+        if (p.isPrimary) tr("Hauptansprechpartner") else null,
+        if (p.represents) tr("vertritt in Versammlungen") else null,
+        if (p.receivesMail) tr("erhält Rundschreiben") else null,
+        if (p.receivesInvoices) tr("erhält Rechnungen") else null,
+    ).joinToString(" · ")
+
+@Composable
+private fun BillingAddressSection(b: de.hubiplan.app.data.BillingAddress) {
+    HorizontalDivider()
+    Text(tr("Rechnungsanschrift"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+    listOf(b.name, b.attention, b.street, "${b.postalCode} ${b.city}".trim(), b.country, b.email)
+        .filter { it.isNotBlank() }
+        .forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+}
+
 @Composable
 private fun ConfirmDialog(preview: Preview, onDismiss: () -> Unit, onConfirm: () -> Unit) {
     AlertDialog(
@@ -431,11 +533,11 @@ private fun EditDialog(d: MemberDetail, saving: Boolean, saveError: String?, onD
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 (error ?: saveError)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
-                for (key in listOf("first_name", "last_name", "birth_date", "club_number", "email", "phone", "street", "postal_code", "city", "country")) {
+                for (key in masterDataKeys(d.isOrganization)) {
                     OutlinedTextField(
                         value = values[key] ?: "",
                         onValueChange = { values = values + (key to it) },
-                        label = { Text(if (key == "birth_date") tr("Geburtsdatum (TT.MM.JJJJ)") else FIELD_LABELS[key] ?: key) },
+                        label = { Text(masterDataLabel(key, d.isOrganization)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
                             keyboardType = when (key) {
@@ -448,7 +550,11 @@ private fun EditDialog(d: MemberDetail, saving: Boolean, saveError: String?, onD
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
-                Picker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
+                if (!d.isOrganization) {
+                    Picker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
+                } else {
+                    Text(tr("Rechtsform, Zusatz und Ansprechpartner im Browser ändern."), style = MaterialTheme.typography.bodySmall)
+                }
             }
         },
         confirmButton = {
@@ -768,8 +874,14 @@ fun CardResultDialog(check: CardCheck, loadPublic: suspend (String) -> ByteArray
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein), horizontalAlignment = Alignment.CenterHorizontally) {
-                RemoteImage(check.photoUrl, loadPublic, tr("Foto"), Modifier.width(140.dp).height(180.dp))
-                listOfNotNull(check.firstName, check.lastName).joinToString(" ").takeIf { it.isNotBlank() }?.let {
+                val organization = check.kind == de.hubiplan.app.data.ORGANIZATION
+                if (organization) {
+                    RemoteImage(check.photoUrl, loadPublic, tr("Logo"), Modifier.width(180.dp).height(120.dp), ContentScale.Fit)
+                    Text(tr("Organisationsmitglied"), style = MaterialTheme.typography.labelLarge)
+                } else {
+                    RemoteImage(check.photoUrl, loadPublic, tr("Foto"), Modifier.width(140.dp).height(180.dp))
+                }
+                listOfNotNull(check.firstName, check.lastName).joinToString(" ").trim().takeIf { it.isNotBlank() }?.let {
                     Text(it, style = MaterialTheme.typography.titleLarge)
                 }
                 listOfNotNull(check.memberType, check.club).joinToString(" · ").takeIf { it.isNotBlank() }?.let { Text(it) }

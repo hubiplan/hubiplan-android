@@ -9,15 +9,28 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class MemberRow(
     val id: Int,
+    /** "person" oder "organization" (ältere HUBIplan-Stände: fehlt) */
+    val kind: String = "person",
     @SerialName("last_name") val lastName: String = "",
     @SerialName("first_name") val firstName: String = "",
+    @SerialName("name_suffix") val nameSuffix: String = "",
     @SerialName("birth_date") val birthDate: String? = null,
     @SerialName("member_type") val memberType: String? = null,
     val status: String = "",
     val departments: List<String> = emptyList(),
     @SerialName("photo_url") val photoUrl: String? = null,
     val city: String = "",
-)
+) {
+    val isOrganization: Boolean get() = kind == ORGANIZATION
+
+    /** Zeile der Liste: „Nachname, Vorname“, Organisationen mit ihrem ganzen Namen. */
+    val listName: String
+        get() = if (isOrganization) organizationName(lastName, nameSuffix) else "$lastName, $firstName"
+}
+
+/** Name einer Organisation mit Zusatz, wie im Browser („Musterbau GmbH – Niederlassung“). */
+fun organizationName(name: String, suffix: String): String =
+    if (suffix.isBlank()) name else "$name – $suffix"
 
 @Serializable
 data class MemberPage(val count: Int = 0, val next: String? = null, val results: List<MemberRow> = emptyList())
@@ -56,6 +69,7 @@ data class MemberPhotos(val approved: PhotoVersion? = null, val pending: PhotoVe
 @Serializable
 data class MemberDetail(
     val id: Int,
+    val kind: String = "person",
     @SerialName("last_name") val lastName: String = "",
     @SerialName("first_name") val firstName: String = "",
     @SerialName("birth_date") val birthDate: String? = null,
@@ -70,13 +84,61 @@ data class MemberDetail(
     val departments: List<DepartmentMembership> = emptyList(),
     val photo: MemberPhotos? = null,
     @SerialName("exit_reasons") val exitReasons: List<Choice> = emptyList(),
+    /** Angaben zur Organisation, bei Personen null */
+    val organization: OrganizationData? = null,
+    @SerialName("contact_persons") val contactPersons: List<ContactPersonItem> = emptyList(),
+    /** Bei Personen: Ansprechpartner für diese Organisationen */
+    @SerialName("contact_for") val contactFor: List<ContactFor> = emptyList(),
+    @SerialName("billing_address") val billingAddress: BillingAddress? = null,
 ) {
-    val name: String get() = "$firstName $lastName".trim()
+    val isOrganization: Boolean get() = kind == ORGANIZATION
+
+    val name: String
+        get() = if (isOrganization) organizationName(lastName, organization?.nameSuffix.orEmpty()) else "$firstName $lastName".trim()
 
     /** Heute laufende Zugehörigkeiten (Untereinheiten). */
     fun currentDepartments(today: String): List<DepartmentMembership> =
         departments.filter { it.validFrom <= today && (it.validUntil == null || it.validUntil >= today) }
 }
+
+@Serializable
+data class OrganizationData(
+    @SerialName("name_suffix") val nameSuffix: String = "",
+    @SerialName("legal_form_label") val legalFormLabel: String = "",
+    val register: String = "",
+    @SerialName("vat_id") val vatId: String = "",
+    val website: String = "",
+)
+
+/** Ansprechpartner einer Organisation (nur lesen; ändern im Browser). */
+@Serializable
+data class ContactPersonItem(
+    val id: Int,
+    @SerialName("display_name") val displayName: String = "",
+    val function: String = "",
+    @SerialName("contact_email") val contactEmail: String = "",
+    @SerialName("contact_phone") val contactPhone: String = "",
+    @SerialName("is_primary") val isPrimary: Boolean = false,
+    @SerialName("receives_mail") val receivesMail: Boolean = false,
+    @SerialName("receives_invoices") val receivesInvoices: Boolean = false,
+    val represents: Boolean = false,
+    @SerialName("access_email") val accessEmail: String = "",
+    @SerialName("linked_member") val linkedMember: Int? = null,
+)
+
+@Serializable
+data class ContactFor(@SerialName("member_id") val memberId: Int, val name: String = "")
+
+@Serializable
+data class BillingAddress(
+    val name: String = "",
+    val attention: String = "",
+    val street: String = "",
+    @SerialName("postal_code") val postalCode: String = "",
+    val city: String = "",
+    val country: String = "",
+    val email: String = "",
+)
 
 @Serializable
 data class MemberTypeItem(
@@ -111,6 +173,7 @@ data class AdminChangeRequest(
 
 @Serializable
 data class CardCheck(
+    val kind: String = "person",
     val status: String = "",
     @SerialName("status_label") val statusLabel: String = "",
     @SerialName("first_name") val firstName: String? = null,
@@ -360,6 +423,8 @@ data class BookingDraft(
 @Serializable
 data class DeptMemberDetail(
     val id: Int,
+    val kind: String = "person",
+    @SerialName("display_name") val displayName: String = "",
     @SerialName("last_name") val lastName: String = "",
     @SerialName("first_name") val firstName: String = "",
     @SerialName("birth_date") val birthDate: String? = null,
@@ -370,7 +435,8 @@ data class DeptMemberDetail(
     val departments: List<String> = emptyList(),
     val contact: Contact? = null,
 ) {
-    val name: String get() = "$firstName $lastName".trim()
+    val name: String
+        get() = if (kind == ORGANIZATION) displayName.ifBlank { lastName } else "$firstName $lastName".trim()
 }
 
 // --- B5: Beiträge (Barzahlung, Quittung) ---

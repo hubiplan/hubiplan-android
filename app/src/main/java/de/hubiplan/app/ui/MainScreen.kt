@@ -44,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -255,16 +256,17 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
     val current = main.access
     var open by rememberSaveable { mutableStateOf(false) }
     if (accesses.size <= 1) {
-        Text(current?.title ?: "HUBIplan")
+        Text(current?.label ?: "HUBIplan", maxLines = 1, overflow = TextOverflow.Ellipsis)
         return
     }
     Box {
-        TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Einheit"), current?.title ?: tr("keine gewählt"), open)) {
-            Text((current?.title ?: tr("Einheit wählen")) + " ▾", color = LocalBrand.current.onBrand)
+        TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Einheit"), current?.label ?: tr("keine gewählt"), open)) {
+            Text((current?.label ?: tr("Einheit wählen")) + " ▾", color = LocalBrand.current.onBrand, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             accesses.forEach { a ->
-                DropdownMenuItem(text = { Text(a.title) }, onClick = {
+                // Ansprechpartner sehen die Organisation dazu (J7)
+                DropdownMenuItem(text = { Text(a.label) }, onClick = {
                     open = false
                     if (a.id != current?.id) { if (leave == null) vm.selectAccess(a) else leave.request { vm.selectAccess(a) } }
                 })

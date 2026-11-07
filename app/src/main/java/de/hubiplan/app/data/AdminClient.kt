@@ -58,9 +58,11 @@ class AdminClient(
 
     suspend fun image(path: String): ByteArray? = use().image(imagePath(path))
 
-    suspend fun members(search: String, page: Int, status: String = "aktiv"): MemberPage {
+    /** [kind]: "" alle, "person" oder "organisation" (Filter `typ` wie im Browser). */
+    suspend fun members(search: String, page: Int, status: String = "aktiv", kind: String = ""): MemberPage {
         val q = URLEncoder.encode(search.trim(), "UTF-8")
-        return decodeApi(get("members/?suche=$q&status=$status&page=$page&page_size=50"))
+        val typ = if (kind.isBlank()) "" else "&typ=$kind"
+        return decodeApi(get("members/?suche=$q&status=$status$typ&page=$page&page_size=50"))
     }
 
     suspend fun member(id: Int): MemberDetail = decodeApi(get("members/$id/"))
