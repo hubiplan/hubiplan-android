@@ -721,7 +721,6 @@
  "Noch kein Logo. Es erscheint nach der Freigabe im Mitgliedsausweis.": "No logo yet. It appears on the membership card once approved.",
  "Organisation": "Organisation",
  "Organisationen": "Organisations",
- "Organisationen bitte im Browser aufnehmen.": "Please admit organisations in the browser.",
  "Organisationsmitglied": "Organisation member",
  "Personen": "Persons",
  "Rechnungsanschrift": "Billing address",
@@ -733,5 +732,11 @@
  "erhält Rundschreiben": "receives circulars",
  "vertritt in Versammlungen": "represents at meetings",
  "{club}: {member} (Ansprechpartner)": "{club}: {member} (contact person)",
- "{club} nutzt keine Aufgaben.": "{club} does not use tasks."
+ "{club} nutzt keine Aufgaben.": "{club} does not use tasks.",
+ "Person": "Person",
+ "Firma, Verein, Behörde oder Stiftung. Rechtsform, Register und Ansprechpartner trägst du danach in der Akte ein.": "Company, association, public body or foundation. Add legal form, register and contact persons afterwards in the member file.",
+ "Namenszusatz (optional)": "Name addition (optional)",
+ "Bitte den Namen der Organisation angeben.": "Please enter the name of the organisation.",
+ "Gibt es die Organisation schon?": "Does the organisation already exist?",
+ "Neue Organisation anlegen": "Create new organisation"
 }

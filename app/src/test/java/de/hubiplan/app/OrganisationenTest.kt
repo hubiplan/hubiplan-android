@@ -2,6 +2,7 @@ package de.hubiplan.app
 
 import de.hubiplan.app.data.CardDisplay
 import de.hubiplan.app.data.ContactPersonItem
+import de.hubiplan.app.data.DuplicateItem
 import de.hubiplan.app.data.Me
 import de.hubiplan.app.data.MemberDetail
 import de.hubiplan.app.data.MemberPage
@@ -132,5 +133,17 @@ class OrganisationenTest {
         )
         assertTrue(p.isOrganization)
         assertEquals("Musterbau GmbH – Niederlassung Musterstadt", p.name)
+    }
+
+    @Test
+    fun dubletteEinerOrganisation() {
+        // Aufnahme von Organisationen in der App (J8d): Treffer ohne Geburtsdatum
+        val found = json.decodeFromString<List<DuplicateItem>>(
+            """[{"id":7,"kind":"organization","last_name":"Musterbau GmbH","first_name":"","birth_date":null,"already_member_here":false}]""",
+        )
+        assertEquals("organization", found[0].kind)
+        assertNull(found[0].birthDate)
+        val person = json.decodeFromString<List<DuplicateItem>>("""[{"id":8,"last_name":"Muster","first_name":"Erika","birth_date":"1980-01-01"}]""")
+        assertEquals("person", person[0].kind)
     }
 }

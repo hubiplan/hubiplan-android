@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +42,7 @@ import de.hubiplan.app.data.FieldEntry
 import de.hubiplan.app.data.MandateItem
 import de.hubiplan.app.data.MemberDetail
 import de.hubiplan.app.data.MemberTypeItem
+import de.hubiplan.app.data.ORGANIZATION
 import de.hubiplan.app.data.Preview
 import de.hubiplan.app.data.TitleItem
 import de.hubiplan.app.data.obj
@@ -594,10 +596,12 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
             mapOf(
                 "first_name" to "", "last_name" to "", "birth_date" to "", "gender" to "",
                 "email" to "", "phone" to "", "street" to "", "postal_code" to "", "city" to "",
-                "entry_date" to todayInput(),
+                "entry_date" to todayInput(), "name_suffix" to "",
             ),
         )
     }
+    // Person oder Organisation (Firma, Verein, Behörde …, J8d)
+    var organization by rememberSaveable { mutableStateOf(false) }
     var types by remember { mutableStateOf<List<MemberTypeItem>>(emptyList()) }
     var units by remember { mutableStateOf<List<DepartmentItem>>(emptyList()) }
     var typeId by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -625,12 +629,18 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
         val body = buildMap<String, Any?> {
             put("member_type", type!!.id)
             put("entry_date", entry)
-            // Name und Geburtsdatum gehen immer mit: bei einer gefundenen Person prüft der
-            // Server damit den Treffer (die ID allein reicht nicht)
-            put("first_name", values["first_name"]!!.trim())
             put("last_name", values["last_name"]!!.trim())
-            put("birth_date", birth)
-            if (person != null) put("person", person) else put("gender", values["gender"])
+            if (organization) {
+                put("kind", "organization")
+                put("name_suffix", values["name_suffix"].orEmpty().trim())
+                if (person != null) put("person", person)
+            } else {
+                // Name und Geburtsdatum gehen immer mit: bei einer gefundenen Person prüft der
+                // Server damit den Treffer (die ID allein reicht nicht)
+                put("first_name", values["first_name"]!!.trim())
+                put("birth_date", birth)
+                if (person != null) put("person", person) else put("gender", values["gender"])
+            }
             for (k in listOf("email", "phone", "street", "postal_code", "city")) put(k, values[k]!!.trim())
             unit?.let { put("department_ids", kotlinx.serialization.json.JsonArray(listOf(JsonPrimitive(it.id)))) }
         }
@@ -652,10 +662,31 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
         Text(tr("Neues Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-        for (k in listOf("first_name", "last_name", "birth_date", "street", "postal_code", "city", "email", "phone")) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+            FilterChip(selected = !organization, enabled = !busy, onClick = { organization = false }, label = { Text(tr("Person")) })
+            FilterChip(selected = organization, enabled = !busy, onClick = { organization = true }, label = { Text(tr("Organisation")) })
+        }
+        if (organization) {
+            Text(tr("Firma, Verein, Behörde oder Stiftung. Rechtsform, Register und Ansprechpartner trägst du danach in der Akte ein."), style = MaterialTheme.typography.bodySmall)
+        }
+        val inputs = if (organization) {
+            listOf("last_name", "name_suffix", "street", "postal_code", "city", "email", "phone")
+        } else {
+            listOf("first_name", "last_name", "birth_date", "street", "postal_code", "city", "email", "phone")
+        }
+        for (k in inputs) {
             ServerTextField(field = k, errors = fields, enabled = !busy, value = values[k] ?: "",
                 onValueChange = { values = values + (k to it) },
-                label = { Text(if (k == "birth_date") tr("Geburtsdatum (TT.MM.JJJJ)") else FIELD_LABELS[k] ?: k) },
+                label = {
+                    Text(
+                        when {
+                            k == "birth_date" -> tr("Geburtsdatum (TT.MM.JJJJ)")
+                            organization && k == "last_name" -> tr("Name der Organisation")
+                            k == "name_suffix" -> tr("Namenszusatz (optional)")
+                            else -> FIELD_LABELS[k] ?: k
+                        },
+                    )
+                },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(
                     keyboardType = when (k) {
@@ -668,7 +699,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        ChoicePicker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
+        if (!organization) ChoicePicker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
         ChoicePicker(tr("Mitgliedsart"), types.map { it to it.name }, type, { it.name }, field = "member_type", errors = fields, enabled = !busy) { typeId = it?.id }
         if (units.isNotEmpty()) ChoicePicker(tr("Untereinheit (optional)"), listOf<DepartmentItem?>(null).map { it to "keine" } + units.map { it to it.label }, unit, { it?.label ?: "keine" }, field = "department_ids", errors = fields, enabled = !busy) { unitId = it?.id }
         ServerTextField(field = "entry_date", errors = fields, value = values["entry_date"] ?: "", onValueChange = { values = values + ("entry_date" to it) }, label = { Text(tr("Eintritt am")) }, enabled = !busy, singleLine = true, trailingIcon = { DatePickButton(values["entry_date"].orEmpty()) { values = values + ("entry_date" to it) } })
@@ -677,19 +708,25 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
             onClick = {
                 val birth = parseGermanDate(values["birth_date"] ?: "")
                 error = when {
-                    values["first_name"].isNullOrBlank() || values["last_name"].isNullOrBlank() -> tr("Bitte Vor- und Nachname angeben.")
-                    birth == null -> tr("Bitte das Geburtsdatum als TT.MM.JJJJ eingeben.")
+                    organization && values["last_name"].isNullOrBlank() -> tr("Bitte den Namen der Organisation angeben.")
+                    !organization && (values["first_name"].isNullOrBlank() || values["last_name"].isNullOrBlank()) -> tr("Bitte Vor- und Nachname angeben.")
+                    !organization && birth == null -> tr("Bitte das Geburtsdatum als TT.MM.JJJJ eingeben.")
                     listOf("street", "postal_code", "city").any { values[it].isNullOrBlank() } -> tr("Bitte die vollständige Anschrift angeben.")
                     type == null -> tr("Bitte eine Mitgliedsart wählen.")
                     parseGermanDate(values["entry_date"] ?: "") == null -> tr("Bitte das Eintrittsdatum als TT.MM.JJJJ eingeben.")
                     else -> null
                 }
-                if (error == null && birth != null) {
-                    // Erst nach möglichen Dubletten suchen (gleicher Name und Geburtstag)
+                if (error == null) {
+                    // Erst nach möglichen Dubletten suchen (gleicher Name und Geburtstag bzw.
+                    // bei Organisationen gleicher Name)
                     scope.launch {
                         busy = true
                         try {
-                            val found = client.duplicates(values["last_name"]!!, values["first_name"]!!, birth)
+                            val found = if (organization) {
+                                client.organizationDuplicates(values["last_name"]!!)
+                            } else {
+                                client.duplicates(values["last_name"]!!, values["first_name"]!!, birth!!)
+                            }
                             if (found.isEmpty()) admit(null) else duplicates = found
                         } catch (e: ApiException) {
                             error = fields.receive(e, errors)
@@ -705,15 +742,16 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
     duplicates?.let { found ->
         AlertDialog(
             onDismissRequest = { duplicates = null },
-            title = { Text(tr("Gibt es die Person schon?")) },
+            title = { Text(if (organization) tr("Gibt es die Organisation schon?") else tr("Gibt es die Person schon?")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     found.forEach { p ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                             Column(Modifier.weight(1f)) {
-                                Text("${p.firstName} ${p.lastName}")
+                                Text(if (p.kind == ORGANIZATION) p.lastName else "${p.firstName} ${p.lastName}")
                                 Text(
-                                    formatPlainDate(p.birthDate) + if (p.alreadyMemberHere) tr(" · schon Mitglied hier") else "",
+                                    (p.birthDate?.let { formatPlainDate(it) } ?: tr("Organisation")) +
+                                        if (p.alreadyMemberHere) tr(" · schon Mitglied hier") else "",
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             }
@@ -731,7 +769,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                 TextButton(onClick = {
                     duplicates = null
                     admit(null)
-                }) { Text(tr("Neue Person anlegen")) }
+                }) { Text(if (organization) tr("Neue Organisation anlegen") else tr("Neue Person anlegen")) }
             },
             dismissButton = { TextButton(onClick = { duplicates = null }) { Text(tr("Abbrechen")) } },
         )

@@ -157,6 +157,10 @@ class AdminClient(
         return decodeList(get("members/duplicates/?name=${enc(lastName)}&vorname=${enc(firstName)}&geburtsdatum=$birthDate"))
     }
 
+    /** Organisationen mit gleichem Namen (J8d). */
+    suspend fun organizationDuplicates(name: String): List<DuplicateItem> =
+        decodeList(get("members/duplicates/?typ=organisation&name=${URLEncoder.encode(name.trim(), "UTF-8")}"))
+
     /** Neues Mitglied; [key] schützt vor doppelter Aufnahme bei erneutem Senden. */
     suspend fun admit(values: JsonObject, key: String): MemberDetail =
         decodeApi(use().admin("POST", "${base}members/admit/", values.toString(), mapOf("Idempotency-Key" to key)).text)
