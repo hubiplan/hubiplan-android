@@ -35,6 +35,11 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     var deleteInfo by remember { mutableStateOf(false) }
     var licenses by remember { mutableStateOf(false) }
+    // Lizenzen als Seite an Stelle des Kontos, Pfeil zurück in der Kopfleiste (A-11)
+    if (licenses) {
+        LicensesPage(onClose = { licenses = false })
+        return
+    }
     // Vor dem Abmelden warnen, wenn Buchungen oder Quittungen noch nicht gesendet sind (A14, F07)
     var pendingWarning by remember { mutableIntStateOf(0) }
     var sendingPending by remember { mutableStateOf(false) }
@@ -86,7 +91,6 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
         TextButton(onClick = { open(SOURCE_URL) }) { Text(tr("Quellcode")) }
     }
 
-    if (licenses) LicensesDialog(onClose = { licenses = false })
 
     if (deleteInfo) {
         val key = main.access?.imprintKey?.let { "/$it" } ?: ""

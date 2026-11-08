@@ -47,7 +47,10 @@ import de.hubiplan.app.tr
 fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
     // Lizenzen auch ohne Anmeldung (Lizenzaudit 31.10.2026, L01)
     var licenses by rememberSaveable { mutableStateOf(false) }
-    if (licenses) LicensesDialog(onClose = { licenses = false })
+    if (licenses) {
+        LicensesPage(onClose = { licenses = false })
+        return
+    }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let(vm::scanned)
     }
