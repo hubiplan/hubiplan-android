@@ -4,7 +4,7 @@ Projektregeln (gelten wie im Hauptprojekt `hubiplan`):
 
 - **Nur lokal bauen und testen**, mit `scripts/test.sh` und installiertem Android-SDK.
   Auf gemeinsam genutzten Test- oder Produktivservern keine Tests ausführen.
-- **Höchstens zwei Testläufe gleichzeitig, jeder höchstens 8 Kerne**, projektübergreifend für
+- **Höchstens drei Testläufe gleichzeitig, jeder höchstens 6 Kerne**, projektübergreifend für
   alle Projekte auf demselben Rechner: `scripts/test.sh` holt sich einen Platz mit `testplatz`
   (aus `hubiplan/scripts/testplatz.sh`; Einrichtung siehe `README.md`, „Bauen und testen“).
 - Temporäre Dateien im lokal konfigurierten Temp-Verzeichnis ablegen; keine festen Laufwerke
