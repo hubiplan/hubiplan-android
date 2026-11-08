@@ -53,7 +53,7 @@ fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onN
             FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
             FilterChip(selected = done, onClick = { done = true }, label = { Text(tr("Erledigt")) })
         }
-        Row(Modifier.padding(horizontal = Abstand.klein)) {
+        Row(Modifier.padding(horizontal = Abstand.klein), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             TextButton(onClick = onNew) { Text(tr("Neue Aufgabe")) }
             TextButton(onClick = { reload++ }) { Text(tr("Aktualisieren")) }
         }
