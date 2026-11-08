@@ -5,6 +5,7 @@ import de.hubiplan.app.data.Theme
 import de.hubiplan.app.ui.LoginField
 import de.hubiplan.app.ui.Tab
 import de.hubiplan.app.ui.barLabelMinScale
+import de.hubiplan.app.ui.barTabs
 import de.hubiplan.app.ui.brandFor
 import de.hubiplan.app.ui.statusIconsDark
 import de.hubiplan.app.ui.breakableCoordinate
@@ -32,7 +33,7 @@ class UxAudit0811Test {
     /** A-14: kurze Beschriftungen in der Leiste, einzeilig, höchstens bis Standardgröße verkleinert. */
     @Test
     fun kurzeReiterbeschriftungen() {
-        Tab.entries.forEach { assertTrue("${it.short} zu lang", it.short.length <= 9) }
+        barTabs(adminVisible = true, tasksVisible = true).forEach { assertTrue("${it.short} zu lang", it.short.length <= 9) }
         assertEquals("Neues", Tab.MITTEILUNGEN.short)
         assertEquals("Verwalten", Tab.VERWALTUNG.short)
         assertEquals("Mitteilungen", Tab.MITTEILUNGEN.label)
