@@ -335,7 +335,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
         }
     }
 
-    // Android-Zurück geht eine Ebene zurück wie „‹ Zurück“ (UX-Audit 31.10. A01); aus einem
+    // Android-Zurück geht eine Ebene zurück wie der Pfeil in der Kopfleiste (UX-Audit 31.10. A01); aus einem
     // Formular erst nach Rückfrage, damit Eingaben nicht unbemerkt verloren gehen.
     val leave = LocalFormLeaveGuard.current
     fun requestLeave(action: () -> Unit) { if (leave == null) action() else leave.request(action) }
@@ -396,12 +396,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
         Column(Modifier.fillMaxSize().padding(padding)) {
             UnitPicker(units, unit) { picked -> if (picked.key != unit.key) requestLeave { unitKey = picked.key } }
             val current = section
-            if (!nested && current != null) {
-                Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { requestLeave { section = null } }) { Text(tr("‹ Übersicht")) }
-                    Text(current.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(start = Abstand.klein))
-                }
-            }
+            // Bereich: Pfeil zurück zur Übersicht und Name des Bereichs in der Kopfleiste (A-01)
+            if (!nested && current != null) BackHead(current.label) { requestLeave { section = null } }
             HorizontalDivider()
             cardError?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
             val open = member

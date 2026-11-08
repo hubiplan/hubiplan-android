@@ -10,15 +10,32 @@ ein. „Passwort vergessen? Im Browser zurücksetzen“ öffnet die vorhandene
 Passwortwiederherstellung genau dieser Instanz. E-Mail und Passwort werden nicht im
 Browserlink mitgegeben. Setze das Passwort dort zurück, kehre zur App zurück und melde dich
 mit dem neuen Passwort an. Ist kein Browser verfügbar, zeigt die App die kopierbare
-Zieladresse. Bei einer leeren, ungültigen oder unverschlüsselten HTTP-Adresse bleibt die
-Aktion deaktiviert; während der Anmeldung ebenfalls.
+Zieladresse. Fehlt die Adresse oder ist sie ungültig bzw. unverschlüsseltes HTTP, bleibt der
+Knopf trotzdem antippbar: Die App springt dann ins Adressfeld und sagt dort, was fehlt. Genauso
+zeigt „Anmelden“ bei leeren Feldern einen Hinweis am Feld. Nur während der Anmeldung sind beide
+Knöpfe gesperrt.
 
 **English:** Under “Or sign in with email and password”, first enter your club’s valid
 address. “Forgot password? Reset in browser” opens that instance’s existing password recovery
 page without adding your email or password to the link. Reset the password there, return to
 the app and sign in with the new password. If no browser is available, the app displays a
-selectable destination address. The action is disabled for empty, invalid or unencrypted HTTP
-addresses, and while signing in.
+selectable destination address. If the address is missing, invalid or plain HTTP, the button
+still responds: the app moves to the address field and explains what is missing there. “Sign
+in” likewise shows a hint next to empty fields. Both buttons are only disabled while signing in.
+
+## Navigation
+
+Die Leiste unten (auf dem Tablet seitlich) hat kurze, einzeilige Beschriftungen: **Termine**,
+**Aufgaben**, **Neues** (die Mitteilungen), **Ausweis** und **Verwalten**. Bei großer Schrift
+werden sie bei Bedarf etwas kleiner statt umzubrechen. Der aktive Reiter ist farbig hinterlegt.
+In jeder Detailansicht (Termin, Mitteilung, Aufgabe, Bereiche der Verwaltung) stehen der Pfeil
+zurück und der Titel oben in der Kopfleiste; System-Zurück führt ebenfalls eine Ebene zurück.
+
+**English:** The bar at the bottom (at the side on tablets) has short single-line labels:
+**Events**, **Tasks**, **Messages**, **Card** and **Admin**. With large text they shrink a little
+instead of wrapping. The active tab is highlighted in colour. Every detail view (event, message,
+task, admin areas) shows the back arrow and title in the top bar; system back also goes up one
+level.
 
 ## Aufgaben im Mitgliederbereich
 
@@ -57,7 +74,7 @@ published plans show open shifts you can sign up for when self sign-up is allowe
 
 ## Mitteilungen lesen und Anhänge öffnen
 
-Der Eingang **Mitteilungen** enthält dieselben empfangenen Schreiben wie **Mein Bereich ›
+Der Eingang **Mitteilungen** (in der Leiste unten „Neues“) enthält dieselben empfangenen Schreiben wie **Mein Bereich ›
 Mitteilungen** im Web. Absätze, fett/kursiv, Listen und sichere Web-/E-Mail-Links werden nativ
 dargestellt. Die Dateinamen der Anhänge stehen beim Schreiben. **Dieses Schreiben mit Anhängen
 im Browser öffnen** führt zum ausgewählten Schreiben und Mitgliederzugang. Eine nötige

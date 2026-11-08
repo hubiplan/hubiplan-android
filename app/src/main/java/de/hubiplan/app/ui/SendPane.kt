@@ -91,7 +91,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
-        TextButton(enabled = !busy, onClick = { if (leave == null) onCancel() else leave.request(onCancel) }) { Text(tr("‹ Zurück")) }
+        BackHead(enabled = !busy) { if (leave == null) onCancel() else leave.request(onCancel) }
         Text(tr("Kurzmitteilung senden"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         val list = senders
         when {

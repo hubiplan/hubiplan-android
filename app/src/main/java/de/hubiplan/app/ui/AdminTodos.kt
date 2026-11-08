@@ -94,7 +94,7 @@ fun TodoScreen(client: AdminClient, id: Int, errors: AdminErrors, reloadKey: Int
         try { task = client.todo(id) } catch (e: ApiException) { error = errors.message(e) }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
-        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
+        BackHead(enabled = !busy, onBack = onBack)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (error != null) TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("Erneut laden")) }
@@ -151,7 +151,7 @@ fun TodoCreateScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Uni
     val fields = rememberServerFields()
     val body = todoInput(title, description, date, time)
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
-        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
+        BackHead(enabled = !busy, onBack = onBack)
         Text(tr("Neue Aufgabe"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Die neue Aufgabe ist zunächst privat. Teilen, Anhänge und Serien verwaltest du im Browser."))
         ServerTextField("title", fields, title, { title = it.take(200) }, label = { Text(tr("Titel")) }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth())

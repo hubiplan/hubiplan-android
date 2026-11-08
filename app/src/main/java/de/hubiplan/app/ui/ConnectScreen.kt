@@ -29,6 +29,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -117,50 +120,105 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
     }
 }
 
+/** Welche Anmeldefelder fehlen (Reihenfolge wie auf dem Bildschirm). */
+internal enum class LoginField { SERVER, EMAIL, PASSWORD }
+
+internal fun missingLoginFields(server: String, email: String, password: String): List<LoginField> = buildList {
+    if (server.isBlank()) add(LoginField.SERVER)
+    if (email.isBlank()) add(LoginField.EMAIL)
+    if (password.isEmpty()) add(LoginField.PASSWORD)
+}
+
+/**
+ * Anmelden und „Passwort vergessen?“ bleiben immer antippbar (außer während einer Anfrage).
+ * Fehlt etwas, steht der Hinweis am Feld, das Feld bekommt den Fokus und der Hinweis wird
+ * vorgelesen, statt dass der Knopf stumm gesperrt ist (UX-Audit 08.11. A-12).
+ */
 @Composable
 internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String) -> Unit) {
     var server by rememberSaveable { mutableStateOf(state.server.removePrefix("https://")) }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
+    // Felder, zu denen nach einem Tippen ein Hinweis steht
+    var missing by rememberSaveable { mutableStateOf(emptyList<LoginField>()) }
+    var serverHint by rememberSaveable { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
     val recoveryUrl = passwordResetUrl(server)
     var browserError by rememberSaveable { mutableStateOf(false) }
+    val serverFocus = remember { FocusRequester() }
+    val emailFocus = remember { FocusRequester() }
+    val passwordFocus = remember { FocusRequester() }
+    fun focus(field: LoginField) = when (field) {
+        LoginField.SERVER -> serverFocus
+        LoginField.EMAIL -> emailFocus
+        LoginField.PASSWORD -> passwordFocus
+    }.requestFocus()
     Text(tr("Oder mit E-Mail und Passwort anmelden"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+    val serverError = when {
+        LoginField.SERVER in missing -> tr("Bitte die Adresse deines Vereins eingeben.")
+        serverHint && recoveryUrl == null -> tr("Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.")
+        else -> null
+    }
     OutlinedTextField(
         value = server,
-        onValueChange = { server = it; browserError = false },
+        onValueChange = { server = it; browserError = false; missing = missing - LoginField.SERVER },
         label = { Text(tr("Adresse von HUBIplan")) },
         placeholder = { Text("verein.example.de") },
         singleLine = true,
+        isError = serverError != null,
+        supportingText = serverError?.let { { Text(it, modifier = Modifier.announce(urgent = true)) } },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().focusRequester(serverFocus),
     )
+    val emailError = LoginField.EMAIL in missing
     OutlinedTextField(
         value = email,
-        onValueChange = { email = it },
+        onValueChange = { email = it; missing = missing - LoginField.EMAIL },
         label = { Text(tr("E-Mail")) },
         singleLine = true,
+        isError = emailError,
+        supportingText = if (emailError) {
+            { Text(tr("Bitte deine E-Mail-Adresse eingeben."), modifier = Modifier.announce(urgent = true)) }
+        } else {
+            null
+        },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().focusRequester(emailFocus),
     )
+    val passwordError = LoginField.PASSWORD in missing
     OutlinedTextField(
         value = password,
-        onValueChange = { password = it },
+        onValueChange = { password = it; missing = missing - LoginField.PASSWORD },
         label = { Text(tr("Passwort")) },
         singleLine = true,
+        isError = passwordError,
+        supportingText = if (passwordError) {
+            { Text(tr("Bitte dein Passwort eingeben."), modifier = Modifier.announce(urgent = true)) }
+        } else {
+            null
+        },
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().focusRequester(passwordFocus),
     )
     OutlinedButton(
-        onClick = { onLogin(server, email, password) },
-        enabled = !state.busy && server.isNotBlank() && email.isNotBlank() && password.isNotEmpty(),
+        onClick = {
+            missing = missingLoginFields(server, email, password)
+            if (missing.isEmpty()) onLogin(server, email, password) else focus(missing.first())
+        },
+        enabled = !state.busy,
         modifier = Modifier.fillMaxWidth(),
     ) { Text(tr("Anmelden")) }
     TextButton(
         onClick = {
-            val url = recoveryUrl ?: return@TextButton
             browserError = false
+            val url = recoveryUrl
+            if (url == null) {
+                serverHint = true
+                serverFocus.requestFocus()
+                return@TextButton
+            }
+            serverHint = false
             try {
                 uriHandler.openUri(url)
             } catch (_: IllegalArgumentException) {
@@ -171,14 +229,16 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
                 browserError = true
             }
         },
-        enabled = !state.busy && recoveryUrl != null,
+        enabled = !state.busy,
         modifier = Modifier.fillMaxWidth(),
     ) { Text(tr("Passwort vergessen? Im Browser zurücksetzen")) }
-    Text(
-        if (recoveryUrl == null) tr("Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.")
-        else tr("Setze dein Passwort auf der Vereinsseite im Browser zurück. Kehre danach zur App zurück und melde dich mit dem neuen Passwort an."),
-        style = MaterialTheme.typography.bodySmall,
-    )
+    if (serverError == null) {
+        Text(
+            if (recoveryUrl == null) tr("Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.")
+            else tr("Setze dein Passwort auf der Vereinsseite im Browser zurück. Kehre danach zur App zurück und melde dich mit dem neuen Passwort an."),
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
     if (browserError && recoveryUrl != null) {
         Text(
             tr("Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser und kehre danach zur App zurück:"),

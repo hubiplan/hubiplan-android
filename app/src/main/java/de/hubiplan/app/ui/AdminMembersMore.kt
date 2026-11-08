@@ -658,7 +658,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
+        BackHead(enabled = !busy, onBack = onBack)
         Text(tr("Neues Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }

@@ -150,7 +150,7 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        BackHead(item?.subject, onBack = onBack)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         val c = item
         if (c == null) {

@@ -472,7 +472,7 @@ fun BookingScreen(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
     }, onError = { error = it })
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        BackHead(onBack = onBack)
         if (booking == null) Text(tr("Buchung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy || loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -586,7 +586,7 @@ fun BookingForm(
         (kindCategories.isEmpty() || category != null)
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
+        BackHead(enabled = !busy, onBack = onBack)
         Text(tr("Neue Buchung"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Wird sofort gebucht, nur mit Belegfoto. Ändern und Storno im Browser."), style = MaterialTheme.typography.bodySmall)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
