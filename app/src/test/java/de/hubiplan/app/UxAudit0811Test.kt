@@ -90,7 +90,9 @@ class UxAudit0811Test {
     fun systemleistenUndLizenzseite() {
         assertTrue("safeDrawingPadding" in File("src/main/java/de/hubiplan/app/MainActivity.kt").readText())
         val lic = File(ui, "LicensesScreen.kt").readText()
-        assertTrue("safeDrawingPadding" in lic)
+        // Seite im Hauptfenster (dessen Abstände gelten), kein eigenes Dialogfenster
+        assertFalse("Dialog(" in lic)
+        assertTrue("BackHead(title)" in lic)
         assertTrue("TopAppBar(" in lic)
         assertTrue("Hyphens.None" in lic)
         assertEquals("androidx.compose:\u200Bui:\u200B1.7.6", breakableCoordinate("androidx.compose:ui:1.7.6"))
@@ -100,10 +102,8 @@ class UxAudit0811Test {
     @Test
     fun statusleisteMitFlaeche() {
         assertTrue("StatusBarStrip(window)" in File("src/main/java/de/hubiplan/app/MainActivity.kt").readText())
-        assertTrue("StatusBarStrip(dialogWindow)" in File(ui, "LicensesScreen.kt").readText())
         // Streifen bleibt oben, auch unter einer Surface (die ihre Mindesthöhe weitergibt)
         assertTrue(".wrapContentHeight(Alignment.Top)" in File(ui, "Kopfleiste.kt").readText())
-        assertTrue("setDecorFitsSystemWindows(it, false)" in File(ui, "LicensesScreen.kt").readText())
         assertFalse(statusIconsDark(brandFor(Theme(primary = "#0e7c66", onPrimary = "#ffffff", accent = "#0e7c66", onAccent = "#000000"))))
         assertTrue(statusIconsDark(brandFor(Theme(primary = "#ffd500", onPrimary = "#ffffff", accent = "#ffd500", onAccent = "#000000"))))
     }

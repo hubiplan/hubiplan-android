@@ -4,9 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,14 +12,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.view.WindowCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,7 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,8 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import de.hubiplan.app.BuildConfig
 import de.hubiplan.app.data.Licenses
 import de.hubiplan.app.tr
@@ -59,73 +48,53 @@ private fun Context.asset(path: String): String? =
 
 /**
  * Lizenzen der App und aller enthaltenen Bibliotheken (Lizenzaudit 31.10.2026, L01).
- * Erreichbar ohne Anmeldung (Startseite) und unter Konto. Vollbild mit Kopfleiste (Pfeil zurück,
- * Titel) und Abstand zu Status- und Gestenleiste (UX-Audit 08.11. A-11).
+ * Erreichbar ohne Anmeldung (Startseite) und unter Konto. Als Seite im Hauptfenster statt als
+ * eigenes Dialogfenster: so gelten dieselben Abstände zu Status- und Gestenleiste wie überall
+ * (UX-Audit 08.11. A-10/A-11). Im Hauptbildschirm stehen Pfeil und Titel in dessen Kopfleiste,
+ * auf der Anmeldeseite in einer eigenen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LicensesDialog(onClose: () -> Unit) {
+fun LicensesPage(onClose: () -> Unit) {
     val context = LocalContext.current
     val libraries = remember { Licenses.parse(context.asset(Licenses.LIBRARIES_ASSET).orEmpty()) }
     // Angezeigter Volltext: Titel und Inhalt
     var shown by remember { mutableStateOf<Pair<String, String>?>(null) }
     fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-
-    Dialog(
-        onDismissRequest = onClose,
-        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
-    ) {
-        // Symbole der Gestenleiste passend zur hellen bzw. dunklen Fläche
-        val dark = isSystemInDarkTheme()
-        val view = LocalView.current
-        val dialogWindow = (view.parent as? DialogWindowProvider)?.window
-        // Randlos wie das Hauptfenster, damit die Abstände zu Status- und Gestenleiste greifen;
-        // DialogProperties allein reicht dafür nicht auf jeder Android-Fassung (A-10/A-11)
-        DisposableEffect(dialogWindow) {
-            dialogWindow?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
-            onDispose { }
-        }
-        SideEffect {
-            dialogWindow?.let { WindowCompat.getInsetsController(it, view).isAppearanceLightNavigationBars = !dark }
-        }
-        // Die Kopfleiste der App liegt unter dem Dialog: Detailansichten hier nicht dort anmelden
-        CompositionLocalProvider(LocalBackHost provides null) {
-            Surface(Modifier.fillMaxSize()) {
-                // Statusleiste wie im Hauptfenster in der Vereinsfarbe (A-10)
-                StatusBarStrip(dialogWindow)
-                Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-                    val text = shown
-                    androidx.activity.compose.BackHandler(enabled = text != null) { shown = null }
-                    TopAppBar(
-                        title = {
-                            Text(text?.first ?: tr("Lizenzen"), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.asHeading())
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { if (text != null) shown = null else onClose() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zurück"))
-                            }
-                        },
-                        windowInsets = WindowInsets(0),
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = LocalBrand.current.brand,
-                            titleContentColor = LocalBrand.current.onBrand,
-                            navigationIconContentColor = LocalBrand.current.onBrand,
-                        ),
-                    )
-                    if (text != null) {
-                        Text(
-                            text.second,
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            lineHeight = 14.sp,
-                            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
-                                .horizontalScroll(rememberScrollState()).padding(Abstand.rand),
-                        )
-                    } else {
-                        LicenseList(libraries, onShow = { shown = it }, onOpen = ::open, onClose = onClose)
+    val text = shown
+    val back = { if (shown != null) shown = null else onClose() }
+    androidx.activity.compose.BackHandler { back() }
+    val title = text?.first ?: tr("Lizenzen")
+    Column(Modifier.fillMaxSize()) {
+        if (LocalBackHost.current != null) {
+            BackHead(title) { back() }
+        } else {
+            TopAppBar(
+                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.asHeading()) },
+                navigationIcon = {
+                    IconButton(onClick = { back() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zurück"))
                     }
-                }
-            }
+                },
+                windowInsets = WindowInsets(0),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = LocalBrand.current.brand,
+                    titleContentColor = LocalBrand.current.onBrand,
+                    navigationIconContentColor = LocalBrand.current.onBrand,
+                ),
+            )
+        }
+        if (text != null) {
+            Text(
+                text.second,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
+                    .horizontalScroll(rememberScrollState()).padding(Abstand.rand),
+            )
+        } else {
+            LicenseList(libraries, onShow = { shown = it }, onOpen = ::open, onClose = onClose)
         }
     }
 }
