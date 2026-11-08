@@ -55,7 +55,7 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
     if (access == null) {
         Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
             Text(tr("Die Aufgabe ist nicht mehr verfügbar oder nicht freigegeben."))
-            TextButton(onClick = { vm.selectTodo(null) }) { Text(tr("‹ Zurück")) }
+            BackHead { vm.selectTodo(null) }
         }
         return
     }
@@ -184,7 +184,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
-        TextButton(onClick = onBack, enabled = !busy) { Text(tr("‹ Zurück")) }
+        BackHead(enabled = !busy, onBack = onBack)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
         if (error != null) TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("Erneut laden")) }

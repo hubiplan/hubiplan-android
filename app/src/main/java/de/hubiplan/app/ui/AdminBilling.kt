@@ -239,7 +239,7 @@ fun InvoiceScreen(
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        BackHead(onBack = onBack)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         val d = inv ?: return@Column

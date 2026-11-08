@@ -40,8 +40,6 @@ import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.push.GooglePush
 import de.hubiplan.app.push.UnifiedPush
 import de.hubiplan.app.sync.Notifications
-import java.text.DateFormat
-import java.util.Date
 import de.hubiplan.app.tr
 
 private val REMINDER_CHOICES: List<Pair<Int?, String>> get() = listOf(
@@ -156,7 +154,7 @@ fun SettingsSection(vm: AppViewModel) {
         )
         settings.lastSync?.let {
             Text(
-                tr("Zuletzt abgeglichen: ") + DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(it)),
+                tr("Zuletzt abgeglichen: ") + formatStamp(it),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

@@ -276,7 +276,7 @@ fun MemberScreen(
     }
 
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        BackHead(onBack = onBack)
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         // Erstes Laden sichtbar machen, Fehler mit erneutem Versuch (UX-Audit 31.10. A07)
@@ -756,8 +756,8 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
         }
     }
 
+    BackHead(onBack = onBack)
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        item { TextButton(onClick = onBack) { Text(tr("‹ Zurück")) } }
         item { Text(tr("Änderungsmeldungen"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading()) }
         error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         val list = items

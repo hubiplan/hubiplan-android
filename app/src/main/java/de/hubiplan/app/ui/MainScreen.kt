@@ -34,6 +34,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRailItemDefaults
+import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,12 +60,14 @@ import androidx.compose.ui.unit.dp
 import de.hubiplan.app.tr
 
 /**
- * Hauptziele der App. „Mein Konto“ steht nicht in der Navigationsleiste, sondern als Symbol im
+ * Hauptziele der App. [short] steht in der Navigationsleiste: einzeilig, ohne Umbruch im Wort
+ * (UX-Audit 08.11. A-14). „Mein Konto“ steht nicht in der Navigationsleiste, sondern als Symbol im
  * Kopf; so bleiben höchstens fünf Ziele (UX-Audit 05.11. A-01). „Ausweis“ statt „Profil“: dort
  * liegen Ausweis, Foto und eigene Daten (A-02, wie „Mein Bereich › Ausweis“ im Browser).
  */
-internal enum class Tab(val label: String) {
-    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen")), AUSWEIS(tr("Ausweis")), VERWALTUNG(tr("Verwaltung")), KONTO(tr("Mein Konto")),
+internal enum class Tab(val label: String, val short: String = label) {
+    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen"), tr("Neues")), AUSWEIS(tr("Ausweis")),
+    VERWALTUNG(tr("Verwaltung"), tr("Verwalten")), KONTO(tr("Mein Konto")),
 }
 
 /** Ziele der Navigationsleiste: nie mehr als fünf, „Mein Konto“ nie (A-01). */
@@ -146,7 +156,30 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
         StandScreen(openStand, onClose = vm::closeStand)
         return
     }
+    // Aktiver Reiter deutlich markiert: Fläche in der (kontrastgeprüften) Primärfarbe, mind. 3 : 1
+    // zur Leiste in Hell und Dunkel bei jeder Vereinsfarbe (UX-Audit 08.11. A-19)
+    val scheme = MaterialTheme.colorScheme
+    val barColors = NavigationSuiteDefaults.itemColors(
+        navigationBarItemColors = NavigationBarItemDefaults.colors(
+            selectedIconColor = scheme.onPrimary,
+            selectedTextColor = scheme.onSurface,
+            indicatorColor = scheme.primary,
+            unselectedIconColor = scheme.onSurfaceVariant,
+            unselectedTextColor = scheme.onSurfaceVariant,
+        ),
+        navigationRailItemColors = NavigationRailItemDefaults.colors(
+            selectedIconColor = scheme.onPrimary,
+            selectedTextColor = scheme.onSurface,
+            indicatorColor = scheme.primary,
+            unselectedIconColor = scheme.onSurfaceVariant,
+            unselectedTextColor = scheme.onSurfaceVariant,
+        ),
+    )
+    // Detailansichten melden Pfeil zurück und Titel für die Kopfleiste an (A-01)
+    val backHost = remember { BackHost() }
+    val detail = backHost.current
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
+    CompositionLocalProvider(LocalBackHost provides backHost) {
     NavigationSuiteScaffold(
         navigationSuiteItems = {
             tabs.forEach { t ->
@@ -166,7 +199,8 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                             contentDescription = null,
                         )
                     },
-                    label = { Text(t.label) },
+                    label = { BarLabel(t.short) },
+                    colors = barColors,
                 )
             }
         },
@@ -176,9 +210,15 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 // In der Verwaltung nicht den persönlichen Zugang als Kopf zeigen; welche Einheit
                 // verwaltet wird, steht darunter (UX-Audit 31.10. A04)
                 title = {
-                    when (tab) {
-                        Tab.VERWALTUNG -> Text(tr("Verwaltung"))
-                        Tab.KONTO -> Text(tr("Mein Konto"))
+                    when {
+                        detail != null -> Text(
+                            detail.title ?: if (tab == Tab.VERWALTUNG || tab == Tab.KONTO) tab.label else main.access?.label ?: "HUBIplan",
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.asHeading(),
+                        )
+                        tab == Tab.VERWALTUNG -> Text(tr("Verwaltung"))
+                        tab == Tab.KONTO -> Text(tr("Mein Konto"))
                         else -> AccessPicker(main, vm)
                     }
                 },
@@ -186,7 +226,11 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 navigationIcon = {
                     val logo by vm.logo.collectAsStateWithLifecycle()
                     val image = remember(logo) { logo?.asImageBitmap() }
-                    if (tab == Tab.KONTO) {
+                    if (detail != null) {
+                        IconButton(onClick = detail.onBack, enabled = detail.enabled) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zurück"))
+                        }
+                    } else if (tab == Tab.KONTO) {
                         IconButton(onClick = { backTarget(tab, previousTab)?.let { target -> leave.request { tab = target } } }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr("Zurück"))
                         }
@@ -241,7 +285,34 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
             }
         }
     }
+    }
 }
+
+/**
+ * Beschriftung der Navigationsleiste: immer eine Zeile. Passt sie bei großer Schrift nicht in die
+ * Breite, wird sie schrittweise kleiner, höchstens bis zur Standardgröße (A-14).
+ */
+@Composable
+private fun BarLabel(text: String) {
+    val base = LocalTextStyle.current
+    val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    val min = barLabelMinScale(fontScale)
+    var scale by remember(text, base, fontScale) { mutableFloatStateOf(1f) }
+    var fits by remember(text, base, fontScale) { mutableStateOf(false) }
+    Text(
+        text,
+        maxLines = 1,
+        softWrap = false,
+        style = base.copy(fontSize = base.fontSize * scale, hyphens = Hyphens.None),
+        modifier = Modifier.drawWithContent { if (fits) drawContent() },
+        onTextLayout = { layout ->
+            if (layout.didOverflowWidth && scale > min) scale = (scale - 0.05f).coerceAtLeast(min) else fits = true
+        },
+    )
+}
+
+/** Kleinster Faktor für [BarLabel]: nie kleiner als bei Standardschrift, höchstens auf 60 %. */
+internal fun barLabelMinScale(fontScale: Float): Float = (1f / fontScale.coerceAtLeast(1f)).coerceIn(0.6f, 1f)
 
 /** Einmaliges Angebot nach dem Verbinden: Verknüpfung mit Wappen und Namen anlegen. */
 @Composable

@@ -39,6 +39,19 @@ fun formatWhen(start: String, end: String, allDay: Boolean, zone: ZoneId = ZoneI
     }
 }
 
+/**
+ * Zeitpunkt (Millisekunden) in der Sprache der App, nicht des Systems (UX-Audit 08.11. A-16):
+ * „8. Nov. 2026, 21:08 Uhr“ bzw. „8 Nov 2026, 21:08“.
+ */
+fun formatStamp(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String {
+    val fmt = if (english) {
+        DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.UK)
+    } else {
+        DateTimeFormatter.ofPattern("d. MMM yyyy, HH:mm", Locale.GERMAN)
+    }
+    return java.time.Instant.ofEpochMilli(millis).atZone(zone).format(fmt) + UHR
+}
+
 fun formatDate(iso: String?, zone: ZoneId = ZoneId.systemDefault()): String =
     iso?.let { runCatching { local(it, zone).format(DAY) }.getOrNull() } ?: ""
 

@@ -8,7 +8,6 @@
  "Beitragsläufe, Mahnungen und SEPA im Browser.": "Fee runs, dunning and SEPA in the browser.",
  "überfällig": "overdue",
  "Die Quittung ließ sich nicht laden.": "The receipt could not be loaded.",
- "‹ Zurück": "‹ Back",
  "vom {x1} · fällig {x2} · {statusLabel}": "dated {x1} · due {x2} · {statusLabel}",
  "Gesamt": "Total",
  "Bar kassiert und gebucht.": "Cash collected and booked.",
@@ -133,7 +132,6 @@
  "Noch keine Mitteilungen.": "No messages yet.",
  "(ohne Betreff)": "(no subject)",
  "Mit Anhängen im Browser öffnen": "Open with attachments in the browser",
- "‹ Zurück zu den Lizenzen": "‹ Back to licences",
  "HUBIplan-App {VERSION_NAME}, Copyright © 2026 Ralf Philipsen (Philipsen EDV). Freie Software unter der GNU Affero General Public License, Version 3 oder neuer. Sie wird ohne jede Gewährleistung bereitgestellt.": "HUBIplan app {VERSION_NAME}, Copyright © 2026 Ralf Philipsen (Philipsen EDV). Free software under the GNU Affero General Public License, version 3 or later. It is provided without any warranty.",
  "Text nicht gefunden: https://www.gnu.org/licenses/agpl-3.0.txt": "Text not found: https://www.gnu.org/licenses/agpl-3.0.txt",
  "Lizenztext der App (AGPL)": "Licence text of the app (AGPL)",
@@ -672,7 +670,6 @@
  "Buchungen und Quittungen": "Bookings and receipts",
  "Offene und bezahlte Rechnungen der Mitglieder": "Open and paid member invoices",
  "Geburtstage und Jubiläen der nächsten Wochen": "Birthdays and anniversaries in the coming weeks",
- "‹ Übersicht": "‹ Overview",
  "Nichts zu erledigen.": "Nothing to do.",
  "Was möchtest du tun?": "What would you like to do?",
  "Für diese Einheit sind in der App keine Bereiche freigegeben.": "No areas are enabled in the app for this unit.",
@@ -774,5 +771,10 @@
  "{name}: noch dran": "{name}: still up",
  "{n} Eingaben warten noch auf die Übertragung. Sie bleiben bis zu zwölf Stunden auf dem Telefon und werden beim nächsten Öffnen des Standmodus mit Empfang übertragen.": "{n} entries are still waiting to be sent. They stay on the phone for up to twelve hours and are sent the next time stand mode is opened with a connection.",
  "{n} Starter": "{n} shooters",
- "{n}. Schuss": "shot {n}"
+ "{n}. Schuss": "shot {n}",
+ "Neues": "Messages",
+ "Verwalten": "Admin",
+ "Bitte die Adresse deines Vereins eingeben.": "Please enter your club's address.",
+ "Bitte deine E-Mail-Adresse eingeben.": "Please enter your email address.",
+ "Bitte dein Passwort eingeben.": "Please enter your password."
 }

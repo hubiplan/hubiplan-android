@@ -188,7 +188,7 @@ private fun EventDetailView(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        BackHead(e?.title, onBack = onBack)
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (e == null) {
             if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }

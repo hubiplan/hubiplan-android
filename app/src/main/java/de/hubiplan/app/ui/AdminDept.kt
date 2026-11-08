@@ -81,7 +81,7 @@ fun DeptMemberScreen(
         } finally { loading = false }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        TextButton(onClick = onBack) { Text(tr("‹ Zurück")) }
+        BackHead(onBack = onBack)
         if (detail == null) Text(tr("Mitglied"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         if (busy || loading) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }

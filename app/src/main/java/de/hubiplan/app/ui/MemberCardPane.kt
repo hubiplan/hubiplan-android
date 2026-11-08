@@ -66,8 +66,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.text.DateFormat
-import java.util.Date
 import de.hubiplan.app.tr
 
 /** Ab diesem Alter weist die App darauf hin, dass der Ausweis ohne Netz angezeigt wird. */
@@ -128,7 +126,7 @@ fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?) {
             MemberCardView(current, Modifier.fillMaxWidth().widthIn(max = 480.dp).clickable(onClickLabel = tr("QR-Code groß anzeigen")) { big = true })
             if (offline || System.currentTimeMillis() - current.savedAt > STALE_MS) {
                 Text(
-                    tr("Ohne Netz angezeigt, Stand {x1}. Wer den QR-Code prüft, sieht immer den aktuellen Stand.", "x1" to DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(current.savedAt))),
+                    tr("Ohne Netz angezeigt, Stand {x1}. Wer den QR-Code prüft, sieht immer den aktuellen Stand.", "x1" to formatStamp(current.savedAt)),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
