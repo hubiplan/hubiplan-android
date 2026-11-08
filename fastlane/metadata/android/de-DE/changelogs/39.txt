@@ -1,0 +1,1 @@
+• Behebt den Absturz beim Verbinden mit QR-Code, beim Fotografieren und bei Berechtigungsabfragen.

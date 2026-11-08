@@ -44,9 +44,17 @@ fi
 ./gradlew --no-daemon --max-workers="$TEST_KERNE" "${TASKS[@]}"
 if [ "$DEFAULT" = 1 ]; then
     # F-Droid: in der foss-Fassung dürfen keine Google-Dienste stecken (Firebase, Play-Dienste)
-    if ./gradlew --no-daemon -q :app:dependencies --configuration fossReleaseRuntimeClasspath \
-        | grep -E "com\.google\.(firebase|android\.gms|android\.play)|com\.google\.android\.datatransport"; then
+    DEPS=$(./gradlew --no-daemon -q :app:dependencies --configuration fossReleaseRuntimeClasspath)
+    if grep -E "com\.google\.(firebase|android\.gms|android\.play)|com\.google\.android\.datatransport" <<< "$DEPS"; then
         echo "Abbruch: Google-Bibliothek in der foss-Fassung." >&2
+        exit 1
+    fi
+    # Activity-Result-API (QR-Scan, Kamera, Berechtigungen) braucht androidx.fragment ab 1.3:
+    # eine ältere FragmentActivity lehnt deren Request-Codes ab (Absturz von 1.0.1).
+    ALT=$(grep -o -E "androidx\.fragment:fragment:[0-9.]+( -> [0-9.]+)?" <<< "$DEPS" \
+        | sed -E 's/.* -> //; s/.*://' | sort -u | grep -E '^1\.[0-2]\.' || true)
+    if [ -n "$ALT" ]; then
+        echo "Abbruch: androidx.fragment $ALT ist zu alt (mindestens 1.3)." >&2
         exit 1
     fi
 fi

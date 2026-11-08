@@ -1,0 +1,1 @@
+• Fixes the crash when connecting with a QR code, taking photos and asking for permissions.
