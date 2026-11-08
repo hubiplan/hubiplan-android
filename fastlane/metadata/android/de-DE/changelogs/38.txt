@@ -1,0 +1,1 @@
+• Behebt den Absturz beim Start der Store-Fassung.
