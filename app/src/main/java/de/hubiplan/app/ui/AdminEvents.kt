@@ -87,6 +87,7 @@ fun EventsSection(
             item {
                 Row(
                     Modifier.fillMaxWidth().padding(start = Abstand.rand, end = Abstand.klein, top = Abstand.klein),
+                    horizontalArrangement = Arrangement.spacedBy(Abstand.klein),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(tr("Kommende Termine"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().weight(1f))

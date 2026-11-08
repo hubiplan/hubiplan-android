@@ -260,7 +260,7 @@ fun FinanceSection(
 
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            Row(Modifier.fillMaxWidth().padding(start = Abstand.rand, end = Abstand.klein, top = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth().padding(start = Abstand.rand, end = Abstand.klein, top = Abstand.klein), horizontalArrangement = Arrangement.spacedBy(Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
                 Text(tr("Kassenbuch"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().weight(1f))
                 TextButton(onClick = { refresh++ }) { Text(tr("Aktualisieren")) }
                 if (canEdit) Button(onClick = onNew) { Text(tr("Neue Buchung")) }
