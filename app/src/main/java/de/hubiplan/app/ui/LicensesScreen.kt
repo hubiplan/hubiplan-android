@@ -16,6 +16,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextOverflow
@@ -78,6 +79,12 @@ fun LicensesDialog(onClose: () -> Unit) {
         val dark = isSystemInDarkTheme()
         val view = LocalView.current
         val dialogWindow = (view.parent as? DialogWindowProvider)?.window
+        // Randlos wie das Hauptfenster, damit die Abstände zu Status- und Gestenleiste greifen;
+        // DialogProperties allein reicht dafür nicht auf jeder Android-Fassung (A-10/A-11)
+        DisposableEffect(dialogWindow) {
+            dialogWindow?.let { WindowCompat.setDecorFitsSystemWindows(it, false) }
+            onDispose { }
+        }
         SideEffect {
             dialogWindow?.let { WindowCompat.getInsetsController(it, view).isAppearanceLightNavigationBars = !dark }
         }
@@ -123,9 +130,9 @@ fun LicensesDialog(onClose: () -> Unit) {
     }
 }
 
-/** Paketnamen ohne Silbentrennung; umbrochen wird höchstens an Punkt oder Doppelpunkt (A-11). */
+/** Paketnamen ohne Silbentrennung; umbrochen wird am Doppelpunkt, nie in der Versionsnummer (A-11). */
 internal fun breakableCoordinate(coordinate: String): String =
-    coordinate.replace(".", ".\u200B").replace(":", ":\u200B")
+    coordinate.replace(":", ":\u200B")
 
 @Composable
 private fun LicenseList(

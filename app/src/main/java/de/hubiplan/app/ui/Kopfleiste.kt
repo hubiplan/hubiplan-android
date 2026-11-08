@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -95,7 +96,10 @@ fun StatusBarStrip(window: android.view.Window?) {
         if (window != null) androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkIcons
     }
     androidx.compose.foundation.layout.Box(
+        // wrapContentHeight: oben bleiben, auch wenn der Elternteil (z. B. Surface) seine
+        // Mindesthöhe weitergibt; sonst stünde der Streifen mitten im Bildschirm
         Modifier.fillMaxWidth()
+            .wrapContentHeight(Alignment.Top)
             .windowInsetsTopHeight(WindowInsets.statusBars)
             .background(brand.brand),
     )
