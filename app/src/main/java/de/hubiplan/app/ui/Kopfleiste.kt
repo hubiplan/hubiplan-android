@@ -1,6 +1,12 @@
 package de.hubiplan.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
@@ -74,3 +80,26 @@ fun BackHead(title: String? = null, enabled: Boolean = true, onBack: () -> Unit)
         onDispose { host.remove(entry) }
     }
 }
+
+/**
+ * Fläche hinter der Statusleiste in der Vereinsfarbe, auf allen Bildschirmen gleich. So endet der
+ * Inhalt sichtbar unter der Leiste, auch bei großer Schrift (UX-Audit 08.11. A-10). Die Symbole
+ * der Leiste richten sich nach der Schriftfarbe auf der Vereinsfarbe.
+ */
+@Composable
+fun StatusBarStrip(window: android.view.Window?) {
+    val brand = LocalBrand.current
+    val view = androidx.compose.ui.platform.LocalView.current
+    val darkIcons = statusIconsDark(brand)
+    SideEffect {
+        if (window != null) androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = darkIcons
+    }
+    androidx.compose.foundation.layout.Box(
+        Modifier.fillMaxWidth()
+            .windowInsetsTopHeight(WindowInsets.statusBars)
+            .background(brand.brand),
+    )
+}
+
+/** Dunkle Statussymbole, wenn auf der Vereinsfarbe dunkle Schrift steht. */
+fun statusIconsDark(brand: BrandColors): Boolean = luminance(brand.onBrand.toArgb().toLong() and 0xFFFFFFFFL) < 0.5

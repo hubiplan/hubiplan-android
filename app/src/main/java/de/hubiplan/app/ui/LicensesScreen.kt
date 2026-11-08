@@ -74,20 +74,18 @@ fun LicensesDialog(onClose: () -> Unit) {
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
-        // Symbole der Systemleisten passend zur hellen bzw. dunklen Fläche
+        // Symbole der Gestenleiste passend zur hellen bzw. dunklen Fläche
         val dark = isSystemInDarkTheme()
         val view = LocalView.current
+        val dialogWindow = (view.parent as? DialogWindowProvider)?.window
         SideEffect {
-            (view.parent as? DialogWindowProvider)?.window?.let { window ->
-                WindowCompat.getInsetsController(window, view).apply {
-                    isAppearanceLightStatusBars = !dark
-                    isAppearanceLightNavigationBars = !dark
-                }
-            }
+            dialogWindow?.let { WindowCompat.getInsetsController(it, view).isAppearanceLightNavigationBars = !dark }
         }
         // Die Kopfleiste der App liegt unter dem Dialog: Detailansichten hier nicht dort anmelden
         CompositionLocalProvider(LocalBackHost provides null) {
             Surface(Modifier.fillMaxSize()) {
+                // Statusleiste wie im Hauptfenster in der Vereinsfarbe (A-10)
+                StatusBarStrip(dialogWindow)
                 Column(Modifier.fillMaxSize().safeDrawingPadding()) {
                     val text = shown
                     androidx.activity.compose.BackHandler(enabled = text != null) { shown = null }

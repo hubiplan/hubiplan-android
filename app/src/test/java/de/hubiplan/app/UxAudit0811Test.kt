@@ -5,6 +5,8 @@ import de.hubiplan.app.data.Theme
 import de.hubiplan.app.ui.LoginField
 import de.hubiplan.app.ui.Tab
 import de.hubiplan.app.ui.barLabelMinScale
+import de.hubiplan.app.ui.brandFor
+import de.hubiplan.app.ui.statusIconsDark
 import de.hubiplan.app.ui.breakableCoordinate
 import de.hubiplan.app.ui.colorSchemeFor
 import de.hubiplan.app.ui.contrast
@@ -91,6 +93,15 @@ class UxAudit0811Test {
         assertTrue("TopAppBar(" in lic)
         assertTrue("Hyphens.None" in lic)
         assertEquals("androidx.​compose:​ui:​1.​7", breakableCoordinate("androidx.compose:ui:1.7"))
+    }
+
+    /** A-10: Statusleiste mit eigener Fläche in der Vereinsfarbe, Symbole lesbar darauf. */
+    @Test
+    fun statusleisteMitFlaeche() {
+        assertTrue("StatusBarStrip(window)" in File("src/main/java/de/hubiplan/app/MainActivity.kt").readText())
+        assertTrue("StatusBarStrip(dialogWindow)" in File(ui, "LicensesScreen.kt").readText())
+        assertFalse(statusIconsDark(brandFor(Theme(primary = "#0e7c66", onPrimary = "#ffffff", accent = "#0e7c66", onAccent = "#000000"))))
+        assertTrue(statusIconsDark(brandFor(Theme(primary = "#ffd500", onPrimary = "#ffffff", accent = "#ffd500", onAccent = "#000000"))))
     }
 
     /** A-12: Knöpfe bleiben antippbar, fehlende Felder werden benannt. */

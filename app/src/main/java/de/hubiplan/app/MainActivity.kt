@@ -24,6 +24,7 @@ import de.hubiplan.app.ui.Loading
 import de.hubiplan.app.ui.MainScreen
 import de.hubiplan.app.ui.QuarantineDialogs
 import de.hubiplan.app.ui.Screen
+import de.hubiplan.app.ui.StatusBarStrip
 import de.hubiplan.app.sync.Notifications
 
 // FragmentActivity statt ComponentActivity: nötig für die Abfrage von Fingerabdruck/PIN (Verwaltung)
@@ -63,6 +64,8 @@ class MainActivity : FragmentActivity() {
                         }
                         QuarantineDialogs(vm)
                     }
+                    // Statusleiste mit eigener Fläche statt durchsichtig über dem Inhalt (A-10)
+                    StatusBarStrip(window)
                 }
             }
         }
