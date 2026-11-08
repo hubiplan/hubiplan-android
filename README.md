@@ -13,7 +13,7 @@ nur mit der HUBIplan-Instanz des eigenen Vereins, nie mit einem fremden Dienst. 
 > English; the developer documentation is in German. Issues and security reports in English
 > are welcome.
 
-Paketname `de.hubiplan.app`, ab Android 9, für Telefon und Tablet.
+Paketname `de.hubiplan.app`, Version 1.0.0, ab Android 9, für Telefon und Tablet.
 
 ## Inhalt
 
@@ -37,11 +37,15 @@ Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schlie
 - Termine der eigenen Einheiten (Verein, Untereinheit, weitergegebene Termine des
   Dachverbands), Zu- und Absage mit einem Fingertipp
 - Termine im Gerätekalender mit Erinnerungen und Hinweis „Rückmeldung fehlt“
-- Mitteilungen und Rundschreiben lesen
+- Mitteilungen des Vereins lesen, Anhänge im Browser öffnen
+- Aufgaben: zugewiesene Aufgaben und offene Angebote übernehmen, erledigen oder zurückgeben;
+  Helferdienste: eigene Schichten sehen und absagen, sich in freie Schichten eintragen
 - Push ohne Google über eine UnifiedPush-App (z. B. ntfy), Inhalt Ende-zu-Ende
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
 - Mitgliedsausweis mit QR-Code unter „Ausweis“, auch ohne Netz (verschlüsselt gespeichert);
-  zum Vorzeigen bildschirmfüllend und mit voller Helligkeit
+  zum Vorzeigen bildschirmfüllend und mit voller Helligkeit; auf Wunsch in Google Wallet oder
+  als Wallet-Pass (`.pkpass`), wenn der Verein das anbietet (auch in `foss`, ohne
+  Google-Bibliothek)
 - eigenes Profil ansehen und Änderungen melden (der Verein prüft sie)
 - „Meine Ergebnisse“ unter „Ausweis“: eigene Wettbewerbe mit Platz und Wert, Titel und Auszeichnungen
   (wenn der Verein das Modul Wettbewerbe nutzt)
@@ -49,6 +53,7 @@ Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schlie
   der Verein gibt es frei, Foto und Einwilligung lassen sich in der App widerrufen
 - Ansprechpartner einer Organisation (Firma, Verein, Behörde …) melden sich wie Mitglieder an;
   die Auswahl zeigt „Verein: Organisation (Ansprechpartner)“, der Ausweis das Logo der Organisation
+- die App zeigt nur, was der Verein in HUBIplan eingeschaltet hat (Module je Zugang)
 - Farben und Wappen des Vereins aus HUBIplan; Verknüpfung mit dem Wappen des Vereins auf
   dem Startbildschirm
 - Deutsch oder Englisch (App-Sprache von Android oder Auswahl unter Mein Konto › Sprache)
@@ -71,10 +76,10 @@ Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburt
   erreicht diesen Bereich nach der üblichen Freischaltung und Entsperrung.
 - Mitglieder suchen, anrufen und bearbeiten (Stammdaten, Mitgliedsart, Untereinheit,
   Beitrag, Austritt, Wiedereintritt, Ehrungen, Zusatzfelder, Bankverbindung) mit
-  Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen
+  Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen, mit Dublettenprüfung
 - Organisationsmitglieder: Filter „Personen/Organisationen“ in der Liste, Akte mit Rechtsform,
-  Ansprechpartnern (anrufen, mailen) und Rechnungsanschrift; Organisationen aufnehmen und
-  Ansprechpartner pflegen im Browser
+  Ansprechpartnern (anrufen, mailen) und Rechnungsanschrift; Organisationen aufnehmen
+  (Ansprechpartner pflegen im Browser)
 - Änderungsmeldungen und Fotos freigeben, Mitgliedsausweis per QR-Code prüfen
 - Termine mit Zu- und Absagen, Rückmeldung für Mitglieder eintragen, einfache Termine
   anlegen und absagen
@@ -83,42 +88,8 @@ Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburt
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,
   Belegnummer aus dem Kassenbuch)
 
-Beim Unterschreiben passen sich die Aktionsknöpfe dem verfügbaren Platz an. Bei großer Schrift stehen sie bei Bedarf in mehreren Zeilen; die Beschriftungen bleiben zusammenhängend. Die Hilfslinie bleibt oberhalb der Rollenbezeichnung. Du kannst weiterhin hochkant unterschreiben.
-
-English: signature actions adapt to the available space and move onto additional rows with large text, keeping each label intact. The guide line stays above the role label. Signing in portrait remains available.
-
-### Aufgaben auf dem Telefon
-
-Unter **Verwaltung › Aufgaben** wählst du die Einheit oder Abteilung und „Offen“ oder
-„Erledigt“. Eine neue Aufgabe ist zunächst privat. Eine Uhrzeit braucht ein Datum;
-die Frist gilt in der angezeigten Zeitzone Europe/Berlin. Zum Teilen und für Anhänge,
-Serienregeln und Verteilung über Ebenen dient die Aufgabenansicht im Browser. In der App
-lassen sich auch freigegebene Aufgaben und lokale Ausgaben solcher Serien erledigen,
-soweit der Server es erlaubt. Eine zentrale Vorlage für einzelne Zielkopien wird nicht
-als Ganzes erledigt. Wiederöffnen kann bei einer bereits bearbeiteten Folgeausgabe
-abgelehnt werden; dann neu laden. Bei einem Versionskonflikt wird keine Änderung erzwungen.
-
-Push-Hinweise für Verwaltungsaufgaben öffnen die konkrete Aufgabe im zugehörigen Konto und Bereich nach der
-Verwaltungsentsperrung. Die App lädt Inhalt und Rechte neu; alte Hinweise oder entzogene
-Freigaben geben keinen Zugriff. Auf dem Sperrbildschirm steht standardmäßig nur ein
-neutraler Hinweis. Titel und Versandkanäle kannst du unter „Mein Konto › Benachrichtigungen“
-in HUBIplan einstellen, den Android-Kanal „Aufgaben“ in den Systemeinstellungen.
-Ohne Push werden Aufgaben beim Öffnen oder Aktualisieren der Liste geladen.
-Aufgabeninhalte und Entwürfe werden nicht lokal gespeichert. Vor dem Verlassen eines
-Formulars fragt die App nach; eine Gerätesperre verwirft den privaten Entwurf.
-Nach einem Verbindungsabbruch beim Anlegen zuerst die Liste aktualisieren, bevor du
-dieselbe Aufgabe erneut anlegst: Es kann sein, dass sie den Server bereits erreicht hat.
-
-Benötigt die Aufgaben-Schnittstellen aus HUBIplan A1–A6 (PRs 128–133).
-
-**English:** In **Administration › Tasks**, choose a unit or department and view open or
-completed tasks. Create a private task with an optional due date and time (Europe/Berlin),
-or complete and reopen tasks when permitted. Sharing, attachments, recurrence rules and
-distribution are managed in the browser. Push opens the exact task in the matching account
-after administration is unlocked; current permissions are always checked by the server.
-Task contents and drafts are kept only in memory. Leaving a form requires confirmation;
-locking administration discards the draft. If creating a task loses connection, refresh
-the list before trying again. This feature requires HUBIplan task APIs A1–A6 (PRs 128–133).
+Wie sich Aufgaben, Helferdienste, Mitteilungen, Unterschrift und Benachrichtigungen im
+Einzelnen verhalten (mit englischer Kurzfassung): [docs/bedienung.md](docs/bedienung.md).
 
 ## Verbinden
 
@@ -126,10 +97,8 @@ Im Browser unter **Mein Konto › App & andere Instanzen › App auf dem Telefon
 „App verbinden“ tippen und den QR-Code in der App scannen. Alternativ mit E-Mail, Passwort
 und ggf. Zwei-Faktor-Code anmelden. Die App erhält einen eigenen Geräteschlüssel, der nur
 für den Mitgliederbereich gilt und sich jederzeit unter „Mein Konto“ abmelden lässt.
-
-**Passwort vergessen:** Trage unter „Oder mit E-Mail und Passwort anmelden“ zuerst die gültige Adresse deines Vereins ein. „Passwort vergessen? Im Browser zurücksetzen“ öffnet die vorhandene Passwortwiederherstellung genau dieser Instanz. E-Mail und Passwort werden nicht im Browserlink mitgegeben. Setze das Passwort dort zurück, kehre zur App zurück und melde dich mit dem neuen Passwort an. Ist kein Browser verfügbar, zeigt die App die kopierbare Zieladresse. Bei einer leeren, ungültigen oder unverschlüsselten HTTP-Adresse bleibt die Aktion deaktiviert; während der Anmeldung ebenfalls.
-
-**Forgot password:** Under “Or sign in with email and password”, first enter your club’s valid address. “Forgot password? Reset in browser” opens that instance’s existing password recovery page without adding your email or password to the link. Reset the password there, return to the app and sign in with the new password. If no browser is available, the app displays a selectable destination address. The action is disabled for empty, invalid or unencrypted HTTP addresses, and while signing in.
+Passwort vergessen: Adresse des Vereins eintragen, dann „Passwort vergessen? Im Browser
+zurücksetzen“ ([Einzelheiten](docs/bedienung.md#passwort-vergessen)).
 
 ## Varianten
 
@@ -166,7 +135,7 @@ app/src/foss/, app/src/play/   Unterschiede der Varianten
 app/src/main/assets/texte/     englische Texte (en.json)
 app/src/test/                  Unit-Tests
 fastlane/metadata/             Texte und Bilder für F-Droid und Play
-docs/                          Lizenzen, Veröffentlichen
+docs/                          Bedienung im Einzelnen, Geräteprüfungen, Lizenzen, Veröffentlichen
 ```
 
 **Sprache:** Deutsch oder Englisch. Wie im Browser ist der deutsche Text der Schlüssel:
@@ -206,19 +175,8 @@ Nur beim Herausgeber, nie im Repository:
 - `firebase.properties` (`app_id`, `project_id`, `api_key`, `sender_id`): nur für `play`.
   Ohne die Datei hat `play` keinen Google-Push.
 
-### Isolierte Accessibility- und Unterbrechungsprüfungen
-
-`scripts/test.sh connectedFossDebugAndroidTest` prüft die produktiven Komponenten auf einem lokalen Gerät. Die zusätzlichen PIN- und TalkBack-Prüfungen sind ausdrücklich freizuschalten und sonst als übersprungen erkennbar:
-
-```bash
-scripts/test.sh connectedFossDebugAndroidTest \
-  -Pandroid.testInstrumentationRunnerArguments.fixturePin="$HUBIPLAN_FIXTURE_PIN" \
-  -Pandroid.testInstrumentationRunnerArguments.fixtureTalkBack=1
-```
-
-Nur einen eigens dafür angelegten Emulator ohne vorhandene Konten oder Geräte-PIN verwenden. `HUBIPLAN_FIXTURE_PIN` enthält eine ausschließlich synthetische sechsstellige Test-PIN. Die PIN-Prüfungen setzen und entfernen diese Geräte-PIN. Der TalkBack-Test benötigt den installierten und einmal initialisierten TalkBack-Dienst. Vorab den Benachrichtigungsdialog des Dienstes abschließen, damit kein Systemdialog die Prüfansicht überdeckt. Die vorherige Accessibility-Einstellung wird anschließend wiederhergestellt. Beide Prüfungen verlangen zusätzlich Emulator-Hardware; persönliche Geräte und bestehende Testkonten sind dafür nicht vorgesehen.
-
-Die nicht exportierten Prüfansichten gehören ausschließlich zum Debug-Build. Die Buchungsform nutzt echte Activity-Rotation, Systemschrift, IME und Geräteauthentifizierung, aber erfundene Konten und einen synthetischen Transport. Die explizite Sperre ist kein Nachweis des produktiven Fünf-Minuten-Timers. Native Accessibility-Aktionen mit aktivem TalkBack ersetzen weder eine Hörprüfung noch Nutzertests.
+Prüfungen auf dem Emulator (Bedienungshilfen, TalkBack, Unterbrechungen):
+[docs/geraetepruefungen.md](docs/geraetepruefungen.md).
 
 ## Veröffentlichen
 
@@ -237,25 +195,6 @@ der Variante `foss`.
 Sicherheitslücken bitte **nicht** als öffentliches Issue melden, sondern vertraulich über
 [GitHub](https://github.com/hubiplan/hubiplan-android/security/advisories/new). Einzelheiten:
 [SECURITY.md](SECURITY.md).
-
-Benachrichtigungen gehören zu genau einer Server-/Geräteverbindung. Beim Abmelden oder
-erneuten Verbinden werden ihre Hinweise entfernt; ein alter Hinweis öffnet kein neu
-belegtes Konto. Beim ersten Start dieser Fassung werden ältere, noch nicht zugeordnete
-HUBIplan-Hinweise einmal entfernt. Hinweise anderer Konten bleiben bei späteren
-Abmeldungen erhalten. Eine neue Verbindung erhält eigene Einstellungen.
-
-Verspätete Hintergrundantworten dürfen nach dem Abmelden oder erneuten Verbinden weder
-das neue Konto entfernen noch Kalender, Hinweise oder den letzten Abgleich verändern.
-Lokale Seiteneffekte werden mit dem Kontowechsel serialisiert; Netzwerkabrufe laufen
-außerhalb dieser kurzen Sperren.
-
-English: Notifications target a specific server/device identity and are cleared when that
-connection is removed or replaced. Old notifications cannot open a reused account slot.
-Legacy unassigned HUBIplan notifications are cleared once after upgrading. Later logout
-only clears that account's notifications. A new connection starts with its own settings.
-Late background responses cannot remove a replacement account or update its calendar,
-notifications or sync timestamp. Local effects are serialized with account replacement;
-network calls run outside those locks.
 
 ## Lizenz
 
@@ -292,30 +231,3 @@ Die Erlaubnis gilt nur für diese Google-Bibliotheken. Für den eigenen Code der
 alles wie in der AGPL: Wer die App weitergibt, muss ihren Quellcode anbieten. Wer die App
 verändert, darf diese Zusatzerlaubnis für seine Fassung beibehalten oder streichen
 (AGPL § 7 Absatz 3).
-
-
-### Aufgaben im Mitgliederbereich
-
-Der Bereich **Aufgaben** zeigt ausdrücklich zugewiesene Aufgaben und offene Angebote deiner aktuell gewählten Mitgliedschaft. Du kannst ein Angebot übernehmen und, soweit freigegeben, erledigen oder wieder öffnen. Eine noch offene Übernahme kannst du zurückgeben. Dafür ist kein Vorstandszugang nötig; Verwaltungsrechte werden dadurch nicht erteilt. Anhänge öffnest du über den Browser im selben Mitgliederbereich.
-
-Aufgabenhinweise öffnen genau das betroffene Konto und den freigegebenen Mitgliedszugang. Ein nicht mehr verfügbarer Zugang fällt nicht auf eine andere Mitgliedschaft oder die Verwaltung zurück. Die App lädt die Berechtigung und den Aufgabenstand frisch; nach Fehlern werden alte Inhalte verworfen. Aufgaben werden nur im Arbeitsspeicher gehalten. Auch gemeinsame Instanzaufgaben lassen sich bei ausgefallener Quelle nicht scheinbar offline erledigen.
-
-Für Mitgliederaufgaben ist eine HUBIplan-Fassung mit den Portal-Aufgaben-Schnittstellen (PR 135) nötig. Instanzübergreifende Aufgaben werden auf dem eigenen HUBIplan-Server abgeglichen; die App verbindet sich weiterhin nur mit der eigenen Instanz.
-
-### Helferdienste im Mitgliederbereich
-
-Nutzt der Verein Helferdienste, schaltet der Bereich **Aufgaben** oben zwischen „Aufgaben“ und
-„Helferdienste“ um. Unter **Meine Dienste** stehen die eigenen Schichten; bis zur Frist des
-Plans lassen sie sich mit **Dienst absagen** zurückgeben, danach nur über die Verwaltung. Darunter
-zeigen die veröffentlichten Dienstpläne freie Schichten mit Ort und Mindestalter; mit
-**Mich eintragen** trägst du dich ein, wenn der Plan das Selbsteintragen erlaubt. Die
-Kalenderdatei „Meine Dienste“ gibt es über **Im Browser öffnen**. Inhalte werden nur im
-Arbeitsspeicher gehalten. Benötigt HUBIplan mit Helferdiensten (Schritte H1–H3).
-
-### Mitteilungen lesen und Anhänge öffnen
-
-Der Eingang **Mitteilungen** enthält dieselben empfangenen Schreiben wie **Mein Bereich → Rundschreiben** im Web. Absätze, fett/kursiv, Listen und sichere Web-/E-Mail-Links werden nativ dargestellt. Die Dateinamen der Anhänge stehen beim Schreiben. **Dieses Schreiben mit Anhängen im Browser öffnen** führt zum ausgewählten Schreiben und Mitgliederzugang. Eine nötige Browseranmeldung bleibt unabhängig von der App und führt danach zum Ziel zurück. Fehlt ein Browser, lässt sich die angezeigte Zieladresse kopieren.
-
-Terminantworten und Aufgabenaktionen bestätigen einen erfolgreichen Serverabschluss als höfliche Statusmeldung. Fehler entfernen vorherige Erfolge und bleiben mit Korrektur- oder Wiederholungsmöglichkeit sichtbar.
-
-Der zusätzliche `ZTalkBackSpeechTest` protokolliert auf einem ausdrücklich freigegebenen, eigenen Emulator den echten TalkBack-Ausgabetext an eine stumme Prüfsynthese. Der nur im Debug-Build vorhandene TTS-Dienst ist standardmäßig deaktiviert; der Test aktiviert ihn vorübergehend und stellt die vorherigen Einstellungen wieder her. Das prüft die tatsächliche Textübergabe, ersetzt aber weder eine Hörprüfung noch Tests mit Betroffenen.

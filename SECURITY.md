@@ -45,8 +45,11 @@ Gemeint ist der Code in diesem Repository, beide Varianten. Besonders interessan
 - Verbindungen zu anderen Diensten als der HUBIplan-Instanz (außer Push in `play`),
 - Daten eines Kontos, die in einem anderen verbundenen Konto oder nach dem Abmelden noch
   lesbar sind (z. B. zwischengespeicherte PDFs, Belege, Kalendereinträge),
-- Verknüpfungen auf dem Startbildschirm oder Links, die ein fremdes Konto öffnen oder
-  Aktionen ohne Freischaltung auslösen.
+- Verknüpfungen auf dem Startbildschirm, Push-Hinweise oder Links, die ein fremdes Konto
+  oder einen fremden Mitgliedszugang öffnen oder Aktionen ohne Freischaltung auslösen,
+- Wallet-Pässe oder Wallet-Links mit Daten eines anderen Mitglieds oder Kontos,
+- Aufgaben, Helferdienste oder Mitteilungen, die nach dem Abmelden oder Kontowechsel noch
+  auf dem Telefon lesbar sind.
 
 Liegt der Fehler in der Schnittstelle von HUBIplan, bitte
 [dort melden](https://github.com/hubiplan/hubiplan/security/advisories/new).
