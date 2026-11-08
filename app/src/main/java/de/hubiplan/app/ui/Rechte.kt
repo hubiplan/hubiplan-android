@@ -33,3 +33,11 @@ fun canEditPhotos(permissions: List<String>): Boolean =
 /** Kontaktdaten im Zug ändern: Mitglieder „bearbeiten“ (früher dept.members.edit). */
 fun canEditDeptMembers(permissions: List<String>): Boolean =
     MEMBERS_EDIT in permissions || DEPT_MEMBERS_EDIT in permissions
+
+// Wettbewerbe (Schießen in der App): Standmodus mit „Ergebnisse erfassen“ oder „Wettbewerbe
+// verwalten“; mit Stufen heißen sie results.edit bzw. competitions.edit
+private val COMPETITION_RIGHTS = setOf("competitions.manage", "competitions.results", "competitions.edit", "results.edit")
+
+/** Bereich „Wettbewerbe“: Modul an (Server ab 08.11.2026 melden Module) und Recht zum Erfassen. */
+fun showsCompetitions(unit: AdminUnit): Boolean =
+    !unit.isDepartment && "competitions" in unit.modules && unit.permissions.any { it in COMPETITION_RIGHTS }

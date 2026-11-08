@@ -103,6 +103,29 @@ contents and drafts are kept only in memory. Leaving a form requires confirmatio
 administration discards the draft. If creating a task loses connection, refresh the list
 before trying again.
 
+## Schießen auswerten (Standmodus)
+
+Wer „Ergebnisse erfassen“ oder „Wettbewerbe verwalten“ darf, sieht in der Verwaltung den
+Bereich „Wettbewerbe“ (nur, wenn das Modul eingeschaltet ist). Er listet die eigenen, noch
+nicht abgeschlossenen Wettbewerbe, heute zuerst.
+
+- „Standmodus öffnen“ legt einen Standzugang bis zum Ende des Wettbewerbstags an und zeigt den
+  Standmodus von HUBIplan im Vollbild in der App. Öffnet man denselben Wettbewerb erneut, nimmt
+  die App denselben Zugang, damit offline erfasste Eingaben weiter übertragen werden.
+- Der Standmodus arbeitet mit dem Standzugang, nicht mit dem Vorstandsschlüssel; die Sperre der
+  Verwaltung nach 5 Minuten Pause schließt ihn deshalb nicht.
+- Die eingebettete Ansicht lädt nur Seiten der eigenen Instanz; andere Links öffnet der Browser.
+  Kamera (Scheibenfoto, Live-Kamera) gibt die App nach Rückfrage frei, Fotos bleiben nur kurz im
+  Cache. Der Bildschirm bleibt an.
+- Zurück oder ✕ fragen nach, wenn noch Eingaben auf die Übertragung warten.
+- „QR-Code für weiteres Gerät“ zeigt einen neuen Standzugang als QR-Code; „Stand-QR scannen“
+  (auch „Ausweis prüfen“ erkennt ihn) öffnet einen solchen Code im Standmodus der App.
+- „Standzugang beenden“ beendet alle aktiven Standzugänge des Wettbewerbs.
+
+Unter „Ausweis“ zeigt „Ranglisten“ die Wettbewerbe so, wie die Webseite des Vereins sie zeigt
+(nur veröffentlichte, Preisplätze oder ganze Rangliste). Laufende Wettbewerbe fragen alle 15
+Sekunden nach einem neuen Stand.
+
 ## Unterschrift auf dem Display
 
 Beim Unterschreiben passen sich die Aktionsknöpfe dem verfügbaren Platz an. Bei großer Schrift

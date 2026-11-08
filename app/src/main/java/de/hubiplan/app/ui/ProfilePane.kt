@@ -250,6 +250,8 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         if (access.hasResults) {
             HorizontalDivider()
             MyResultsSection(access, vm)
+            // Ranglisten wie auf der Webseite (Abschnitt fehlt, wenn der Verein keine zeigt)
+            RankingsSection(access, vm)
         }
     }
 

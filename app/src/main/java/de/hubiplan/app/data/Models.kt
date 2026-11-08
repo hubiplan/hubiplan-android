@@ -27,6 +27,8 @@ data class AdminUnit(
     val scope: String = "u",
     /** Rechte als Bereiche mit Stufen (Server ab November 2026): neue Codes gelten */
     val stufen: Boolean = false,
+    /** Eingeschaltete Module (Server ab 08.11.2026; ältere: leer) */
+    val modules: List<String> = emptyList(),
 ) {
     val key: String get() = "$scope:$id"
     val isDepartment: Boolean get() = scope == "d"

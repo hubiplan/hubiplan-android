@@ -10,6 +10,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- QR-Code scannen; die App funktioniert auch ohne Kamera (Anmeldung mit Passwort) -->
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <!-- Kamera: QR-Codes, Profil- und Belegfotos, Standmodus (Scheibenfoto, Live-Kamera) -->
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- UnifiedPush: installierte Verteiler-Apps (z. B. ntfy) finden (Android 11+) -->
     <queries>

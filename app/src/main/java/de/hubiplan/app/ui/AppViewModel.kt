@@ -156,6 +156,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _admin = MutableStateFlow(AdminState())
     val admin: StateFlow<AdminState> = _admin
+    // Standmodus eingebettet (Schießen in der App); liegt über allen Reitern, damit die
+    // Sperre der Verwaltung nach 5 Minuten Pause ihn nicht schließt
+    private val _stand = MutableStateFlow<StandSession?>(null)
+    val stand: StateFlow<StandSession?> = _stand
+    fun openStand(session: StandSession) { _stand.value = session }
+    fun closeStand() { _stand.value = null }
     private val _openTodo = MutableStateFlow<TodoOpenRequest?>(null)
     val openTodo: StateFlow<TodoOpenRequest?> = _openTodo
     private val _selectedTodo = MutableStateFlow<de.hubiplan.app.data.TodoTarget?>(null)

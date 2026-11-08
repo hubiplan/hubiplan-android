@@ -20,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -226,6 +227,7 @@ internal enum class Section(val label: String, val hint: String) {
     FINANCE(tr("Kassenbuch"), tr("Buchungen und Quittungen")),
     BILLING(tr("Rechnungen"), tr("Offene und bezahlte Rechnungen der Mitglieder")),
     OCCASIONS(tr("Jubiläen und Geburtstage"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
+    COMPETITIONS(tr("Wettbewerbe"), tr("Schießen im Standmodus erfassen, auch ohne Empfang")),
 }
 
 /**
@@ -250,6 +252,7 @@ internal fun sectionsFor(unit: AdminUnit): List<Section> {
         Section.FINANCE.takeIf { FINANCE_VIEW in p || FINANCE_EDIT in p },
         Section.BILLING.takeIf { BILLING_VIEW in p || BILLING_EDIT in p },
         Section.OCCASIONS.takeIf { members },
+        Section.COMPETITIONS.takeIf { showsCompetitions(unit) },
     )
 }
 
@@ -310,8 +313,19 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             }
         }
     }
+    fun openStandLink(code: String): Boolean {
+        val link = de.hubiplan.app.data.StandLink.parse(code) ?: return false
+        if (link.server != main.account.server) {
+            cardError = tr("Der QR-Code gehört zu einer anderen HUBIplan-Instanz.")
+        } else {
+            vm.openStand(StandSession(link.url, link.server, tr("Standmodus")))
+        }
+        return true
+    }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
         val code = result.contents ?: return@rememberLauncherForActivityResult
+        // Stand-QR (auch beim Ausweis prüfen erkannt): Standmodus öffnen
+        if (openStandLink(code)) return@rememberLauncherForActivityResult
         scope.launch {
             try {
                 card = client.checkCard(code)
@@ -482,6 +496,23 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     onChanged = onChanged,
                 )
                 section == Section.BILLING && section in sections -> BillingSection(client, errors, reload) { invoiceId = it }
+                section == Section.COMPETITIONS && section in sections -> CompetitionsSection(
+                    client,
+                    server = main.account.server,
+                    deviceName = android.os.Build.MODEL.take(60),
+                    errors = errors,
+                    reload = reload,
+                    onScan = {
+                        scanner.launch(
+                            ScanOptions()
+                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                .setPrompt(tr("Stand-QR scannen"))
+                                .setBeepEnabled(false)
+                                .setOrientationLocked(false),
+                        )
+                    },
+                    onOpenStand = vm::openStand,
+                )
                 section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
                     eventId = o.eventId
                     eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
@@ -644,6 +675,7 @@ private fun sectionIcon(s: Section) = when (s) {
     Section.FINANCE -> Icons.Filled.ShoppingCart
     Section.BILLING -> Icons.AutoMirrored.Filled.List
     Section.OCCASIONS -> Icons.Filled.Star
+    Section.COMPETITIONS -> Icons.Filled.LocationOn
 }
 
 @Composable

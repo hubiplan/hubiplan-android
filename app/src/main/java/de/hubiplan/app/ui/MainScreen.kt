@@ -134,6 +134,18 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     // Inhalt angelegt, damit Zurück in Listen, Details und Formularen zuerst dort wirkt.
     val back = backTarget(tab, previousTab)
     androidx.activity.compose.BackHandler(enabled = back != null) { back?.let { target -> leave.request { tab = target } } }
+    val stand by vm.stand.collectAsStateWithLifecycle()
+    // Standmodus nur zur Instanz dieses Kontos; beim Kontowechsel schließen
+    LaunchedEffect(stand, main.account.server) {
+        if (stand?.server?.let { it != main.account.server } == true) vm.closeStand()
+    }
+    // Standmodus im Vollbild statt der Reiter: so wirkt Zurück sicher dort, und die Sperre der
+    // Verwaltung nach 5 Minuten Pause schließt ihn nicht (er arbeitet mit dem Standzugang)
+    val openStand = stand
+    if (openStand != null) {
+        StandScreen(openStand, onClose = vm::closeStand)
+        return
+    }
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     NavigationSuiteScaffold(
         navigationSuiteItems = {
