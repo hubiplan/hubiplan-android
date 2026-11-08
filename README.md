@@ -165,7 +165,7 @@ Testläufe auf einem Rechner nicht ausbremsen, holt es sich einen Testplatz mit 
 Installation steht im Kopf der Datei).
 
 Gebaut und getestet wird ausschließlich lokal. Über alle Projekte desselben Rechners
-gelten höchstens zwei gleichzeitige Testläufe mit je höchstens acht Kernen. Temporäre
+gelten höchstens drei gleichzeitige Testläufe mit je höchstens sechs Kernen. Temporäre
 Dateien gehören in ein lokal konfiguriertes Temp-Verzeichnis.
 
 Nur beim Herausgeber, nie im Repository:
