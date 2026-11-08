@@ -39,7 +39,7 @@ TASKS=("$@")
 DEFAULT=0
 if [ ${#TASKS[@]} -eq 0 ]; then
     DEFAULT=1
-    TASKS=(testFossDebugUnitTest assembleFossDebug lintFossDebug assemblePlayDebug)
+    TASKS=(testFossDebugUnitTest assembleFossDebug lintFossDebug assemblePlayDebug assembleFossRelease)
 fi
 ./gradlew --no-daemon --max-workers="$TEST_KERNE" "${TASKS[@]}"
 if [ "$DEFAULT" = 1 ]; then
