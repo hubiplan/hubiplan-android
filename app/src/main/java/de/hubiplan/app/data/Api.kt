@@ -521,6 +521,16 @@ class Api(
     suspend fun myResults(accessId: Int): MyResults =
         decodeApi(expect("GET", "/api/portal/$accessId/results/"))
 
+    /** Ranglisten wie auf der Webseite des Vereins (Schießen in der App, SB4). */
+    suspend fun rankings(accessId: Int): Rankings =
+        decodeApi(expect("GET", "/api/portal/$accessId/rankings/"))
+
+    suspend fun ranking(accessId: Int, id: String): RankingDetail =
+        decodeApi(expect("GET", "/api/portal/$accessId/rankings/${java.net.URLEncoder.encode(id, "UTF-8")}/"))
+
+    suspend fun rankingVersion(accessId: Int, id: String): RankingVersion =
+        decodeApi(expect("GET", "/api/portal/$accessId/rankings/${java.net.URLEncoder.encode(id, "UTF-8")}/?version=1"))
+
     // --- Helferdienste im Mitgliederbereich (HUBIplan Schritt H2) ---
 
     suspend fun memberHelpers(accessId: Int): HelperOverview =

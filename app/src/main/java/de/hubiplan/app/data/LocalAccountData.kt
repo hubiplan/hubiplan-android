@@ -41,6 +41,7 @@ object LocalAccountData {
         ReceiptCache.forget(context.cacheDir, accountKey)
         File(context.cacheDir, WALLET_PASS).deleteRecursively()
         DraftCrypto.deleteKey(alias(accountKey))
+        StandStore.forget(context, accountKey)
     }
 
     /**

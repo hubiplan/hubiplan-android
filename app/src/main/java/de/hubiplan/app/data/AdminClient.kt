@@ -354,6 +354,32 @@ class AdminClient(
 
     private suspend fun get(path: String): String = use().admin("GET", base + path).text
 
+    // --- Wettbewerbe und Standzugang (konzepte/schiessen-android.md) ---
+
+    suspend fun competitions(): List<AdminCompetition> = decodeApi(get("competitions/"))
+
+    suspend fun competition(id: Int): AdminCompetition {
+        require(id > 0)
+        return decodeApi(get("competitions/$id/"))
+    }
+
+    suspend fun standAccesses(competition: Int): List<StandAccess> {
+        require(competition > 0)
+        return decodeApi(get("competitions/$competition/stand-access/"))
+    }
+
+    /** Neuer Standzugang bis Ende des Wettbewerbstags; der Schlüssel kommt nur jetzt. */
+    suspend fun createStandAccess(competition: Int, label: String): StandAccess {
+        require(competition > 0)
+        val r = use().admin("POST", "${base}competitions/$competition/stand-access/", obj("label" to label.take(100)).toString())
+        return decodeApi(r.text)
+    }
+
+    suspend fun endStandAccess(competition: Int, access: Int) {
+        require(competition > 0 && access > 0)
+        use().admin("DELETE", "${base}competitions/$competition/stand-access/$access/")
+    }
+
     private suspend fun change(method: String, path: String, body: JsonObject): Changed<MemberDetail> {
         val r = use().admin(method, base + path, body.toString())
         return Changed(decodeApi(r.text), r.changeSet.takeIf { r.undoable }, r.label)
