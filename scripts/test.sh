@@ -4,9 +4,9 @@
 #
 #   scripts/test.sh [Gradle-Aufgaben …]
 #
-# Regeln: nur lokal testen. Höchstens drei Testläufe gleichzeitig (alle Projekte),
-# jeder höchstens 6 Kerne: das Skript holt sich einen Platz mit testplatz (aus
-# hubiplan/scripts/testplatz.sh), Gradle bekommt so viele Worker wie der Platz Kerne.
+# Regeln: nur lokal testen. Das Skript holt sich einen lokalen Testplatz mit testplatz (aus
+# hubiplan/scripts/testplatz.sh, siehe hubiplan/docs/testserver.md); Gradle bekommt so viele
+# Worker wie der Platz Kerne.
 set -euo pipefail
 
 if [ -z "${TESTPLATZ:-}" ]; then
