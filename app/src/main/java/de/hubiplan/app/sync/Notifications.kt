@@ -96,6 +96,8 @@ object Notifications {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_TODOS)
+            // Während das Notenpult offen ist: still, ohne Einblenden (Noten in der App, E6)
+            .setSilent(de.hubiplan.app.data.PultOffen.offen)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title.ifBlank { tr("Aufgabe") })
             .setContentText(text)
@@ -170,6 +172,8 @@ object Notifications {
             ),
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_RSVP)
+            // Während das Notenpult offen ist: still, ohne Einblenden (Noten in der App, E6)
+            .setSilent(de.hubiplan.app.data.PultOffen.offen)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(tr("Rückmeldung fehlt: {title}", "title" to title))
             .setContentText(text)
@@ -218,6 +222,8 @@ object Notifications {
         )
         val body = if (short) text else text.ifBlank { tr("Neues Rundschreiben") }
         val notification = NotificationCompat.Builder(context, CHANNEL_MESSAGES)
+            // Während das Notenpult offen ist: still, ohne Einblenden (Noten in der App, E6)
+            .setSilent(de.hubiplan.app.data.PultOffen.offen)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title.ifBlank { tr("Mitteilung") })
             .setContentText(body)
@@ -240,6 +246,8 @@ object Notifications {
     fun showText(context: Context, accountId: String, id: Int, title: String, text: String) {
         if (!allowed(context)) return
         val notification = NotificationCompat.Builder(context, CHANNEL_RSVP)
+            // Während das Notenpult offen ist: still, ohne Einblenden (Noten in der App, E6)
+            .setSilent(de.hubiplan.app.data.PultOffen.offen)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(text)
@@ -267,6 +275,8 @@ object Notifications {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_MESSAGES)
+            // Während das Notenpult offen ist: still, ohne Einblenden (Noten in der App, E6)
+            .setSilent(de.hubiplan.app.data.PultOffen.offen)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title.ifBlank { "HUBIplan" })
             .setContentText(text)

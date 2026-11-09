@@ -21,6 +21,10 @@ class HubiplanApp : Application() {
         de.hubiplan.app.data.DeviceTokens.renewer = { server, token -> keys.renew(server, token) }
         de.hubiplan.app.push.GooglePush.init(this)
         // Übrig gebliebene Quittungs-PDFs aufräumen (GA-S06), ohne den Start aufzuhalten
-        Thread { runCatching { de.hubiplan.app.data.ReceiptCache.clear(this) } }.start()
+        Thread {
+            runCatching { de.hubiplan.app.data.ReceiptCache.clear(this) }
+            // Entschlüsselte Kopien aus einem zuletzt nicht sauber geschlossenen Notenpult
+            runCatching { de.hubiplan.app.data.PultDateien.clear(this) }
+        }.start()
     }
 }

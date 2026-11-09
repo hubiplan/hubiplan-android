@@ -549,7 +549,50 @@ class Api(
 
     suspend fun circular(accessId: Int, id: Int): CircularItem =
         decodeApi(expect("GET", "/api/portal/$accessId/circulars/$id/"))
+
+    // --- Noten in der App (N3–N8) ---
+
+    /** Notenmappen des eigenen Musikerprofils: feste Mappen und Termine. */
+    suspend fun scoreFolders(accessId: Int): ScoreFolders =
+        decodeApi(expect("GET", "/api/portal/$accessId/music/folders/"))
+
+    /**
+     * Notendatei laden. [path] kommt aus der Mappe (nur eigener Mitgliederbereich), [format]
+     * "", "pdf" oder "midi", [transpose] z. B. "M2" oder "-3". Mit [etag] antwortet der Server
+     * bei unveränderter Fassung mit 304.
+     */
+    suspend fun scoreFile(accessId: Int, path: String, format: String = "", transpose: String = "", etag: String? = null): ScoreDownload {
+        val prefix = "/api/portal/$accessId/music/files/"
+        val base = path.substringBefore('?')
+        if (!base.startsWith(prefix) || base.drop(prefix.length).trimEnd('/').toIntOrNull() == null) throw protocolError()
+        val query = listOfNotNull(
+            format.takeIf { it.isNotEmpty() }?.let { "format=$it" },
+            transpose.takeIf { it.isNotEmpty() }?.let { "transpose=" + java.net.URLEncoder.encode(it, "UTF-8") },
+        ).joinToString("&")
+        val headers = etag?.let { mapOf("If-None-Match" to it) } ?: emptyMap()
+        val resp = send("GET", base + (if (query.isEmpty()) "" else "?$query"), headers = headers, accept = false, limit = MAX_FILE_BYTES)
+        if (resp.code == 304) return ScoreDownload(true, ByteArray(0), resp.headers["ETag"] ?: etag, null)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return ScoreDownload(false, resp.body, resp.headers["ETag"], resp.headers["Content-Type"])
+    }
+
+    /** Live-Vorgabe der Leitung für eine Mappe oder einen Termin ([target] z. B. "folder-3"). */
+    suspend fun live(accessId: Int, target: String): LiveState =
+        decodeApi(expect("GET", "/api/portal/$accessId/music/live/${liveTarget(target)}/"))
+
+    suspend fun sendLive(accessId: Int, target: String, arrangement: Int, number: String): LiveCue? =
+        decodeApi<LiveSent>(
+            expect(
+                "POST",
+                "/api/portal/$accessId/music/live/${liveTarget(target)}/",
+                """{"arrangement":$arrangement,"number":${quote(number)}}""",
+            ),
+        ).cue
 }
+
+/** Nur die bekannten Ziele in den Pfad lassen. */
+internal fun liveTarget(target: String): String =
+    target.takeIf { Regex("^(folder|performance|rehearsal)-\\d{1,12}$").matches(it) } ?: throw protocolError()
 
 private fun quote(value: String): String =
     json.encodeToString(JsonPrimitive.serializer(), JsonPrimitive(value))

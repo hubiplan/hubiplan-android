@@ -30,12 +30,59 @@ Die Leiste unten (auf dem Tablet seitlich) hat kurze, einzeilige Beschriftungen:
 werden sie bei Bedarf etwas kleiner statt umzubrechen. Der aktive Reiter ist farbig hinterlegt.
 In jeder Detailansicht (Termin, Mitteilung, Aufgabe, Bereiche der Verwaltung) stehen der Pfeil
 zurück und der Titel oben in der Kopfleiste; System-Zurück führt ebenfalls eine Ebene zurück.
+Musiker sehen zusätzlich **Noten** (siehe unten). Werden es auf dem Telefon dadurch sechs Ziele,
+steht **Verwaltung** als Symbol oben in der Kopfleiste neben „Mein Konto“; auf dem Tablet bleiben
+alle sechs in der seitlichen Leiste.
 
 **English:** The bar at the bottom (at the side on tablets) has short single-line labels:
 **Events**, **Tasks**, **Messages**, **Card** and **Admin**. With large text they shrink a little
 instead of wrapping. The active tab is highlighted in colour. Every detail view (event, message,
 task, admin areas) shows the back arrow and title in the top bar; system back also goes up one
-level.
+level. Musicians also see **Sheet music** (see below). If that makes six targets on a phone,
+**Admin** moves to an icon in the top bar next to “My account”; tablets keep all six in the side bar.
+
+## Noten und Notenpult
+
+Für Musiker (Modul Musik und Notenarchiv an, aktives Musikerprofil) gibt es den Bereich **Noten**:
+oben Favoriten und zuletzt gespielte Stücke, darunter die festen **Notenmappen** des Vereins
+(Marschbuch, Repertoire …) und die eigenen **Proben und Auftritte** in Programmreihenfolge. Die
+App zeigt nur die Dateien der eigenen Stimme, so wie der Server sie freigibt. Das Suchfeld findet
+Stücke über alle Mappen nach Titel, Komponist oder Nummer, ohne Netz, Umlaute tolerant und nach
+Wortanfängen („alte kam“ findet „Alte Kameraden“).
+
+- **Für unterwegs laden** legt alle Noten einer Mappe verschlüsselt auf das Gerät (nicht in
+  Downloads oder Galerie). Feste Mappen bleiben dann dauerhaft dort; Proben und Auftritte lädt die
+  App am Vortag über WLAN selbst (abschaltbar). Was der Server nicht mehr liefert (Stimme entfernt,
+  Freigabe entzogen, Termin abgesagt oder älter als 7 Tage), löscht der nächste Abgleich; beim
+  Abmelden ist alles weg.
+- **Spielen** öffnet das **Notenpult** im Vollbild. Der Bildschirm bleibt an. Blättern: Tippen
+  (linkes Drittel zurück, sonst vor), Wischen, Lautstärketasten (leiser = vor) oder ein
+  Bluetooth-Fußpedal (Pfeiltasten, Bild auf/ab, Leertaste). Am Ende eines Stücks geht es ins
+  nächste. Langes Drücken des Pedals öffnet die Schnellwahl.
+- Tipp in die Bildmitte zeigt die Kopfzeile: Stück, Seite, Uhr, Akku, **Stück wählen**
+  (Nummernfeld, Suche, Liste, „Zurück zu …“), **Sperren** (Tippen und Wischen aus, lang drücken
+  entsperrt), **Anhören** (Hörbeispiel oder aus MusicXML gesetztes MIDI, Tempo 50–100 %),
+  Transponieren bei MusicXML-Noten und Einstellungen: Nachtmodus, volle Helligkeit, Ränder
+  abschneiden, halbe Seite wenden, zwei Seiten nebeneinander (Tablet quer), Drehung sperren,
+  Blätterwege, Lautstärketasten vertauschen.
+- **Leitung:** Wer Musik bearbeiten darf oder für die Mappe bzw. den Termin als Leitung
+  eingetragen ist, sieht **An alle senden**. Alle Geräte mit derselben Mappe zeigen dann
+  „Dirigent: Nr. 27 · Alte Kameraden“ und springen nach 3 Sekunden dorthin, außer man tippt
+  **Bleiben** (auf „nur anzeigen“ umstellbar).
+- Während das Notenpult offen ist, meldet sich HUBIplan nur still. „Bitte nicht stören“ für andere
+  Apps schaltet man selbst ein; die App bietet einen Knopf zu den Einstellungen.
+
+**English:** Musicians (music and score modules on, active musician profile) get **Sheet music**:
+favourites and recently played pieces, the club's fixed **music folders** (march book,
+repertoire …) and their own **rehearsals and performances** in programme order, always only the
+files of their own part. Search works across all folders, offline, by title, composer or number.
+**Download for offline use** stores a folder encrypted on the device; rehearsals and performances
+are fetched the day before over Wi-Fi. Anything the server no longer delivers is deleted at the
+next sync, and everything on logout. **Play** opens the full-screen **music stand**: the screen
+stays on; turn pages by tapping, swiping, volume keys or a Bluetooth foot pedal; the next piece
+follows at the end. Tap the middle for the header with **Choose piece** (number pad, search),
+**Lock**, **Listen**, transposition for MusicXML and display settings. Leaders can **Send to
+everyone**; other devices jump to the piece after 3 seconds unless you tap **Stay**.
 
 ## Aufgaben im Mitgliederbereich
 
