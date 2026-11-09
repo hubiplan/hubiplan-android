@@ -74,7 +74,9 @@ fun brandFor(theme: Theme?, dark: Boolean = false): BrandColors {
     // Im Dunkelmodus kein heller Balken über dunklem Inhalt (UX-Audit 08.11. A-06): helle
     // Vereinsfarben so weit abdunkeln, bis weiße Schrift lesbar ist. Dunkle bleiben, wie sie sind.
     val primary = if (dark) withContrast(raw, listOf(WHITE), BLACK) else raw
-    val onPrimary = parseHexColor(theme?.onPrimary)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
+    // Abgedunkelt trägt der Balken immer weiße Schrift (und helle Statussymbole)
+    val onPrimary = if (dark && primary != raw) WHITE
+    else parseHexColor(theme?.onPrimary)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
     return BrandColors(Color(primary), Color(onPrimary))
 }
 

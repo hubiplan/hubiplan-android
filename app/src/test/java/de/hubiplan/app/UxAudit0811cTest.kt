@@ -78,7 +78,7 @@ class UxAudit0811cTest {
     fun symboleStattZeichen() {
         val treffer = ui.walkTopDown().filter { it.extension == "kt" }.flatMap { f ->
             f.readLines().withIndex()
-                .filter { (_, line) -> !line.trimStart().startsWith("*") && !line.trimStart().startsWith("//") }
+                .filter { (_, line) -> line.trimStart().let { !it.startsWith("*") && !it.startsWith("/*") && !it.startsWith("//") } }
                 .filter { (_, line) -> line.contains('✓') || line.contains('✗') || line.contains('▾') }
                 .map { (i, _) -> "${f.name}:${i + 1}" }
         }.toList()

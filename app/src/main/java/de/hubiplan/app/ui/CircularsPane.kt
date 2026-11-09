@@ -136,6 +136,7 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
             if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
         }
     }
+    val screen by vm.screen.collectAsStateWithLifecycle()
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
@@ -149,6 +150,6 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         }
         Text(c.subject, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(listOf(c.sender, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-        CircularContent(c, (vm.screen.value as? Screen.Main)?.account?.server, access.id)
+        CircularContent(c, (screen as? Screen.Main)?.account?.server, access.id)
     }
 }
