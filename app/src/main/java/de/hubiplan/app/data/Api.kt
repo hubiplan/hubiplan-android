@@ -26,11 +26,16 @@ import de.hubiplan.app.tr
  * [origin]: Konto der abgelehnten Anfrage (siehe [apiOrigin]), damit eine verspätete Ablehnung
  * nicht ein inzwischen gewähltes anderes Konto entfernt (Audit 02.11., WA-V01).
  */
+/** Netzproblem ohne Antwort des Servers (UX-Audit 08.11. A-03). */
+enum class Network { OFFLINE, TIMEOUT }
+
 class ApiException(
     val status: Int,
     message: String,
     val body: String = "",
     val origin: String? = null,
+    /** Gesetzt, wenn keine Antwort kam: offline oder Zeitüberschreitung. */
+    val network: Network? = null,
 ) : Exception(message) {
     val fieldErrors: Map<String, String> = if (status == 400 || status == 422) parseFieldErrors(body) else emptyMap()
     val generalError: String? = parseGeneralError(body)
@@ -105,6 +110,7 @@ private const val ADMIN_TOKEN_PREFIX = "hpa_"
 private val SIGNATURE_V2 = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
 private val KEY_PATHS = setOf("/api/app/v1/devices/current/renew/", "/api/app/v1/devices/current/key/")
 private val OFFLINE: String get() = tr("Keine Verbindung zum Server. Bitte die Internetverbindung prüfen.")
+private val TIMEOUT: String get() = tr("HUBIplan antwortet gerade nicht. Bitte später erneut versuchen.")
 
 /** `code` aus einer Fehlerantwort (z. B. `device_renew`, `admin_signature`). */
 fun errorCode(text: String): String? = try {
@@ -206,8 +212,10 @@ class Api(
             transport.newCall(request(method, path, bytes, body?.contentType(), headers, accept)).execute().use { resp ->
                 Raw(resp.code, readLimited(resp.body, limit), resp.headers)
             }
+        } catch (e: java.net.SocketTimeoutException) {
+            throw ApiException(0, TIMEOUT, network = Network.TIMEOUT)
         } catch (e: IOException) {
-            throw ApiException(0, OFFLINE)
+            throw ApiException(0, OFFLINE, network = Network.OFFLINE)
         }
         if (raw.headers[SignedFormat.FORMAT_HEADER] == "2") SIGNATURE_V2.add(server)
         // Erneuern und Nachmelden selbst nie erneut erneuern (das wäre eine Schleife)

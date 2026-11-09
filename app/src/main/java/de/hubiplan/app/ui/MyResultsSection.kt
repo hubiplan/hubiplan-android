@@ -37,7 +37,7 @@ fun MyResultsSection(access: PortalAccess, vm: AppViewModel) {
         try {
             data = api.myResults(access.id)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.userText()
         }
     }
     Text(tr("Meine Ergebnisse"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
@@ -75,10 +75,20 @@ fun MyResultsSection(access: PortalAccess, vm: AppViewModel) {
 
 private const val SHORT_LIST = 5
 
-/** „Einzel: 2. Platz von 14 · 28 Ringe“; ohne Platz nur der Wert. */
+/**
+ * „Einzel: 2. Platz von 14 · 28 Ringe“; ohne Platz nur der Wert. Jede Zahl ist beschriftet:
+ * ohne Einheit vom Server steht „Wert 27“ statt einer nackten Zahl (UX-Audit 08.11. A-18).
+ */
 fun placingLine(p: MyPlacing): String {
-    val place = p.place?.let { n -> "$n. Platz" + (p.field?.let { tr(" von {it}", "it" to it) } ?: "") }
-    val parts = listOfNotNull(place, p.valueText.ifBlank { null })
+    val place = p.place?.let { n -> tr("{n}. Platz", "n" to n) + (p.field?.let { tr(" von {it}", "it" to it) } ?: "") }
+    val value = p.valueText.ifBlank { null }?.let { v ->
+        when {
+            v.any(Char::isLetter) -> v // schon mit Einheit
+            p.unitLabel.isNotBlank() -> "$v ${p.unitLabel}"
+            else -> tr("Wert {value}", "value" to v)
+        }
+    }
+    val parts = listOfNotNull(place, value)
     return "${p.scoring}: " + parts.ifEmpty { listOf(tr("ohne Wertung")) }.joinToString(" · ")
 }
 

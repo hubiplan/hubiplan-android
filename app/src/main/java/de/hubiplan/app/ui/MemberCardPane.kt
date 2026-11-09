@@ -163,7 +163,7 @@ private fun WalletButtons(vm: AppViewModel, accessId: Int, wallet: CardWallet) {
             try {
                 block(api)
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e) else message = e.message
+                if (e.status == 401) vm.deviceRevoked(e) else message = e.userText()
             } finally {
                 busy = false
             }

@@ -72,8 +72,10 @@ internal fun dutyLine(duty: HelperDuty): String = buildList {
 @Composable
 internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewModel, switch: @Composable () -> Unit) {
     var data by remember(api, access) { mutableStateOf<HelperOverview?>(null) }
-    var error by remember(api, access) { mutableStateOf<String?>(null) }
+    var error by remember(api, access) { mutableStateOf<Problem?>(null) }
     var notice by remember(api, access) { mutableStateOf<String?>(null) }
+    var refreshing by remember { mutableStateOf(false) }
+    var loadedAt by remember(api, access) { mutableStateOf<Long?>(null) }
     var busy by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     var cancel by remember { mutableStateOf<MyShift?>(null) }
@@ -86,9 +88,15 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
         onDispose { lifecycle.removeObserver(observer) }
     }
     LaunchedEffect(api, access, reload) {
-        error = null
-        try { data = api.memberHelpers(access) }
-        catch (e: ApiException) { if (e.status == 401) vm.deviceRevoked(e) else error = e.message }
+        try {
+            data = api.memberHelpers(access)
+            error = null
+            loadedAt = System.currentTimeMillis()
+        } catch (e: ApiException) {
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
+        } finally {
+            refreshing = false
+        }
     }
     fun act(done: String, action: suspend () -> Unit) {
         if (busy) return
@@ -100,7 +108,7 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
                 action()
                 notice = done
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+                if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
             } finally {
                 busy = false
                 reload++
@@ -122,18 +130,20 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
         )
     }
     val current = data
+    // Ziehen zum Aktualisieren (UX-Audit 08.11. A-02)
+    Refreshable(refreshing, onRefresh = { refreshing = true; reload++ }) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
             Text(tr("Helferdienste"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(Abstand.rand))
             switch()
             Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-                TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("Aktualisieren")) }
                 TextButton(onClick = {
                     context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$server/mein-bereich/helferdienste?zugang=$access")))
                 }) { Text(tr("Im Browser öffnen")) }
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand))
-            error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
+            error?.let { ProblemNotice(it, onRetry = { refreshing = true; reload++ }, since = loadedAt.takeIf { current != null }) }
+            if (error == null) loadedAt?.let { FreshnessLine(it) { refreshing = true; reload++ } }
             notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
             if (current == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth().padding(Abstand.rand))
         }
@@ -160,6 +170,7 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
                 HorizontalDivider()
             }
         }
+    }
     }
 }
 
