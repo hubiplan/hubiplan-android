@@ -526,7 +526,7 @@ fun <T> ChoicePicker(label: String, options: List<Pair<T, String>>, selected: T?
                 onClick = { open = true },
                 modifier = base.fillMaxWidth().dropdown(label, selected?.let(show) ?: tr("nichts gewählt"), open),
             ) {
-                Text((selected?.let(show) ?: tr("Bitte wählen")) + " ▾")
+                DropdownText(selected?.let(show) ?: tr("Bitte wählen"))
             }
             androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
                 options.forEach { (value, text) ->

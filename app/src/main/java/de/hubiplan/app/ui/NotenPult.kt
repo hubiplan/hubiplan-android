@@ -796,7 +796,8 @@ private fun PultKopf(
                         DropdownMenu(expanded = transposeMenu, onDismissRequest = { transposeMenu = false }) {
                             TRANSPOSITIONEN.forEach { value ->
                                 DropdownMenuItem(
-                                    text = { Text((if (value == transpose) "✓ " else "    ") + transpositionLabel(value)) },
+                                    text = { Text(transpositionLabel(value)) },
+                                    leadingIcon = { MenuCheck(value == transpose) },
                                     onClick = { transposeMenu = false; onTranspose(value) },
                                 )
                             }
@@ -814,7 +815,7 @@ private fun PultKopf(
 
 @Composable
 private fun ToggleItem(label: String, on: Boolean, onClick: () -> Unit) {
-    DropdownMenuItem(text = { Text((if (on) "✓ " else "    ") + label) }, onClick = onClick)
+    DropdownMenuItem(text = { Text(label) }, leadingIcon = { MenuCheck(on) }, onClick = onClick)
 }
 
 /**

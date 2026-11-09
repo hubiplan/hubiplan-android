@@ -41,6 +41,12 @@ import de.hubiplan.app.data.PortalAccess
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
 
 /** Termine wie im Kalender-Abo: von heute bis gut ein Jahr voraus. */
 private const val DAYS_AHEAD = 400L
@@ -110,14 +116,7 @@ private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) 
         },
         trailingContent = {
             if (occ.rsvpEnabled) {
-                Text(
-                    when (occ.myResponse) {
-                        "yes" -> tr("✓ Zusage")
-                        "no" -> tr("✗ Absage")
-                        else -> tr("offen")
-                    },
-                    color = if (occ.myResponse == null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
-                )
+                RsvpStatus(occ.myResponse)
             }
         },
     )
@@ -259,5 +258,20 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int)
     }
     if (mine != null) {
         TextButton(onClick = { onRespond(null, 0) }, enabled = !busy) { Text(tr("Rückmeldung zurücknehmen")) }
+    }
+}
+
+/** Eigene Rückmeldung als Symbol mit Klartext statt „✓“/„✗“ (UX-Audit 08.11. A-07). */
+@Composable
+internal fun RsvpStatus(response: String?) {
+    val (icon, text) = when (response) {
+        "yes" -> Icons.Filled.Check to tr("Zugesagt")
+        "no" -> Icons.Filled.Close to tr("Nicht dabei")
+        else -> null to tr("Noch offen")
+    }
+    val color = if (response == null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Abstand.eng)) {
+        icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(18.dp)) }
+        Text(text, color = color)
     }
 }

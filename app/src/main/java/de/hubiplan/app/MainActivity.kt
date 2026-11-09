@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import de.hubiplan.app.data.PairingLink
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -108,6 +109,13 @@ class MainActivity : FragmentActivity() {
 
     /** Aus einer Benachrichtigung oder Verknüpfung: Mitteilung öffnen bzw. zum passenden Konto wechseln. */
     private fun openFrom(intent: Intent?) {
+        // Verbinden-Link aus dem Browser (X-04); danach entfernen, damit er beim Drehen nicht erneut greift
+        if (intent?.action == Intent.ACTION_VIEW && intent.data?.scheme == PairingLink.SCHEME) {
+            vm.openPairingLink(intent.dataString.orEmpty())
+            intent.data = null
+            intent.action = null
+            return
+        }
         val access = intent?.getIntExtra(Notifications.EXTRA_ACCESS, -1) ?: -1
         val circular = intent?.getIntExtra(Notifications.EXTRA_CIRCULAR, -1) ?: -1
         val shortcut = intent?.getStringExtra(Notifications.EXTRA_SHORTCUT_ACCOUNT)

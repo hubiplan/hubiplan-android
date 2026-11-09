@@ -36,10 +36,19 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- „In der HUBIplan-App öffnen“ auf demselben Telefon (UX-Audit 08.11. X-04).
+                 Eigenes Schema statt App-Link: jede Instanz hat eine eigene Adresse. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hubiplan" android:host="verbinden" />
             </intent-filter>
         </activity>
 

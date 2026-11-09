@@ -520,6 +520,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { store.setRsvpHints(on) }
     }
 
+    // Verbinden-Link, der vor dem Laden des Kontos ankam (App über den Link gestartet)
+    private var started = false
+    private var startLink: String? = null
+
     init {
         viewModelScope.launch {
             // Aktives Konto fehlt (abgemeldet), aber andere sind da: zum ersten wechseln
@@ -539,7 +543,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _theme.value = store.cachedTheme.first()
             loadAccounts()
             val account = store.account.first()
-            if (account == null) _screen.value = Screen.Connect else refresh(account)
+            started = true
+            val link = startLink
+            startLink = null
+            when {
+                link != null -> showPairingLink(link, adding = account != null)
+                account == null -> _screen.value = Screen.Connect
+                else -> refresh(account)
+            }
         }
     }
 
@@ -806,6 +817,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         // Erst nachfragen: ein untergeschobener QR-Code einer fremden Adresse fällt so auf
         _connect.value = _connect.value.copy(pendingPairing = link, error = null)
+    }
+
+    /**
+     * Link „In der HUBIplan-App öffnen“ (X-04). Wie beim QR-Code erst nachfragen; ist schon ein
+     * Konto verbunden, wird daraus „Weiteres Konto verbinden“ (bei derselben Adresse: neu verbinden).
+     */
+    fun openPairingLink(text: String) {
+        if (!started) {
+            startLink = text
+            return
+        }
+        showPairingLink(text, adding = screen.value is Screen.Main || _connect.value.adding)
+    }
+
+    private fun showPairingLink(text: String, adding: Boolean) {
+        val link = PairingLink.parse(text)
+        // Laufende Aktualisierung darf den Verbinden-Bildschirm nicht mehr überschreiben
+        ++refreshGeneration
+        _connect.value = ConnectState(
+            adding = adding,
+            pendingPairing = link,
+            error = if (link == null) tr("Dieser Link zum Verbinden ist ungültig oder unvollständig. Bitte in HUBIplan unter „Mein Konto › App & andere Instanzen“ neu erzeugen.") else null,
+        )
+        _screen.value = Screen.Connect
     }
 
     fun confirmPairing() {

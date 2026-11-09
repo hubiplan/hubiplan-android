@@ -69,6 +69,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import de.hubiplan.app.tr
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 
 const val MEMBERS_EDIT = "members.edit"
 const val PHOTOS_MANAGE = "photos.manage"
@@ -585,7 +589,7 @@ private fun <T> Picker(label: String, options: List<Pair<T, String>>, selected: 
                 onClick = { open = true },
                 modifier = Modifier.fillMaxWidth().dropdown(label, selected?.let(show) ?: tr("nichts gewählt"), open),
             ) {
-                Text((selected?.let(show) ?: tr("Bitte wählen")) + " ▾")
+                DropdownText(selected?.let(show) ?: tr("Bitte wählen"))
             }
             DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
                 options.forEach { (value, text) ->
@@ -869,10 +873,11 @@ fun CardResultDialog(check: CardCheck, loadPublic: suspend (String) -> ByteArray
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(
-                if (valid) "✓ ${check.statusLabel}" else "✗ ${check.statusLabel}",
-                color = if (valid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-            )
+            val color = if (valid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                Icon(if (valid) Icons.Filled.CheckCircle else Icons.Filled.Warning, contentDescription = null, tint = color)
+                Text(check.statusLabel, color = color)
+            }
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein), horizontalAlignment = Alignment.CenterHorizontally) {

@@ -1,5 +1,6 @@
 package de.hubiplan.app.ui
 
+import androidx.compose.ui.autofill.ContentType
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -192,7 +193,7 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().autofill(ContentType.Password),
         )
         OutlinedTextField(
             value = code,
@@ -724,7 +725,7 @@ private fun UnitPicker(units: List<AdminUnit>, current: AdminUnit, onPick: (Admi
             Text(tr("Verwaltung · {name}", "name" to current.name), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(Abstand.klein))
         } else {
             TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Verwaltete Einheit"), current.name, open)) {
-                Text(tr("Verwaltung · {name} ▾", "name" to current.name), style = MaterialTheme.typography.titleMedium)
+                DropdownText(tr("Verwaltung · {name}", "name" to current.name), style = MaterialTheme.typography.titleMedium)
             }
             DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
                 units.forEach { u ->

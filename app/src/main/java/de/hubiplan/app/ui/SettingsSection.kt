@@ -173,7 +173,7 @@ private fun ReminderPicker(current: Int?, onPick: (Int?) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(tr("Erinnerung: "))
         TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Erinnerung"), reminderLabel(current), open)) {
-            Text(reminderLabel(current) + " ▾")
+            DropdownText(reminderLabel(current))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             REMINDER_CHOICES.forEach { (minutes, label) ->
