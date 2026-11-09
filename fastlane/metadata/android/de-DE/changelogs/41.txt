@@ -1,0 +1,2 @@
+• Standmodus: Beim Einscannen einer Schießkarte ist das Kamerabild wieder zu sehen.
+• Die Verwaltung öffnet sich in der zuletzt gewählten Einheit.

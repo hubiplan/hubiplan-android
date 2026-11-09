@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.view.View
 import android.webkit.PermissionRequest
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
@@ -156,6 +157,9 @@ fun StandScreen(session: StandSession, onClose: () -> Unit) {
                 factory = { ctx ->
                     WebView(ctx).apply {
                         keepScreenOn = true
+                        // Eigene Hardware-Ebene: Chromium legt das Kamerabild (<video>) sonst als
+                        // Überlagerung hinter das Fenster, und der deckende Hintergrund verdeckt es.
+                        setLayerType(View.LAYER_TYPE_HARDWARE, null)
                         settings.apply {
                             javaScriptEnabled = true
                             domStorageEnabled = true
