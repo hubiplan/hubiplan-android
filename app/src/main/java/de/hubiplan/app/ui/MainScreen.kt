@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBox
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -40,6 +40,7 @@ import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteDefaults
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.runtime.Composable
@@ -62,11 +63,11 @@ import de.hubiplan.app.tr
 /**
  * Hauptziele der App. [short] steht in der Navigationsleiste: einzeilig, ohne Umbruch im Wort
  * (UX-Audit 08.11. A-14). „Mein Konto“ steht nicht in der Navigationsleiste, sondern als Symbol im
- * Kopf; so bleiben höchstens fünf Ziele (UX-Audit 05.11. A-01). „Ausweis“ statt „Profil“: dort
- * liegen Ausweis, Foto und eigene Daten (A-02, wie „Mein Bereich › Ausweis“ im Browser).
+ * Kopf; so bleiben höchstens fünf Ziele (UX-Audit 05.11. A-01). „Ich“ statt „Ausweis“: oben der
+ * Ausweis, darunter alles Persönliche wie „Mein Bereich“ im Browser (Konzept app-ich, S-06/X-03).
  */
 internal enum class Tab(val label: String, val short: String = label) {
-    TERMINE(tr("Termine")), NOTEN(tr("Noten")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen"), tr("Neues")), AUSWEIS(tr("Ausweis")),
+    TERMINE(tr("Termine")), NOTEN(tr("Noten")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen"), tr("Neues")), ICH(tr("Ich")),
     VERWALTUNG(tr("Verwaltung"), tr("Verwalten")), KONTO(tr("Mein Konto")),
 }
 
@@ -129,6 +130,11 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     var previousTab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, leave.busy) { if (openRequest != null && tab != Tab.MITTEILUNGEN) leave.request(action = { tab = Tab.MITTEILUNGEN }, onStay = vm::openHandled) }
+    // App-Verknüpfung „Ausweis zeigen“: Reiter „Ich“; den großen Ausweis öffnet der Reiter selbst
+    val openCard by vm.openCard.collectAsStateWithLifecycle()
+    LaunchedEffect(openCard, leave.busy) { if (openCard && tab != Tab.ICH) leave.request(action = { tab = Tab.ICH }, onStay = vm::cardHandled) }
+    // „Helferdienste“ unter „Ich“ öffnet die Helferdienste im Reiter „Aufgaben“
+    var helpersRequest by rememberSaveable { mutableStateOf(false) }
     // „Verwaltung“ nur für Konten mit Verwaltungsrechten (Schritt A8)
     val admin by vm.admin.collectAsStateWithLifecycle()
     val pendingTodo by vm.openTodo.collectAsStateWithLifecycle()
@@ -244,7 +250,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.NOTEN -> NotenSymbol
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
-                                Tab.AUSWEIS -> Icons.Filled.AccountBox
+                                Tab.ICH -> Icons.Filled.Person
                                 Tab.VERWALTUNG -> Symbole.Verwaltung
                                 Tab.KONTO -> Icons.Filled.AccountCircle
                             },
@@ -321,7 +327,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
                     tab == Tab.VERWALTUNG -> AdminPane(main, vm)
-                    tab == Tab.AUFGABEN -> MemberTodosPane(main, vm)
+                    tab == Tab.AUFGABEN -> MemberTodosPane(main, vm, openHelpers = helpersRequest, onHelpersOpened = { helpersRequest = false })
                     tab == Tab.NOTEN && notesAccess != null -> NotenPane(notesAccess, main, vm)
                     main.me == null && !main.offline -> Loading()
                     access == null && main.me != null -> Message(
@@ -329,9 +335,9 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     )
                     access != null && tab == Tab.TERMINE -> EventsPane(access, vm)
                     access != null && tab == Tab.MITTEILUNGEN -> CircularsPane(access, vm)
-                    access != null && tab == Tab.AUSWEIS -> ProfilePane(access, main, vm)
+                    access != null && tab == Tab.ICH -> IchPane(access, main, vm, onHelpers = { leave.request { helpersRequest = true; tab = Tab.AUFGABEN } })
                     // Ohne Netz: wenigstens den gespeicherten Ausweis zeigen
-                    main.offline && tab == Tab.AUSWEIS -> OfflineCardPane(main)
+                    main.offline && tab == Tab.ICH -> OfflineCardPane(main, vm)
                     // Ohne Netz beim Kaltstart: Hinweis statt leerer Fläche, dazu wartende
                     // Kassenvorgänge dieses Telefons (UX-Audit 31.10. A15, F03)
                     main.offline -> OfflinePane(main, events = tab == Tab.TERMINE)
@@ -468,7 +474,7 @@ fun Loading() {
 }
 
 @Composable
-private fun OfflineCardPane(main: Screen.Main) {
+private fun OfflineCardPane(main: Screen.Main, vm: AppViewModel) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val store = remember(main.account.server, main.account.deviceId) {
         de.hubiplan.app.data.CardStore(context, de.hubiplan.app.data.CardStore.key(main.account.server, main.account.deviceId))
@@ -481,7 +487,11 @@ private fun OfflineCardPane(main: Screen.Main) {
         if (accessId == null) {
             Text(tr("Ohne Netz ist noch kein Ausweis gespeichert."))
         } else {
-            MemberCardSection(store, accessId, null)
+            // Verknüpfung „Ausweis zeigen“ ohne Netz: gespeicherten Ausweis groß
+            val openCard by vm.openCard.collectAsStateWithLifecycle()
+            var bigRequest by remember { mutableIntStateOf(0) }
+            LaunchedEffect(openCard) { if (openCard) { bigRequest++; vm.cardHandled() } }
+            MemberCardSection(store, accessId, null, bigRequest = bigRequest)
         }
     }
 }

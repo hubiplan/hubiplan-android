@@ -26,7 +26,7 @@ in” likewise shows a hint next to empty fields. Both buttons are only disabled
 ## Navigation
 
 Die Leiste unten (auf dem Tablet seitlich) hat kurze, einzeilige Beschriftungen: **Termine**,
-**Aufgaben**, **Neues** (die Mitteilungen), **Ausweis** und **Verwalten**. Bei großer Schrift
+**Aufgaben**, **Neues** (die Mitteilungen), **Ich** und **Verwalten**. Bei großer Schrift
 werden sie bei Bedarf etwas kleiner statt umzubrechen. Der aktive Reiter ist farbig hinterlegt.
 In jeder Detailansicht (Termin, Mitteilung, Aufgabe, Bereiche der Verwaltung) stehen der Pfeil
 zurück und der Titel oben in der Kopfleiste; System-Zurück führt ebenfalls eine Ebene zurück.
@@ -35,11 +35,43 @@ steht **Verwaltung** als Symbol oben in der Kopfleiste neben „Mein Konto“; a
 alle sechs in der seitlichen Leiste.
 
 **English:** The bar at the bottom (at the side on tablets) has short single-line labels:
-**Events**, **Tasks**, **Messages**, **Card** and **Admin**. With large text they shrink a little
+**Events**, **Tasks**, **Messages**, **Me** and **Admin**. With large text they shrink a little
 instead of wrapping. The active tab is highlighted in colour. Every detail view (event, message,
 task, admin areas) shows the back arrow and title in the top bar; system back also goes up one
 level. Musicians also see **Sheet music** (see below). If that makes six targets on a phone,
 **Admin** moves to an icon in the top bar next to “My account”; tablets keep all six in the side bar.
+
+## Reiter „Ich“
+
+Unter **Ich** steht alles Persönliche, gegliedert wie „Mein Bereich“ im Browser (Kopf: „Mein
+Bereich“). Ganz oben der **Mitgliedsausweis**; Tippen zeigt ihn groß, ohne Netz den zuletzt
+gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, das ihn direkt groß
+öffnet. Darunter eine Liste mit Kurzstand rechts und der Zahl offener Punkte:
+
+- **Meine Daten**: Anschrift, Telefon, Foto, „Änderung melden“.
+- **Rechnungen**: offene zuerst mit Betrag und Fälligkeit, „PDF ansehen“, darunter Beiträge über
+  eine Sammelrechnung und das Lastschriftmandat (nur ansehen; erteilen, ändern und widerrufen im
+  Browser). PDFs öffnet die App nur online; sie liegen nur kurz im Cache und werden beim nächsten
+  Öffnen, beim Start und beim Abmelden gelöscht.
+- **Versammlungen**: Einladungen mit Ort, Zeit und Tagesordnung, „Antrag stellen“ bis zur Frist,
+  eigene Anträge mit Stand und „Antrag zurückziehen“, darunter freigegebene Protokolle als PDF.
+- **Meine Ergebnisse**: Plätze, Werte, Titel und Ranglisten.
+- **Helferdienste**: führt in den Reiter „Aufgaben“ zu den Helferdiensten.
+- **Dokumente**: freigegebene Dokumente des Vereins, nur lesen.
+
+Es erscheinen nur Punkte, deren Modul der Verein eingeschaltet hat. Pfeil oder System-Zurück
+führen aus einer Unterseite zurück zur Liste.
+
+**English:** **Me** holds everything personal, organised like “My area” in the browser. Your
+**membership card** is at the top; tap it to show it large, offline the last saved one.
+Long-pressing the app icon offers “Show ID card”, which opens it large straight away. Below is a
+list with a short status on the right and the number of open items: **My data** (address, phone,
+photo, “Report change”), **Invoices** (open ones first with amount and due date, “View PDF”,
+fees via a collective invoice and your direct debit mandate, view only), **Meetings**
+(invitations with agenda, “Submit a motion” until the deadline, your motions with status and
+“Withdraw motion”, released minutes as PDF), **My results**, **Volunteer duties** (opens them in
+the “Tasks” tab) and **Documents** (read only). PDFs open only online and are kept in the cache
+only briefly. Only items whose module is switched on appear.
 
 ## Noten und Notenpult
 
@@ -154,7 +186,7 @@ einrichten“ direkt in die Systemeinstellung. Danach prüft die App beim Zurüc
 erneut. In „Zu erledigen“ heißen gemeldete Änderungen der Mitglieder „Datenänderungen“; das
 Verteilen von Aufgaben heißt „Aufgaben verteilen“, damit es sich vom Reiter „Aufgaben“ (deine
 eigenen) unterscheidet. Unter „Meine Ergebnisse“ steht bei jedem Wert die Einheit („27 Ringe“),
-Telefonnummer und E-Mail-Adresse im Ausweis lassen sich antippen.
+Telefonnummer und E-Mail-Adresse unter „Meine Daten“ lassen sich antippen.
 
 **English:** Pull a list down to reload events, messages, tasks, helper duties and the admin
 lists. A line above the list shows when it was loaded (“As of 14:32”); with TalkBack this line
@@ -166,7 +198,7 @@ screen?” appears only in the event list and only the first time; later use “
 phone has no screen lock, the admin area offers “Set up screen lock”, which opens the system
 setting; the app checks again when you return. Member-reported changes are called “Data
 changes”, and distributing tasks is “Assign tasks”, distinct from the “Tasks” tab. Every value
-under “My results” has its unit (“27 rings”); phone number and email on the card can be tapped.
+under “My results” has its unit (“27 rings”); phone number and email under “My data” can be tapped.
 
 ## Einheit in der Verwaltung
 
@@ -230,7 +262,7 @@ nicht abgeschlossenen Wettbewerbe, heute zuerst.
   (auch „Ausweis prüfen“ erkennt ihn) öffnet einen solchen Code im Standmodus der App.
 - „Standzugang beenden“ beendet alle aktiven Standzugänge des Wettbewerbs.
 
-Unter „Ausweis“ zeigt „Ranglisten“ die Wettbewerbe so, wie die Webseite des Vereins sie zeigt
+Unter „Ich › Meine Ergebnisse“ zeigt „Ranglisten“ die Wettbewerbe so, wie die Webseite des Vereins sie zeigt
 (nur veröffentlichte, Preisplätze oder ganze Rangliste). Laufende Wettbewerbe fragen alle 15
 Sekunden nach einem neuen Stand.
 

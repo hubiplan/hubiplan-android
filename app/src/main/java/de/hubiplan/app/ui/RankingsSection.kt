@@ -28,7 +28,7 @@ import de.hubiplan.app.tr
 import kotlinx.coroutines.delay
 
 /**
- * „Ranglisten“ im Reiter Ausweis (Schießen in der App, SB4): genau das, was die Webseite des
+ * „Ranglisten“ unter „Ich › Meine Ergebnisse“ (Schießen in der App, SB4): genau das, was die Webseite des
  * Vereins zu Wettbewerben zeigt (Preisplätze oder ganze Rangliste, Namen nach Einwilligung).
  * Läuft ein Wettbewerb, fragt die App wie die Webseite alle 15 Sekunden nach einem neuen Stand.
  */

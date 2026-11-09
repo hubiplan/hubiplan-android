@@ -1,0 +1,3 @@
+• New "Me" tab instead of "Card": your ID card at the top, below it My data, Invoices, Meetings, My results, Volunteer duties and Documents.
+• Invoices with open amounts and PDF, view your direct debit mandate; meetings with agenda, motions and minutes.
+• Long-press the app icon: "Show ID card" opens your card directly.

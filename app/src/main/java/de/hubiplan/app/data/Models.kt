@@ -143,6 +143,8 @@ data class PortalAccess(
     val modules: List<String>? = null,
     /** Aktives Musikerprofil in diesem Verein (Modul Musik an; ältere Stände: fehlt) */
     val musician: Boolean = false,
+    @SerialName("meetings_enabled") val meetingsEnabled: Boolean = false,
+    @SerialName("docs_enabled") val docsEnabled: Boolean = false,
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
 
@@ -164,8 +166,17 @@ data class PortalAccess(
     /** Aufgaben im Mitgliederbereich */
     val hasTodos: Boolean get() = moduleOn("todos")
 
-    /** Mitgliedsausweis im Reiter Ausweis */
+    /** Mitgliedsausweis oben im Reiter „Ich“ */
     val hasCard: Boolean get() = moduleOn("cards")
+
+    /** „Rechnungen“ unter „Ich“; wie im Browser immer da (ohne Modul Rechnungen leer) */
+    val hasInvoices: Boolean get() = moduleOn("billing")
+
+    /** „Versammlungen“ unter „Ich“ */
+    val hasMeetings: Boolean get() = moduleOn("meetings", meetingsEnabled)
+
+    /** „Dokumente“ unter „Ich“ (nur lesen) */
+    val hasDocs: Boolean get() = moduleOn("docs", docsEnabled)
 
     val isContact: Boolean get() = memberKind == ORGANIZATION && memberName.isNotBlank()
 

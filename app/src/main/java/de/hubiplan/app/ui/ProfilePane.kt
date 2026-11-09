@@ -45,7 +45,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import de.hubiplan.app.data.ApiException
-import de.hubiplan.app.data.CardStore
 import de.hubiplan.app.data.PhotoState
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.Profile
@@ -56,13 +55,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import de.hubiplan.app.tr
 
-/** Eigene Daten: ansehen, Änderung melden, Foto aufnehmen (wartet auf Freigabe). */
+/**
+ * „Meine Daten“ unter „Ich“: ansehen, Änderung melden, Foto aufnehmen (wartet auf Freigabe).
+ * Ausweis und Ergebnisse stehen eigens unter „Ich“ (Konzept app-ich).
+ */
 @Composable
 fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     val context = LocalContext.current
-    val cardStore = remember(main.account.server, main.account.deviceId) {
-        CardStore(context, CardStore.key(main.account.server, main.account.deviceId))
-    }
     val scope = rememberCoroutineScope()
     var profile by remember(access.id) { mutableStateOf<Profile?>(null) }
     var photo by remember(access.id) { mutableStateOf<PhotoState?>(null) }
@@ -130,11 +129,6 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     ) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         notice?.let { StatusNotice(it) }
-        // Ausweis zuerst: er soll auch ohne Netz und ohne geladenes Profil erscheinen
-        if (access.hasCard) {
-            MemberCardSection(cardStore, access.id, vm)
-            HorizontalDivider()
-        }
         val p = profile
         if (p == null) {
             if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
@@ -246,12 +240,6 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                     }
                 },
             )
-        }
-        if (access.hasResults) {
-            HorizontalDivider()
-            MyResultsSection(access, vm)
-            // Ranglisten wie auf der Webseite (Abschnitt fehlt, wenn der Verein keine zeigt)
-            RankingsSection(access, vm)
         }
     }
 

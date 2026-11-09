@@ -99,7 +99,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             title = { Text(tr("Konto und Daten löschen")) },
             text = {
                 Text(
-                    tr("Deine Mitgliedsdaten verwaltet dein Verein in seiner HUBIplan-Instanz ({x1}), nicht die App.\n\n• Abmelden löscht den Geräteschlüssel dieses Telefons beim Verein und alle Daten dieses Kontos in der App, auch die eingetragenen Kalendertermine und noch nicht gesendete Buchungen und Quittungen der Verwaltung.\n• Dein Foto kannst du unter Profil selbst löschen.\n• Die Löschung deines Zugangs und deiner Mitgliedsdaten beantragst du beim Verein. Wen du ansprichst, steht in seinen Datenschutzhinweisen.", "x1" to main.account.server.removePrefix("https://")),
+                    tr("Deine Mitgliedsdaten verwaltet dein Verein in seiner HUBIplan-Instanz ({x1}), nicht die App.\n\n• Abmelden löscht den Geräteschlüssel dieses Telefons beim Verein und alle Daten dieses Kontos in der App, auch die eingetragenen Kalendertermine und noch nicht gesendete Buchungen und Quittungen der Verwaltung.\n• Dein Foto kannst du unter „Ich › Meine Daten“ selbst löschen.\n• Die Löschung deines Zugangs und deiner Mitgliedsdaten beantragst du beim Verein. Wen du ansprichst, steht in seinen Datenschutzhinweisen.", "x1" to main.account.server.removePrefix("https://")),
                 )
             },
             confirmButton = {

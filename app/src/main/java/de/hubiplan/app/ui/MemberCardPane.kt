@@ -77,10 +77,12 @@ private const val STALE_MS = 24L * 60 * 60 * 1000
  * die immer den aktuellen Stand zeigt (gesperrte Ausweise gelten dort nicht mehr).
  */
 @Composable
-fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?) {
+fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?, bigRequest: Int = 0) {
     var stored by remember(accessId) { mutableStateOf(store.load(accessId)) }
     var offline by remember(accessId) { mutableStateOf(false) }
     var big by remember { mutableStateOf(false) }
+    // App-Verknüpfung „Ausweis zeigen“: gleich groß (Konzept app-ich)
+    LaunchedEffect(bigRequest) { if (bigRequest > 0) big = true }
 
     LaunchedEffect(accessId) {
         val api = vm?.api() ?: run { offline = true; return@LaunchedEffect }
