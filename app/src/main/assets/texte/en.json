@@ -870,5 +870,8 @@
  "{n} Halbtöne": "{n} semitones",
  "{n} Stücke": "{n} pieces",
  "{sender}: {piece}": "{sender}: {piece}",
- "„Bitte nicht stören“ öffnen": "Open “Do not disturb”"
+ "„Bitte nicht stören“ öffnen": "Open “Do not disturb”",
+ "Notengröße {n}": "Note size {n}",
+ "Noten kleiner": "Smaller notes",
+ "Noten größer": "Larger notes"
 }

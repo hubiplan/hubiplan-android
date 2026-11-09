@@ -72,7 +72,12 @@ internal class PultLoader(
     private val loading = Mutex()
     private val rendered = LruCache<String, Bitmap>(10)
 
-    fun key(item: FolderItem, transpose: String) = "${item.arrangement}-$transpose"
+    /** Satz für vom Server gesetzte Noten (Bildschirm und Notengröße), vom Pult gesetzt. */
+    @Volatile
+    var layout: String = ""
+
+    fun key(item: FolderItem, transpose: String) =
+        "${item.arrangement}-$transpose" + if (item.sheets.any { it.sheetFormat == "pdf" }) "-$layout" else ""
 
     fun known(key: String): PieceDocs? = pieces[key]
 
@@ -107,9 +112,12 @@ internal class PultLoader(
     }
 
     private suspend fun bytes(score: ScoreFile, transpose: String): ByteArray? {
-        val variant = score.sheetFormat + if (transpose.isNotEmpty() && score.sheetFormat == "pdf") "-t$transpose" else ""
-        store.read(accessId, score, variant)?.let { return it }
-        return runCatching { sync?.sheet(score, transpose) }.getOrNull()
+        val wanted = layout
+        store.read(accessId, score, NotenSync.variantOf(score, transpose, wanted))?.let { return it }
+        sync?.let { s -> runCatching { s.sheet(score, transpose, wanted) }.getOrNull()?.let { return it } }
+        // Ohne Netz: die passende Form fehlt, dann wenigstens die gespeicherte A4-Fassung
+        if (wanted.isNotEmpty()) store.read(accessId, score, NotenSync.variantOf(score, transpose))?.let { return it }
+        return null
     }
 
     private fun open(id: String, bytes: ByteArray): SheetDoc? = runCatching {

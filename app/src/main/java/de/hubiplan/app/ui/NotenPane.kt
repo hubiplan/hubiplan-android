@@ -391,7 +391,7 @@ private fun MappeDetail(
                             progress = 0f
                             notice = null
                             scope.launch {
-                                val failed = NotenSync(api, store, accessId).download(mappe) { done, total ->
+                                val failed = NotenSync(api, store, accessId).download(mappe, PultEinstellungen.load(context).lastLayout) { done, total ->
                                     progress = if (total == 0) 1f else done.toFloat() / total
                                 }
                                 notice = if (failed == 0) tr("Alle Noten sind auf dem Gerät.") else trn(

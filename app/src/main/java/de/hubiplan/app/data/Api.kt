@@ -558,16 +558,25 @@ class Api(
 
     /**
      * Notendatei laden. [path] kommt aus der Mappe (nur eigener Mitgliederbereich), [format]
-     * "", "pdf" oder "midi", [transpose] z. B. "M2" oder "-3". Mit [etag] antwortet der Server
+     * "", "pdf" oder "midi", [transpose] z. B. "M2" oder "-3", [layout] „1778x60“ (nur PDF aus
+     * MusicXML: für den Bildschirm neu umbrochen). Mit [etag] antwortet der Server
      * bei unveränderter Fassung mit 304.
      */
-    suspend fun scoreFile(accessId: Int, path: String, format: String = "", transpose: String = "", etag: String? = null): ScoreDownload {
+    suspend fun scoreFile(
+        accessId: Int,
+        path: String,
+        format: String = "",
+        transpose: String = "",
+        etag: String? = null,
+        layout: String = "",
+    ): ScoreDownload {
         val prefix = "/api/portal/$accessId/music/files/"
         val base = path.substringBefore('?')
         if (!base.startsWith(prefix) || base.drop(prefix.length).trimEnd('/').toIntOrNull() == null) throw protocolError()
         val query = listOfNotNull(
             format.takeIf { it.isNotEmpty() }?.let { "format=$it" },
             transpose.takeIf { it.isNotEmpty() }?.let { "transpose=" + java.net.URLEncoder.encode(it, "UTF-8") },
+            layout.takeIf { Regex("^\\d{3,4}x\\d{2,3}$").matches(it) }?.let { "layout=$it" },
         ).joinToString("&")
         val headers = etag?.let { mapOf("If-None-Match" to it) } ?: emptyMap()
         val resp = send("GET", base + (if (query.isEmpty()) "" else "?$query"), headers = headers, accept = false, limit = MAX_FILE_BYTES)

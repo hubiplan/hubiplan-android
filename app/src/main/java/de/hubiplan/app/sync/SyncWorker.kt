@@ -131,7 +131,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val musician = portal.filter { it.hasScores }.map { it.id }.toSet()
         notes.storedAccesses().filter { it !in musician }.forEach { notes.forgetAccess(it) }
         for (id in musician) {
-            runCatching { de.hubiplan.app.data.NotenSync(api, notes, id).background(unmetered, prefs.prefetch) }
+            runCatching { de.hubiplan.app.data.NotenSync(api, notes, id).background(unmetered, prefs.prefetch, prefs.lastLayout) }
         }
     }
 

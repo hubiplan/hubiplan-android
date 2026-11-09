@@ -5,6 +5,7 @@ import de.hubiplan.app.data.FolderItem
 import de.hubiplan.app.data.Mappe
 import de.hubiplan.app.data.NotenStore
 import de.hubiplan.app.data.NotenSuche
+import de.hubiplan.app.data.NotenSync
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.PultStelle
 import de.hubiplan.app.data.PultTasten
@@ -200,6 +201,20 @@ class NotenTest {
         assertFalse(NotenStore.dueForPrefetch(probe, now.minusDays(3)))
         assertFalse(NotenStore.dueForPrefetch(probe.copy(cancelled = true), now))
         assertFalse(NotenStore.dueForPrefetch(marschbuch, now))
+    }
+
+    @Test
+    fun satzFuerDenBildschirm() {
+        val pdf = marschbuch.pieces[0].sheets.single()
+        val xml = marschbuch.pieces[1].sheets.single()
+        assertEquals("", NotenSync.variantOf(pdf, "2", "1778x50"))
+        assertEquals("pdf", NotenSync.variantOf(xml))
+        assertEquals("pdf-t-3-l1778x50", NotenSync.variantOf(xml, "-3", "1778x50"))
+        // Handy hoch, Tablet quer, Grenzen wie auf dem Server
+        assertEquals("2222x50", NotenSync.layoutFor(1080, 2400, 50))
+        assertEquals("800x120", NotenSync.layoutFor(2560, 800, 200))
+        assertEquals("3000x25", NotenSync.layoutFor(300, 2400, 10))
+        assertEquals("", NotenSync.layoutFor(0, 100, 50))
     }
 
     @Test

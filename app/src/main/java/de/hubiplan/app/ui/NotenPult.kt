@@ -224,7 +224,11 @@ fun NotenPult(session: PultSession, vm: AppViewModel, onClose: () -> Unit) {
 
     // --- Stück laden, Nachbarn vorbereiten ---
     var docs by remember { mutableStateOf<PieceDocs?>(null) }
-    LaunchedEffect(mappeKey, stelle.piece, itemTranspose) {
+    // Satz für MusicXML: Bildschirmform und Notengröße (der Server bricht passend um)
+    var layout by remember { mutableStateOf("") }
+    LaunchedEffect(mappeKey, stelle.piece, itemTranspose, layout) {
+        if (layout.isEmpty()) return@LaunchedEffect
+        loader.layout = layout
         val current = item ?: return@LaunchedEffect
         val key = loader.key(current, itemTranspose)
         if (docs?.key != key) docs = loader.known(key)
@@ -376,6 +380,14 @@ fun NotenPult(session: PultSession, vm: AppViewModel, onClose: () -> Unit) {
             val two = settings.twoPages && wide
             SideEffect { twoUp = two }
             val widthPx = with(density) { (if (two) maxWidth / 2 else maxWidth).roundToPx() }.coerceAtLeast(200)
+            val heightPx = with(density) { maxHeight.roundToPx() }.coerceAtLeast(200)
+            val wantedLayout = NotenSync.layoutFor(widthPx, heightPx, settings.noteSize)
+            SideEffect {
+                if (wantedLayout != layout) {
+                    layout = wantedLayout
+                    if (settings.lastLayout != wantedLayout) change(settings.copy(lastLayout = wantedLayout))
+                }
+            }
             val current = docs
             val showHalf = settings.halfTurn && !two && stelle.half
             val first = pageBitmap(loader, current, stelle.page, widthPx, settings.crop)
@@ -498,6 +510,7 @@ fun NotenPult(session: PultSession, vm: AppViewModel, onClose: () -> Unit) {
                     hasAudio = item?.audio != null,
                     transpose = itemTranspose,
                     canTranspose = item?.sheets?.any { it.sheetFormat == "pdf" } == true && sync != null,
+                    noteSize = settings.noteSize,
                     onClose = onClose,
                     onLock = { locked = true; menu = false; hint = tr("Gesperrt: zum Entsperren lange drücken") },
                     onChoose = { auswahl = false },
@@ -673,6 +686,7 @@ private fun PultKopf(
     hasAudio: Boolean,
     transpose: String,
     canTranspose: Boolean,
+    noteSize: Int,
     onClose: () -> Unit,
     onLock: () -> Unit,
     onChoose: () -> Unit,
@@ -762,6 +776,20 @@ private fun PultKopf(
                     }
                 }
                 if (canTranspose) {
+                    // Notengröße: neu umbrochen statt nur vergrößert (Konzept 4.8)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(
+                            onClick = { onSettings(settings.copy(noteSize = (noteSize - 10).coerceAtLeast(25))) },
+                            enabled = noteSize > 25,
+                            modifier = Modifier.semantics { contentDescription = tr("Noten kleiner") },
+                        ) { Text("A−") }
+                        Text(tr("Notengröße {n}", "n" to noteSize), Modifier.padding(horizontal = Abstand.eng), style = MaterialTheme.typography.labelMedium)
+                        OutlinedButton(
+                            onClick = { onSettings(settings.copy(noteSize = (noteSize + 10).coerceAtMost(120))) },
+                            enabled = noteSize < 120,
+                            modifier = Modifier.semantics { contentDescription = tr("Noten größer") },
+                        ) { Text("A+") }
+                    }
                     Box {
                         OutlinedButton(onClick = { transposeMenu = true }) { Text(transpositionLabel(transpose)) }
                         DropdownMenu(expanded = transposeMenu, onDismissRequest = { transposeMenu = false }) {

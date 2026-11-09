@@ -30,6 +30,10 @@ data class PultEinstellungen(
     val prefetch: Boolean = true,
     /** Hinweis „Bitte nicht stören“ schon gezeigt */
     val dndHintShown: Boolean = false,
+    /** Notengröße für vom Server neu gesetzte Noten (MusicXML), Verovio-Skala 25–120 */
+    val noteSize: Int = 50,
+    /** Zuletzt genutzter Satz („1778x50“), damit Vorladen gleich die passende Form holt */
+    val lastLayout: String = "",
 ) {
     fun save(context: Context) {
         prefs(context).edit()
@@ -37,7 +41,7 @@ data class PultEinstellungen(
             .putBoolean("swipe", swipe).putBoolean("half", halfTurn).putBoolean("two", twoPages)
             .putBoolean("crop", crop).putBoolean("night", night).putBoolean("bright", bright)
             .putBoolean("rotation", lockRotation).putBoolean("jump", autoJump).putBoolean("prefetch", prefetch)
-            .putBoolean("dnd", dndHintShown)
+            .putBoolean("dnd", dndHintShown).putInt("size", noteSize).putString("layout", lastLayout)
             .apply()
     }
 
@@ -61,6 +65,8 @@ data class PultEinstellungen(
                 autoJump = p.getBoolean("jump", d.autoJump),
                 prefetch = p.getBoolean("prefetch", d.prefetch),
                 dndHintShown = p.getBoolean("dnd", d.dndHintShown),
+                noteSize = p.getInt("size", d.noteSize).coerceIn(25, 120),
+                lastLayout = p.getString("layout", d.lastLayout).orEmpty(),
             )
         }
     }
