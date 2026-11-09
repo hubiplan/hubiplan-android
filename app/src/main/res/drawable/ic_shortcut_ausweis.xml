@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Symbol der App-Verknüpfung „Ausweis zeigen“: Karte mit Person (eigene Zeichnung) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:fillColor="#FF1F3A6E"
+        android:pathData="M24,0A24,24 0,1 1,24 48A24,24 0,1 1,24 0Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M11,15h26a2,2 0,0 1,2 2v14a2,2 0,0 1,-2 2h-26a2,2 0,0 1,-2 -2v-14a2,2 0,0 1,2 -2zM17,19a3,3 0,1 0,0.01 0zM12.5,29.5c0,-3 2.5,-4.5 4.5,-4.5s4.5,1.5 4.5,4.5zM25,20h10v2h-10zM25,24h10v2h-10zM25,28h7v2h-7z" />
+</vector>

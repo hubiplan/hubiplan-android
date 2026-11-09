@@ -48,7 +48,7 @@ import kotlinx.coroutines.launch
 
 /** Mitgliedersicht ohne Vorstandsschlüssel; Inhalte werden nie auf Datenträger gespeichert. */
 @Composable
-fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
+fun MemberTodosPane(main: Screen.Main, vm: AppViewModel, openHelpers: Boolean = false, onHelpersOpened: () -> Unit = {}) {
     val target by vm.selectedTodo.collectAsStateWithLifecycle()
     val portalTarget = target?.takeIf { it.scope == "p" }
     val access = if (portalTarget != null) portalTarget.memberAccess(main.me?.portal.orEmpty()) else main.access
@@ -68,6 +68,13 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
         val api = remember(main.account) { Api(main.account.server, main.account.token) }
         // Helferdienste als zweite Ansicht im selben Reiter (höchstens fünf Ziele in der Leiste)
         var helpers by rememberSaveable(access.id) { mutableStateOf(false) }
+        // „Helferdienste“ unter „Ich“ führt hierher (Konzept app-ich, Entscheidung 4)
+        LaunchedEffect(openHelpers) {
+            if (openHelpers) {
+                helpers = true
+                onHelpersOpened()
+            }
+        }
         val withHelpers = access.hasHelpers && portalTarget == null
         // Ohne Modul Aufgaben bleiben nur die Helferdienste
         val onlyHelpers = withHelpers && !access.hasTodos

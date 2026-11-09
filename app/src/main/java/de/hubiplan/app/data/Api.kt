@@ -525,6 +525,48 @@ class Api(
         null
     }
 
+    // --- Reiter „Ich“ (Konzept app-ich): Rechnungen, Mandat, Versammlungen, Dokumente ---
+
+    suspend fun myInvoices(accessId: Int): MyInvoices =
+        decodeApi(expect("GET", "/api/portal/$accessId/invoices/"))
+
+    suspend fun myMandate(accessId: Int): MandateState =
+        decodeApi(expect("GET", "/api/portal/$accessId/mandate/"))
+
+    suspend fun myMeetings(accessId: Int): MyMeetings =
+        decodeApi(expect("GET", "/api/portal/$accessId/meetings/"))
+
+    suspend fun submitMotion(accessId: Int, meetingId: Int, title: String, text: String): List<OwnMotion> =
+        decodeApi(expect("POST", "/api/portal/$accessId/meetings/$meetingId/motions/",
+            json.encodeToString(JsonObject.serializer(), jsonObjectOf("title" to title, "text" to text))))
+
+    suspend fun withdrawMotion(accessId: Int, motionId: Int) {
+        expect("POST", "/api/portal/$accessId/meetings/motions/$motionId/withdraw/", "{}")
+    }
+
+    suspend fun myDocuments(accessId: Int): MyDocuments =
+        decodeApi(expect("GET", "/api/portal/$accessId/documents/"))
+
+    /** Rechnung als PDF (nur zum Ansehen, die App speichert sie nicht). */
+    suspend fun invoicePdf(accessId: Int, invoiceId: Int, cancellation: Boolean = false): ByteArray =
+        file("/api/portal/$accessId/invoices/$invoiceId/pdf/" + if (cancellation) "?storno=1" else "")
+
+    /** Freigegebenes Protokoll einer Versammlung als PDF. */
+    suspend fun minutesPdf(accessId: Int, meetingId: Int): ByteArray =
+        file("/api/portal/$accessId/meetings/$meetingId/minutes/")
+
+    /** Aktuelle Fassung eines Dokuments; nur Pfade des eigenen Mitgliederbereichs. */
+    suspend fun documentFile(accessId: Int, path: String): ByteArray {
+        if (!documentPathOk(accessId, path)) throw protocolError()
+        return file(path)
+    }
+
+    private suspend fun file(path: String): ByteArray {
+        val resp = send("GET", path, accept = false, limit = MAX_FILE_BYTES)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return resp.body
+    }
+
     /** „Meine Ergebnisse“ (Wettbewerbe Schritt 5). */
     suspend fun myResults(accessId: Int): MyResults =
         decodeApi(expect("GET", "/api/portal/$accessId/results/"))

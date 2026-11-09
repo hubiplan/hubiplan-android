@@ -59,6 +59,10 @@ fun formatSince(millis: Long, now: Long = System.currentTimeMillis(), zone: Zone
     return if (at.toLocalDate() == today) at.format(TIME) + UHR else formatStamp(millis, zone)
 }
 
+/** „Sa, 6. Dezember 2026, 18:00 Uhr“ bzw. „Sat 6 December 2026, 18:00“. */
+fun formatDayTime(iso: String?, zone: ZoneId = ZoneId.systemDefault()): String =
+    iso?.let { runCatching { local(it, zone).let { t -> "${t.format(DAY)}, ${t.format(TIME)}$UHR" } }.getOrNull() } ?: ""
+
 fun formatDate(iso: String?, zone: ZoneId = ZoneId.systemDefault()): String =
     iso?.let { runCatching { local(it, zone).format(DAY) }.getOrNull() } ?: ""
 

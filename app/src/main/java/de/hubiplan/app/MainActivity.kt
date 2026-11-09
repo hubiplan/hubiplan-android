@@ -116,6 +116,12 @@ class MainActivity : FragmentActivity() {
             intent.action = null
             return
         }
+        // App-Verknüpfung „Ausweis zeigen“ (lange auf das App-Symbol drücken)
+        if (intent?.action == de.hubiplan.app.shortcut.CardShortcut.ACTION) {
+            vm.openCard()
+            intent.action = null
+            return
+        }
         val access = intent?.getIntExtra(Notifications.EXTRA_ACCESS, -1) ?: -1
         val circular = intent?.getIntExtra(Notifications.EXTRA_CIRCULAR, -1) ?: -1
         val shortcut = intent?.getStringExtra(Notifications.EXTRA_SHORTCUT_ACCOUNT)

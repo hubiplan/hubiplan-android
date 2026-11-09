@@ -25,6 +25,8 @@ class HubiplanApp : Application() {
             runCatching { de.hubiplan.app.data.ReceiptCache.clear(this) }
             // Entschlüsselte Kopien aus einem zuletzt nicht sauber geschlossenen Notenpult
             runCatching { de.hubiplan.app.data.PultDateien.clear(this) }
+            // Zuletzt angesehene Rechnung oder Dokument (Reiter „Ich“)
+            runCatching { de.hubiplan.app.data.Ansicht.clear(this) }
         }.start()
     }
 }

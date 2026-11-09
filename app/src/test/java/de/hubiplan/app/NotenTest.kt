@@ -164,9 +164,9 @@ class NotenTest {
     @Test
     fun navigationMitNoten() {
         // Ohne Noten unverändert
-        assertEquals(listOf(Tab.TERMINE, Tab.MITTEILUNGEN, Tab.AUSWEIS), barTabs(adminVisible = false, tasksVisible = false))
+        assertEquals(listOf(Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH), barTabs(adminVisible = false, tasksVisible = false))
         assertEquals(
-            listOf(Tab.TERMINE, Tab.NOTEN, Tab.AUFGABEN, Tab.MITTEILUNGEN, Tab.AUSWEIS),
+            listOf(Tab.TERMINE, Tab.NOTEN, Tab.AUFGABEN, Tab.MITTEILUNGEN, Tab.ICH),
             barTabs(adminVisible = true, tasksVisible = true, notesVisible = true),
         )
         // Telefon mit sechs Zielen: Verwaltung in die Kopfleiste

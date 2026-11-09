@@ -40,6 +40,7 @@ object LocalAccountData {
         FOLDERS.forEach { dir(context, it, accountKey).deleteRecursively() }
         ReceiptCache.forget(context.cacheDir, accountKey)
         File(context.cacheDir, WALLET_PASS).deleteRecursively()
+        Ansicht.clear(context)
         DraftCrypto.deleteKey(alias(accountKey))
         StandStore.forget(context, accountKey)
         LastUnitStore.forget(context, accountKey)
@@ -58,6 +59,7 @@ object LocalAccountData {
         LastUnitStore.forget(context, accountKey)
         ReceiptCache.forget(context.cacheDir, accountKey)
         File(context.cacheDir, WALLET_PASS).deleteRecursively()
+        Ansicht.clear(context)
         var kept = false
         for (folder in listOf("entwuerfe", "quittungen")) {
             val source = dir(context, folder, accountKey)

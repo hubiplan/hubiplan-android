@@ -489,6 +489,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _openRequest.value = null
     }
 
+    /** App-Verknüpfung „Ausweis zeigen“: Reiter „Ich“ mit großem Ausweis öffnen (Konzept app-ich). */
+    private val _openCard = MutableStateFlow(false)
+    val openCard: StateFlow<Boolean> = _openCard
+
+    fun openCard() {
+        _openCard.value = true
+    }
+
+    fun cardHandled() {
+        _openCard.value = false
+    }
+
     /** Push über eine UnifiedPush-App oder Google einschalten oder (null) abschalten. */
     fun setPushDistributor(pkg: String?) {
         viewModelScope.launch {
@@ -613,6 +625,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // und Schlüssel löschen (AND-S02). Vom Server abgemeldet: ungesendete Belege in die
             // Quarantäne, sie kommen nach erneuter Anmeldung zurück (Fachfrage 16, Audit 31.10.)
             runCatching { ClubShortcut.forget(context, current) }
+            // Ein anderes Konto mit Ausweis legt die Verknüpfung beim Laden wieder an
+            runCatching { de.hubiplan.app.shortcut.CardShortcut.update(context, false) }
             current.let {
                 val key = LocalAccountData.key(it.server, it.deviceId)
                 runCatching {
@@ -725,7 +739,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 if (url != null && bytes == null) continue
                 target.ifCurrent(account) { runCatching { ClubLogo.save(context, account, a.id, url, bytes) } }
             }
-            target.ifCurrent(account) { runCatching { ClubShortcut.refresh(context, account, accesses) } }
+            target.ifCurrent(account) {
+                runCatching { ClubShortcut.refresh(context, account, accesses) }
+                runCatching { de.hubiplan.app.shortcut.CardShortcut.update(context, accesses.any { it.hasCard }) }
+            }
         }
     }
 

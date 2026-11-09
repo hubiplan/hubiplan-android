@@ -7,4 +7,6 @@
     <cache-path name="export" path="export/" />
     <!-- Wallet-Pass zum Öffnen in einer Wallet-App, wird beim nächsten Laden überschrieben -->
     <cache-path name="ausweis" path="ausweis/" />
+    <!-- Rechnung, Protokoll oder Dokument zum Ansehen (Reiter „Ich“), beim nächsten Öffnen, beim Start und beim Abmelden gelöscht -->
+    <cache-path name="ansicht" path="ansicht/" />
 </paths>
