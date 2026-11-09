@@ -47,20 +47,16 @@ private const val DAYS_AHEAD = 400L
 
 @Composable
 fun EventsPane(access: PortalAccess, vm: AppViewModel) {
-    var items by remember(access.id) { mutableStateOf<List<Occurrence>?>(null) }
-    var error by remember(access.id) { mutableStateOf<String?>(null) }
+    // Liste bleibt beim Aktualisieren sichtbar; Ziehen lädt neu (UX-Audit 08.11. A-02)
+    val events = remember(access.id) { Loadable<List<Occurrence>>() }
     // Gewählt ist der Einzeltermin (Schlüssel der Wiederholung), nicht die ganze Serie (UX-Audit 31.10. A05)
     var selected by rememberSaveable(access.id) { mutableStateOf<String?>(null) }
-    var reloadKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(access.id, reloadKey) {
+    LaunchedEffect(access.id, events.tick) {
         val api = vm.api() ?: return@LaunchedEffect
-        error = null
-        try {
+        events.load(vm::deviceRevoked) {
             val today = LocalDate.now()
-            items = api.events(access.id, today.toString(), today.plusDays(DAYS_AHEAD).toString())
-        } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+            api.events(access.id, today.toString(), today.plusDays(DAYS_AHEAD).toString())
         }
     }
 
@@ -69,15 +65,9 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
         onBack = { selected = null },
         emptyDetail = tr("Termin auswählen"),
         list = {
-            when {
-                error != null -> Column(Modifier.padding(Abstand.rand)) {
-                    Text(error ?: "", color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = { reloadKey++ }) { Text(tr("Erneut laden")) }
-                }
-                items == null -> Loading()
-                items!!.isEmpty() -> Message(tr("Keine anstehenden Termine."))
-                else -> LazyColumn(Modifier.fillMaxSize()) {
-                    items(items!!, key = { it.key }) { occ ->
+            LoadableList(events, empty = tr("Keine anstehenden Termine."), isEmpty = { it.isEmpty() }) { list ->
+                LazyColumn(Modifier.fillMaxSize()) {
+                    items(list, key = { it.key }) { occ ->
                         EventRow(occ, occ.key == selected) { selected = occ.key }
                         HorizontalDivider()
                     }
@@ -85,10 +75,10 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
             }
         },
         detail = {
-            val list = items.orEmpty()
+            val list = events.value.orEmpty()
             list.firstOrNull { it.key == selected }?.let { occ ->
                 val series = list.count { it.eventId == occ.eventId } > 1
-                EventDetailView(access, occ, series, vm, onBack = { selected = null }) { reloadKey++ }
+                EventDetailView(access, occ, series, vm, onBack = { selected = null }) { events.reload() }
             }
         },
     )
@@ -144,7 +134,7 @@ private fun EventDetailView(
 ) {
     val eventId = occ.eventId
     var event by remember(eventId) { mutableStateOf<EventDetail?>(null) }
-    var error by remember(eventId) { mutableStateOf<String?>(null) }
+    var error by remember(eventId) { mutableStateOf<Problem?>(null) }
     var busy by remember { mutableStateOf(false) }
     var attempt by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
@@ -156,7 +146,7 @@ private fun EventDetailView(
         try {
             event = api.event(access.id, eventId)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
         }
     }
 
@@ -176,7 +166,7 @@ private fun EventDetailView(
                 onChanged()
                 vm.syncSoon()
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+                if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
             } finally {
                 busy = false
             }
@@ -189,9 +179,9 @@ private fun EventDetailView(
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         BackHead(e?.title, onBack = onBack)
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
+        error?.let { ProblemNotice(it, onRetry = if (e == null) ({ attempt++ }) else null, inset = false) }
         if (e == null) {
-            if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
+            if (error == null) Loading()
             return@Column
         }
         notice?.let { StatusNotice(it) }

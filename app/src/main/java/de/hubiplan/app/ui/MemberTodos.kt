@@ -82,65 +82,61 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel) {
 @Composable
 private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String, vm: AppViewModel,
     switch: (@Composable () -> Unit)? = null) {
-    var rows by remember { mutableStateOf<List<MemberTodo>?>(null) }
-    var error by remember { mutableStateOf<String?>(null) }
+    // Liste bleibt beim Aktualisieren sichtbar; Ziehen lädt neu (UX-Audit 08.11. A-02)
+    val todos = remember { Loadable<List<MemberTodo>>() }
     var done by remember { mutableStateOf(false) }
-    var reload by remember { mutableIntStateOf(0) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
-        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) reload++ }
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) todos.reload() }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
     }
-    LaunchedEffect(api, access, reload) {
-        rows = null
-        error = null
-        try { rows = api.memberTodos(access).items }
-        catch (e: ApiException) { if (e.status == 401) vm.deviceRevoked(e) else error = e.message }
+    LaunchedEffect(api, access, todos.tick) {
+        todos.load(vm::deviceRevoked) { api.memberTodos(access).items }
     }
     ListDetail(
         hasDetail = selected != null,
         onBack = { vm.selectTodo(null) },
         emptyDetail = tr("Aufgabe auswählen"),
         list = {
-            Column(Modifier.fillMaxSize()) {
-                Text(tr("Aufgaben"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(Abstand.rand))
-                switch?.invoke()
-                Text(tr("Für dich freigegebene Aufgaben und offene Angebote deiner Einheit."), modifier = Modifier.padding(horizontal = Abstand.rand))
-                Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-                    FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
-                    FilterChip(selected = done, onClick = { done = true }, label = { Text(tr("Erledigt")) })
-                    TextButton(onClick = { reload++ }) { Text(tr("Aktualisieren")) }
-                }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
-                if (rows == null && error == null) Loading()
-                rows?.let { current ->
-                    val visible = current.filter { (it.status == "done") == done }
-                    if (visible.isEmpty()) Text(tr("Keine Aufgaben in dieser Ansicht."), modifier = Modifier.padding(Abstand.rand))
-                    LazyColumn {
-                        items(visible, key = { it.id }) { todo ->
-                            ListItem(headlineContent = { Text(todo.title) },
-                                supportingContent = { Text(todo.dueLabel.ifBlank { tr("ohne Frist") }) },
-                                modifier = Modifier.openRow { vm.selectTodo(TodoTarget("p", access, todo.id)) })
-                            HorizontalDivider()
-                        }
+            LoadableList(
+                todos,
+                empty = tr("Keine Aufgaben in dieser Ansicht."),
+                isEmpty = { rows -> rows.none { (it.status == "done") == done } },
+                header = {
+                    Text(tr("Aufgaben"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(Abstand.rand))
+                    switch?.invoke()
+                    Text(tr("Für dich freigegebene Aufgaben und offene Angebote deiner Einheit."), modifier = Modifier.padding(horizontal = Abstand.rand))
+                    Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                        FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
+                        FilterChip(selected = done, onClick = { done = true }, label = { Text(tr("Erledigt")) })
+                    }
+                },
+            ) { current ->
+                val visible = current.filter { (it.status == "done") == done }
+                LazyColumn(Modifier.fillMaxSize()) {
+                    items(visible, key = { it.id }) { todo ->
+                        ListItem(headlineContent = { Text(todo.title) },
+                            supportingContent = { Text(todo.dueLabel.ifBlank { tr("ohne Frist") }) },
+                            modifier = Modifier.openRow { vm.selectTodo(TodoTarget("p", access, todo.id)) })
+                        HorizontalDivider()
                     }
                 }
             }
         },
         detail = {
-            selected?.let { id -> MemberTaskDetail(api, access, id, server, reload, vm,
-                onBack = { vm.selectTodo(null) }, onChanged = { reload++ },
-                onInvalidated = { message -> rows = null; error = message }) }
+            selected?.let { id -> MemberTaskDetail(api, access, id, server, todos.tick, vm,
+                onBack = { vm.selectTodo(null) }, onChanged = { todos.reload() },
+                onInvalidated = { problem -> todos.value = null; todos.problem = problem }) }
         },
     )
 }
 
 @Composable
 private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, reloadKey: Int,
-    vm: AppViewModel, onBack: () -> Unit, onChanged: () -> Unit, onInvalidated: (String) -> Unit) {
+    vm: AppViewModel, onBack: () -> Unit, onChanged: () -> Unit, onInvalidated: (Problem) -> Unit) {
     var task by remember(api, access, id) { mutableStateOf<MemberTodo?>(null) }
-    var error by remember(api, access, id) { mutableStateOf<String?>(null) }
+    var error by remember(api, access, id) { mutableStateOf<Problem?>(null) }
     var busy by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
@@ -151,8 +147,8 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         try { task = api.memberTodo(access, id) }
         catch (e: ApiException) {
             if (e.status == 401) vm.deviceRevoked(e) else {
-                val message = e.message ?: tr("Die Aufgabe ist nicht mehr verfügbar oder nicht freigegeben.")
-                error = message; onInvalidated(message)
+                val problem = e.problem()
+                error = problem; onInvalidated(problem)
             }
         }
     }
@@ -177,17 +173,16 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
             } catch (e: ApiException) {
                 task = null
                 if (e.status == 401) vm.deviceRevoked(e) else {
-                    val message = e.message ?: tr("Die Aufgabe ist nicht mehr verfügbar oder nicht freigegeben.")
-                    error = message; onInvalidated(message)
+                    val problem = e.problem()
+                    error = problem; onInvalidated(problem)
                 }
             } finally { busy = false }
         }
     }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         BackHead(enabled = !busy, onBack = onBack)
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
+        error?.let { ProblemNotice(it, onRetry = if (busy) null else ({ reload++ }), inset = false) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-        if (error != null) TextButton(onClick = { reload++ }, enabled = !busy) { Text(tr("Erneut laden")) }
         notice?.let { StatusNotice(it) }
         task?.let { current ->
             Text(current.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())

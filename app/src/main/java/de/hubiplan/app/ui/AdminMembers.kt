@@ -80,7 +80,8 @@ typealias OnChanged = (text: String, changeSet: String?) -> Unit
 class AdminErrors(val onLocked: () -> Unit) {
     fun message(e: ApiException): String {
         if (e.status == 401) onLocked()
-        return e.message ?: tr("Fehler")
+        // Nutzersprache statt Rohtext, auch bei Zeitüberschreitung (UX-Audit 08.11. A-03)
+        return e.userText()
     }
 }
 
@@ -118,6 +119,7 @@ fun MemberList(
     onAdmit: (() -> Unit)?,
     initialSearch: String = "",
     onSearch: (String) -> Unit = {},
+    reload: Int = 0,
     onOpen: (Int) -> Unit,
 ) {
     // Suchbegriff bleibt nach dem Öffnen einer Akte erhalten (UX-Audit 31.10. A02)
@@ -131,7 +133,15 @@ fun MemberList(
     var count by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(search, former, kind, page) {
+    // Aktualisieren (Zug-Geste) beginnt wieder bei Seite 1 (UX-Audit 08.11. A-02)
+    var refresh by remember { mutableIntStateOf(0) }
+    val firstReload = remember { reload }
+    LaunchedEffect(reload) {
+        if (reload == firstReload) return@LaunchedEffect
+        page = 1
+        refresh++
+    }
+    LaunchedEffect(search, former, kind, page, refresh) {
         if (page == 1) delay(300) // erst nach einer kurzen Tipp-Pause suchen
         loading = true
         try {
@@ -726,7 +736,7 @@ private fun ExitDialog(d: MemberDetail, onDismiss: () -> Unit, onNext: (String, 
     )
 }
 
-// --- Änderungsmeldungen ---
+// --- Datenänderungen ---
 
 @Composable
 fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, onOpen: (Int) -> Unit, onChanged: OnChanged) {
@@ -758,7 +768,7 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
 
     BackHead(onBack = onBack)
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        item { Text(tr("Änderungsmeldungen"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading()) }
+        item { Text(tr("Datenänderungen"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading()) }
         error?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         val list = items
         if (list == null) {
@@ -806,11 +816,11 @@ fun ChangeRequestsScreen(client: AdminClient, errors: AdminErrors, onBack: () ->
 // --- Geburtstage und Jubiläen ---
 
 @Composable
-fun OccasionsSection(client: AdminClient, errors: AdminErrors, onOpen: (Int) -> Unit) {
+fun OccasionsSection(client: AdminClient, errors: AdminErrors, reload: Int = 0, onOpen: (Int) -> Unit) {
     var birthdays by remember { mutableStateOf<List<BirthdayRow>?>(null) }
     var jubilees by remember { mutableStateOf<List<JubileeRow>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(client.unitId) {
+    LaunchedEffect(client.unitId, reload) {
         val (from, to) = upcomingRange(today(), 30)
         val (_, jubileeTo) = upcomingRange(today(), 90)
         try {

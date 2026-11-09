@@ -80,7 +80,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     var attempt by remember { mutableIntStateOf(0) }
 
     fun fail(e: ApiException) {
-        if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+        if (e.status == 401) vm.deviceRevoked(e) else error = e.userText()
     }
 
     LaunchedEffect(access.id, reload, attempt) {
@@ -207,9 +207,9 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         Text(tr("Kontakt"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
         val c = p.contact
         if (c != null) {
-            listOf(c.street, "${c.postalCode} ${c.city}".trim(), c.country, c.email, c.phone)
-                .filter { it.isNotBlank() }
-                .forEach { Text(it) }
+            // Telefon und E-Mail antippbar wie in der Mitgliedsakte (UX-Audit 08.11. A-18)
+            ContactRows(c)
+            if (c.country.isNotBlank()) Text(c.country)
         }
         p.changeRequests.firstOrNull { it.status == "pending" }?.let {
             Text(tr("Deine Änderung wartet auf Bestätigung durch den Vorstand."), style = MaterialTheme.typography.bodySmall)
@@ -287,7 +287,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                             draft = null
                             fail(e)
                         } else {
-                            photoError = e.message
+                            photoError = e.userText()
                         }
                     } finally {
                         sending = false

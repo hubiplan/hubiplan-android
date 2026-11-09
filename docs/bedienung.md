@@ -89,6 +89,38 @@ Wiederholungsmöglichkeit sichtbar.
 with native formatting. Attachments open in the browser for the selected message and
 membership.
 
+## Aktualisieren, Fehler und ohne Netz
+
+Termine, Mitteilungen, Aufgaben, Helferdienste und die Listen der Verwaltung lädst du neu, indem
+du die Liste nach unten ziehst. Über der Liste steht, von wann der Stand ist („Stand: 14:32 Uhr“);
+mit TalkBack bietet diese Zeile die Aktion „Aktualisieren“ an. Beim Aktualisieren bleibt die
+bisherige Liste sichtbar. Ohne Netz erscheint ein grauer Hinweis mit Wolke, z. B. „Offline – du
+siehst den Stand von 14:32 Uhr.“, mit „Erneut laden“. Andere Fehler stehen in einer roten Fläche
+in Alltagssprache („HUBIplan antwortet gerade nicht.“); den Statuscode des Servers zeigt
+„Details“.
+
+Den Vorschlag „Auf den Startbildschirm legen?“ zeigt die App nur in der Terminliste und nur
+beim ersten Mal; später geht es über „Mein Konto“.
+
+Hat das Telefon keine Bildschirmsperre, führt in der Verwaltung der Knopf „Bildschirmsperre
+einrichten“ direkt in die Systemeinstellung. Danach prüft die App beim Zurückkehren von selbst
+erneut. In „Zu erledigen“ heißen gemeldete Änderungen der Mitglieder „Datenänderungen“; das
+Verteilen von Aufgaben heißt „Aufgaben verteilen“, damit es sich vom Reiter „Aufgaben“ (deine
+eigenen) unterscheidet. Unter „Meine Ergebnisse“ steht bei jedem Wert die Einheit („27 Ringe“),
+Telefonnummer und E-Mail-Adresse im Ausweis lassen sich antippen.
+
+**English:** Pull a list down to reload events, messages, tasks, helper duties and the admin
+lists. A line above the list shows when it was loaded (“As of 14:32”); with TalkBack this line
+offers the action “Refresh”. The previous list stays visible while reloading. Without a
+connection a grey banner with a cloud appears, e.g. “Offline – you are seeing the data from
+14:32.”, with “Reload”. Other errors appear in a red box in plain language (“HUBIplan is not
+responding right now.”); “Details” shows the server status code. The suggestion “Add to home
+screen?” appears only in the event list and only the first time; later use “My account”. If the
+phone has no screen lock, the admin area offers “Set up screen lock”, which opens the system
+setting; the app checks again when you return. Member-reported changes are called “Data
+changes”, and distributing tasks is “Assign tasks”, distinct from the “Tasks” tab. Every value
+under “My results” has its unit (“27 rings”); phone number and email on the card can be tapped.
+
 ## Einheit in der Verwaltung
 
 Wer mehrere Einheiten verwaltet, wählt sie oben in der **Verwaltung**. Die App merkt sich je
@@ -103,7 +135,7 @@ stays on the device and is deleted when you sign out.
 
 ## Aufgaben in der Verwaltung
 
-Unter **Verwaltung › Aufgaben** wählst du die Einheit oder Abteilung und „Offen“ oder
+Unter **Verwaltung › Aufgaben verteilen** wählst du die Einheit oder Abteilung und „Offen“ oder
 „Erledigt“. Eine neue Aufgabe ist zunächst privat. Eine Uhrzeit braucht ein Datum; die Frist
 gilt in der angezeigten Zeitzone Europe/Berlin. Zum Teilen und für Anhänge, Serienregeln und
 Verteilung über Ebenen dient die Aufgabenansicht im Browser. In der App lassen sich auch

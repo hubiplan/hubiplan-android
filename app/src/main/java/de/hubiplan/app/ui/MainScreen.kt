@@ -17,8 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Card
@@ -193,7 +193,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                                 Tab.TERMINE -> Icons.Filled.DateRange
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
                                 Tab.AUSWEIS -> Icons.Filled.AccountBox
-                                Tab.VERWALTUNG -> Icons.Filled.Build
+                                Tab.VERWALTUNG -> Symbole.Verwaltung
                                 Tab.KONTO -> Icons.Filled.AccountCircle
                             },
                             contentDescription = null,
@@ -253,17 +253,12 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     actionIconContentColor = LocalBrand.current.onBrand,
                 ),
             )
-            if (main.offline) {
-                Text(
-                    tr("Keine Verbindung zu HUBIplan. Bitte später erneut versuchen."),
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.announce().padding(Abstand.rand),
-                )
-                TextButton(onClick = vm::reload, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("Erneut laden")) }
-            }
+            // Offline als neutrale Fläche, nicht in Fehlerrot (UX-Audit 08.11. A-03)
+            if (main.offline) OfflineBanner(since = null, onRetry = vm::reload)
             val access = main.access
             val offer by vm.shortcutOffer.collectAsStateWithLifecycle()
-            if (offer && access != null && tab == Tab.TERMINE) ShortcutOffer(access.title, vm)
+            // Nur in der Terminliste, nie über einem geöffneten Termin (A-15)
+            if (offer && access != null && tab == Tab.TERMINE && detail == null) ShortcutOffer(vm)
             Box(Modifier.fillMaxSize()) {
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
@@ -314,19 +309,24 @@ private fun BarLabel(text: String) {
 /** Kleinster Faktor für [BarLabel]: nie kleiner als bei Standardschrift, höchstens auf 60 %. */
 internal fun barLabelMinScale(fontScale: Float): Float = (1f / fontScale.coerceAtLeast(1f)).coerceIn(0.6f, 1f)
 
-/** Einmaliges Angebot nach dem Verbinden: Verknüpfung mit Wappen und Namen anlegen. */
+/**
+ * Einmaliges Angebot nach dem Verbinden: Verknüpfung mit Wappen und Namen anlegen. Kompakt in
+ * einer Zeile, damit auch bei großer Schrift der erste Termin sichtbar bleibt (UX-Audit 08.11. A-15);
+ * wer es gesehen hat, bekommt es beim nächsten Start nicht noch einmal („Mein Konto“ hat den Knopf).
+ */
 @Composable
-private fun ShortcutOffer(name: String, vm: AppViewModel) {
+private fun ShortcutOffer(vm: AppViewModel) {
+    LaunchedEffect(Unit) { vm.shortcutOfferSeen() }
     Card(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein)) {
-        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
-            Text(tr("„{name}“ auf den Startbildschirm legen?", "name" to name), style = MaterialTheme.typography.titleSmall)
-            Text(
-                tr("Eine Verknüpfung mit Wappen und Namen öffnet die App direkt hier. Im App-Menü heißt die App weiter HUBIplan."),
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-                TextButton(onClick = { vm.pinShortcut() }) { Text(tr("Ja, ablegen")) }
-                TextButton(onClick = vm::dismissShortcutOffer) { Text(tr("Nein, danke")) }
+        Row(
+            Modifier.padding(start = Abstand.rand, end = Abstand.eng),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Abstand.klein),
+        ) {
+            Text(tr("Auf den Startbildschirm legen?"), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            TextButton(onClick = { vm.pinShortcut() }) { Text(tr("Hinzufügen")) }
+            IconButton(onClick = vm::dismissShortcutOffer) {
+                Icon(Icons.Filled.Close, contentDescription = tr("Nicht jetzt"))
             }
         }
     }

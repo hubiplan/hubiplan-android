@@ -52,6 +52,13 @@ fun formatStamp(millis: Long, zone: ZoneId = ZoneId.systemDefault()): String {
     return java.time.Instant.ofEpochMilli(millis).atZone(zone).format(fmt) + UHR
 }
 
+/** Uhrzeit eines Stands: heute nur „14:32 Uhr“, sonst mit Datum wie [formatStamp] (A-02, A-03). */
+fun formatSince(millis: Long, now: Long = System.currentTimeMillis(), zone: ZoneId = ZoneId.systemDefault()): String {
+    val at = java.time.Instant.ofEpochMilli(millis).atZone(zone)
+    val today = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+    return if (at.toLocalDate() == today) at.format(TIME) + UHR else formatStamp(millis, zone)
+}
+
 fun formatDate(iso: String?, zone: ZoneId = ZoneId.systemDefault()): String =
     iso?.let { runCatching { local(it, zone).format(DAY) }.getOrNull() } ?: ""
 

@@ -87,7 +87,7 @@ suspend fun sendDrafts(client: AdminClient, store: DraftStore): Int {
         } catch (e: ApiException) {
             if (e.status == 0) break
             if (e.status == 401) throw e
-            store.save(draft.copy(error = e.message))
+            store.save(draft.copy(error = e.userText()))
         }
     }
     return sent
