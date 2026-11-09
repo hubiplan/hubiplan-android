@@ -1,0 +1,2 @@
+• Stand mode: the camera picture is visible again when scanning a shooting card.
+• Administration opens in the unit you chose last.

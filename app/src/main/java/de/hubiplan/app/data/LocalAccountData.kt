@@ -42,6 +42,7 @@ object LocalAccountData {
         File(context.cacheDir, WALLET_PASS).deleteRecursively()
         DraftCrypto.deleteKey(alias(accountKey))
         StandStore.forget(context, accountKey)
+        LastUnitStore.forget(context, accountKey)
     }
 
     /**
@@ -51,6 +52,7 @@ object LocalAccountData {
      */
     fun retire(context: Context, accountKey: String, server: String = "", email: String = "") {
         dir(context, "ausweise", accountKey).deleteRecursively()
+        LastUnitStore.forget(context, accountKey)
         ReceiptCache.forget(context.cacheDir, accountKey)
         File(context.cacheDir, WALLET_PASS).deleteRecursively()
         var kept = false

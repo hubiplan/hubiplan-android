@@ -72,6 +72,7 @@ import com.journeyapps.barcodescanner.ScanOptions
 import de.hubiplan.app.data.AdminClient
 import de.hubiplan.app.data.AdminTask
 import de.hubiplan.app.data.AdminUnit
+import de.hubiplan.app.data.LastUnitStore
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CardCheck
@@ -261,7 +262,11 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
-    var unitKey by rememberSaveable { mutableStateOf(units.first().key) }
+    val accountKey = "${main.account.server}-${main.account.deviceId}"
+    // Start in der zuletzt gewählten Einheit dieses Kontos, sonst in der ersten
+    var unitKey by rememberSaveable(accountKey) {
+        mutableStateOf(LastUnitStore.startUnit(units, LastUnitStore.get(context, accountKey)).key)
+    }
     val unit = units.firstOrNull { it.key == unitKey } ?: units.first()
     val client = remember(unit.key, main.account.server, main.account.deviceId) { vm.adminApi()?.let { AdminClient(it, unit.id, vm::useAdmin, unit.scope, "${main.account.server}-${main.account.deviceId}") } } ?: return
     val errors = remember { AdminErrors(onLocked = vm::adminRejected) }
@@ -394,7 +399,14 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            UnitPicker(units, unit) { picked -> if (picked.key != unit.key) requestLeave { unitKey = picked.key } }
+            UnitPicker(units, unit) { picked ->
+                if (picked.key != unit.key) {
+                    requestLeave {
+                        unitKey = picked.key
+                        LastUnitStore.put(context, accountKey, picked.key)
+                    }
+                }
+            }
             val current = section
             // Bereich: Pfeil zurück zur Übersicht und Name des Bereichs in der Kopfleiste (A-01)
             if (!nested && current != null) BackHead(current.label) { requestLeave { section = null } }

@@ -89,6 +89,18 @@ Wiederholungsmöglichkeit sichtbar.
 with native formatting. Attachments open in the browser for the selected message and
 membership.
 
+## Einheit in der Verwaltung
+
+Wer mehrere Einheiten verwaltet, wählt sie oben in der **Verwaltung**. Die App merkt sich je
+Konto die zuletzt gewählte Einheit und öffnet die Verwaltung beim nächsten Mal dort. Gibt es
+die Einheit nicht mehr oder fehlen die Rechte, startet sie in der ersten. Die Auswahl bleibt
+nur auf dem Gerät und wird beim Abmelden gelöscht.
+
+**English:** If you manage several units, choose one at the top of **Administration**. The
+app remembers the unit you chose last for each account and opens Administration there next
+time. If that unit is gone or you lack the rights, it starts with the first one. The choice
+stays on the device and is deleted when you sign out.
+
 ## Aufgaben in der Verwaltung
 
 Unter **Verwaltung › Aufgaben** wählst du die Einheit oder Abteilung und „Offen“ oder
