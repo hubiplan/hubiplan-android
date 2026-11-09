@@ -66,7 +66,7 @@ class UiInterruptionTest {
             compose.activityRule.scenario.onActivity { focused = it.window.decorView.hasWindowFocus() }
             focused
         }
-        compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse A ▾").fetchSemanticsNodes().isNotEmpty() || compose.onAllNodesWithText("Kasse B ▾").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse A").fetchSemanticsNodes().isNotEmpty() || compose.onAllNodesWithText("Kasse B").fetchSemanticsNodes().isNotEmpty() }
     }
     @After fun dismissSystemWindow() {
         if (fixtureAllowed) {
@@ -78,9 +78,9 @@ class UiInterruptionTest {
         compose.onNodeWithText("Betrag in €").performScrollTo().performTextInput("23,50")
         compose.onNodeWithText("Buchungstext").performScrollTo().performTextInput("Testauslagen")
         closeSoftKeyboard()
-        compose.onNodeWithText("Kasse A ▾").performScrollTo().performClick()
+        compose.onNodeWithText("Kasse A").performScrollTo().performClick()
         compose.onNodeWithText("Kasse B").performClick()
-        compose.onNodeWithText("Bitte wählen ▾").performScrollTo().performClick()
+        compose.onNodeWithText("Bitte wählen").performScrollTo().performClick()
         compose.onNodeWithText("Auslagen").performClick()
         compose.onNodeWithText("Aus der Galerie").performScrollTo().performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithContentDescription("Beleg").fetchSemanticsNodes().isNotEmpty() }
@@ -89,10 +89,10 @@ class UiInterruptionTest {
         unlock(); fill()
         compose.activityRule.scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
         compose.waitUntil(20_000) { instrumentation.targetContext.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE }
-        compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse B ▾").fetchSemanticsNodes().isNotEmpty() && compose.onAllNodesWithContentDescription("Beleg").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(20_000) { compose.onAllNodesWithText("Kasse B").fetchSemanticsNodes().isNotEmpty() && compose.onAllNodesWithContentDescription("Beleg").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("23,50").assertExists()
-        compose.onNodeWithText("Kasse B ▾").assertExists()
-        compose.onNodeWithText("Auslagen ▾").assertExists()
+        compose.onNodeWithText("Kasse B").assertExists()
+        compose.onNodeWithText("Auslagen").assertExists()
         compose.onNodeWithContentDescription("Beleg").assertExists()
         compose.onNodeWithText("Lock fixture").performClick()
         compose.onNodeWithText("23,50").assertDoesNotExist()
@@ -100,7 +100,7 @@ class UiInterruptionTest {
         compose.activityRule.scenario.moveToState(Lifecycle.State.RESUMED)
         unlock()
         compose.onNodeWithText("23,50").assertExists()
-        compose.onNodeWithText("Kasse B ▾").assertExists()
+        compose.onNodeWithText("Kasse B").assertExists()
         compose.onNodeWithContentDescription("Beleg").assertExists()
         compose.onNodeWithText("Testauslagen").assertExists()
         compose.onNodeWithText("Buchungstext").performScrollTo().performClick().performTextReplacement("Testauslagen fortgesetzt")
@@ -122,9 +122,9 @@ class UiInterruptionTest {
             assertTrue("Die echte Bildschirmtastatur ist sichtbar", imeShown())
             closeSoftKeyboard()
             compose.onNodeWithText("Buchen", substring = false).performScrollTo().assertIsDisplayed().assertIsNotEnabled()
-            compose.onNodeWithText("Kasse A ▾").performScrollTo().assertIsDisplayed().performClick()
+            compose.onNodeWithText("Kasse A").performScrollTo().assertIsDisplayed().performClick()
             compose.onNodeWithText("Kasse B").performClick()
-            compose.onNodeWithText("Kasse B ▾").assertIsDisplayed()
+            compose.onNodeWithText("Kasse B").assertIsDisplayed()
         } finally {
             closeSoftKeyboard()
             val restored = scale.toFloatOrNull() ?: 1f

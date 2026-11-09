@@ -1,9 +1,14 @@
 package de.hubiplan.app.data
 
 import java.net.URI
+import java.net.URLDecoder
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
-/** Inhalt des QR-Codes „App verbinden“: https://<Instanz>/app/verbinden#code=<Code>. */
+/**
+ * Inhalt des QR-Codes „App verbinden“: https://<Instanz>/app/verbinden#code=<Code>.
+ * Auf demselben Telefon öffnet der Knopf „In der HUBIplan-App öffnen“ stattdessen
+ * hubiplan://verbinden?server=<Origin, URL-kodiert>&code=<Code> (UX-Audit 08.11. X-04).
+ */
 data class PairingLink(val server: String, val code: String) {
     companion object {
         fun parse(text: String): PairingLink? {
@@ -12,6 +17,7 @@ data class PairingLink(val server: String, val code: String) {
             } catch (e: Exception) {
                 return null
             }
+            if (uri.scheme == SCHEME) return parseAppLink(uri)
             if (uri.scheme != "https" || uri.host.isNullOrBlank()) return null
             if (uri.path?.trimEnd('/') != "/app/verbinden") return null
             val code = uri.rawFragment
@@ -22,6 +28,37 @@ data class PairingLink(val server: String, val code: String) {
                 ?: return null
             val server = httpsOrigin(uri) ?: return null
             return PairingLink(server, code)
+        }
+
+        /** Eigenes Schema der App; die Adresse der Instanz steht im Link, nur HTTPS. */
+        const val SCHEME = "hubiplan"
+
+        private fun parseAppLink(uri: URI): PairingLink? {
+            if (uri.isOpaque || uri.host != "verbinden") return null
+            if (!uri.path.isNullOrEmpty() && uri.path != "/") return null
+            val params = uri.rawQuery?.split('&').orEmpty().mapNotNull { part ->
+                val key = part.substringBefore('=', "")
+                if (key.isEmpty()) null else key to decode(part.substringAfter('='))
+            }.toMap()
+            // Auch hubiplan://verbinden?link=<QR-Adresse, URL-kodiert>: dieselbe Prüfung wie beim QR-Code
+            params["link"]?.let { inner -> return inner.takeIf { it.startsWith("https://") }?.let(::parse) }
+            val code = params["code"]?.takeIf { it.isNotBlank() && it.none(Char::isWhitespace) } ?: return null
+            val serverText = params["server"] ?: return null
+            val server = try {
+                URI(serverText)
+            } catch (e: Exception) {
+                return null
+            }
+            if (server.scheme != "https" || server.host.isNullOrBlank()) return null
+            if (!server.path.isNullOrEmpty() && server.path != "/") return null
+            if (server.rawQuery != null || server.rawFragment != null || server.rawUserInfo != null) return null
+            return PairingLink(httpsOrigin(server) ?: return null, code)
+        }
+
+        private fun decode(text: String): String? = try {
+            URLDecoder.decode(text, "UTF-8")
+        } catch (e: IllegalArgumentException) {
+            null
         }
     }
 }

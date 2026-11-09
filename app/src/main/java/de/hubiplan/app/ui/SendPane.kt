@@ -106,7 +106,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                     enabled = !busy,
                     modifier = if (list.size > 1) Modifier.dropdown(tr("An"), senderName, pick) else Modifier,
                 ) {
-                    Text(tr("An") + ": " + (sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–") + if (list.size > 1) " ▾" else "")
+                    DropdownText(tr("An") + ": " + senderName, showArrow = list.size > 1)
                 }
                 DropdownMenu(expanded = pick, onDismissRequest = { pick = false }) {
                     list.forEach { s ->

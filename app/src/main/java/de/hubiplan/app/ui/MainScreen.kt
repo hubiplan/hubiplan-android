@@ -403,7 +403,7 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
     }
     Box {
         TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Einheit"), current?.label ?: tr("keine gewählt"), open)) {
-            Text((current?.label ?: tr("Einheit wählen")) + " ▾", color = LocalBrand.current.onBrand, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            DropdownText(current?.label ?: tr("Einheit wählen"), color = LocalBrand.current.onBrand)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             accesses.forEach { a ->

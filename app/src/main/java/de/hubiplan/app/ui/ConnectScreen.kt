@@ -2,6 +2,7 @@ package de.hubiplan.app.ui
 
 import android.content.ActivityNotFoundException
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalUriHandler
 import de.hubiplan.app.data.passwordResetUrl
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,9 +17,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -47,6 +52,8 @@ import de.hubiplan.app.tr
 fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
     // Lizenzen auch ohne Anmeldung (Lizenzaudit 31.10.2026, L01)
     var licenses by rememberSaveable { mutableStateOf(false) }
+    // Nach einem Fehler mit bekannter Adresse gleich das Anmeldeformular zeigen
+    var withPassword by rememberSaveable { mutableStateOf(state.server.isNotBlank()) }
     if (licenses) {
         LicensesPage(onClose = { licenses = false })
         return
@@ -62,7 +69,7 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                 Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(link.server.removePrefix("https://"), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        tr("Verbinde die App nur, wenn das die Adresse deines Vereins ist und du den QR-Code selbst gerade im Browser erzeugt hast."),
+                        tr("Verbinde die App nur, wenn das die Adresse deines Vereins ist und du den QR-Code oder Link selbst gerade im Browser erzeugt hast."),
                     )
                 }
             },
@@ -95,30 +102,56 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     SecondFactor(state, vm)
                     return@Column
                 }
-                Text(
-                    tr("Am einfachsten verbindest du die App mit dem QR-Code aus HUBIplan: im Browser unter „Mein Konto › App & andere Instanzen“ auf „App verbinden“ tippen."),
-                )
-                Button(
-                    onClick = {
-                        vm.clearError()
-                        scanner.launch(
-                            ScanOptions()
-                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                .setPrompt(tr("QR-Code aus „Mein Konto“ scannen"))
-                                .setBeepEnabled(false)
-                                .setOrientationLocked(false),
-                        )
-                    },
+                // Beide Wege gleichrangig; auf nur einem Telefon führt der Knopf im Browser
+                // „In der HUBIplan-App öffnen“ direkt hierher (UX-Audit 08.11. X-04)
+                Text(tr("Wie möchtest du dich verbinden?"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+                ConnectChoice(
+                    title = tr("QR-Code von einem anderen Bildschirm scannen"),
+                    hint = tr("Im Browser, z. B. am Computer, unter „Mein Konto › App & andere Instanzen“ auf „App verbinden“ tippen."),
+                    selected = false,
                     enabled = !state.busy,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(tr("Mit QR-Code verbinden")) }
-                HorizontalDivider()
-                PasswordLogin(state, vm::login)
+                ) {
+                    vm.clearError()
+                    scanner.launch(
+                        ScanOptions()
+                            .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                            .setPrompt(tr("QR-Code aus „Mein Konto“ scannen"))
+                            .setBeepEnabled(false)
+                            .setOrientationLocked(false),
+                    )
+                }
+                ConnectChoice(
+                    title = tr("Mit E-Mail und Passwort anmelden"),
+                    hint = tr("Mit der Adresse deines Vereins und deinen Zugangsdaten aus HUBIplan."),
+                    selected = withPassword,
+                    enabled = !state.busy,
+                ) { withPassword = !withPassword }
+                if (withPassword) PasswordLogin(state, vm::login)
+                Text(
+                    tr("Nur ein Telefon? Öffne HUBIplan im Browser des Telefons, dann „Mein Konto › App & andere Instanzen“ und tippe auf „In der HUBIplan-App öffnen“."),
+                    style = MaterialTheme.typography.bodySmall,
+                )
                 if (state.adding) {
                     TextButton(onClick = vm::cancelAdd, enabled = !state.busy) { Text(tr("Abbrechen, zurück zum bisherigen Konto")) }
                 }
                 TextButton(onClick = { licenses = true }) { Text(tr("Lizenzen")) }
             }
+        }
+    }
+}
+
+/** Ein Weg zum Verbinden: großer Knopf mit Erklärung darunter, beide Wege gleich gewichtet. */
+@Composable
+private fun ConnectChoice(title: String, hint: String, selected: Boolean, enabled: Boolean, onClick: () -> Unit) {
+    OutlinedCard(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else CardDefaults.outlinedCardBorder(enabled),
+    ) {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            Text(hint, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -146,6 +179,7 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
     var missing by rememberSaveable { mutableStateOf(emptyList<LoginField>()) }
     var serverHint by rememberSaveable { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
+    val autofillManager = LocalAutofillManager.current
     val recoveryUrl = passwordResetUrl(server)
     var browserError by rememberSaveable { mutableStateOf(false) }
     val serverFocus = remember { FocusRequester() }
@@ -156,7 +190,6 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
         LoginField.EMAIL -> emailFocus
         LoginField.PASSWORD -> passwordFocus
     }.requestFocus()
-    Text(tr("Oder mit E-Mail und Passwort anmelden"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     val serverError = when {
         LoginField.SERVER in missing -> tr("Bitte die Adresse deines Vereins eingeben.")
         serverHint && recoveryUrl == null -> tr("Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.")
@@ -186,7 +219,7 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
             null
         },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-        modifier = Modifier.fillMaxWidth().focusRequester(emailFocus),
+        modifier = Modifier.fillMaxWidth().focusRequester(emailFocus).autofill(ContentType.Username),
     )
     val passwordError = LoginField.PASSWORD in missing
     OutlinedTextField(
@@ -202,12 +235,18 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
         },
         visualTransformation = PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        modifier = Modifier.fillMaxWidth().focusRequester(passwordFocus),
+        modifier = Modifier.fillMaxWidth().focusRequester(passwordFocus).autofill(ContentType.Password),
     )
     OutlinedButton(
         onClick = {
             missing = missingLoginFields(server, email, password)
-            if (missing.isEmpty()) onLogin(server, email, password) else focus(missing.first())
+            if (missing.isEmpty()) {
+                // Passwortmanager bietet an, die Anmeldung zu speichern (A-05)
+                autofillManager?.commit()
+                onLogin(server, email, password)
+            } else {
+                focus(missing.first())
+            }
         },
         enabled = !state.busy,
         modifier = Modifier.fillMaxWidth(),

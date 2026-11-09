@@ -12,7 +12,16 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Place
@@ -30,7 +39,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentType
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.stateDescription
@@ -197,3 +208,34 @@ fun TimePickButton(value: String, onPick: (String) -> Unit) {
         Icon(Icons.Filled.Edit, contentDescription = tr("Uhrzeit auswählen"))
     }
 }
+
+/**
+ * Beschriftung einer Aufklapp-Auswahl: Wert und Material-Pfeil statt des Zeichens „▾“
+ * (UX-Audit 08.11. A-07). Der Pfeil hat keine eigene Ansage; die Rolle kommt von [dropdown].
+ */
+@Composable
+fun DropdownText(
+    text: String,
+    color: Color = Color.Unspecified,
+    style: TextStyle = LocalTextStyle.current,
+    showArrow: Boolean = true,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(text, color = color, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        if (showArrow) {
+            Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = color.takeOrElse { LocalContentColor.current })
+        }
+    }
+}
+
+/** Häkchen vor gewählten Menüeinträgen; nicht gewählte behalten den Platz (A-07). */
+@Composable
+fun MenuCheck(on: Boolean) {
+    if (on) Icon(Icons.Filled.Check, contentDescription = null) else Spacer(Modifier.size(24.dp))
+}
+
+/**
+ * Autofill-Hinweis für Passwortmanager (Google, Bitwarden, …): Anmeldefelder werden zum
+ * Ausfüllen angeboten und gespeichert (UX-Audit 08.11. A-05).
+ */
+fun Modifier.autofill(type: ContentType): Modifier = semantics { contentType = type }

@@ -30,7 +30,7 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     return if (!dark) {
         // Primärfarbe dient in Material als Text- und Rahmenfarbe (Textknöpfe, aktive Felder,
         // Schalter): bei hellen Vereinsfarben abdunkeln (Barrierefreiheit A-03). Die
-        // unveränderte Vereinsfarbe bleibt für die Kopfleiste (LocalBrand).
+        // unveränderte Vereinsfarbe bleibt im hellen Modus für die Kopfleiste (LocalBrand).
         val uiPrimary = withContrast(primary, surfaces, BLACK)
         val uiAccent = withContrast(accent, surfaces, BLACK)
         lightColorScheme(
@@ -64,20 +64,24 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     }
 }
 
-/** Unveränderte Vereinsfarbe für farbige Flächen (Kopfleiste) samt lesbarer Schrift. */
+/** Vereinsfarbe für farbige Flächen (Kopfleiste) samt lesbarer Schrift; im Dunkelmodus gedämpft. */
 data class BrandColors(val brand: Color, val onBrand: Color)
 
 val LocalBrand = staticCompositionLocalOf { BrandColors(Color(DEFAULT_PRIMARY), Color(WHITE)) }
 
-fun brandFor(theme: Theme?): BrandColors {
-    val primary = parseHexColor(theme?.primary) ?: DEFAULT_PRIMARY
+fun brandFor(theme: Theme?, dark: Boolean = false): BrandColors {
+    val raw = parseHexColor(theme?.primary) ?: DEFAULT_PRIMARY
+    // Im Dunkelmodus kein heller Balken über dunklem Inhalt (UX-Audit 08.11. A-06): helle
+    // Vereinsfarben so weit abdunkeln, bis weiße Schrift lesbar ist. Dunkle bleiben, wie sie sind.
+    val primary = if (dark) withContrast(raw, listOf(WHITE), BLACK) else raw
     val onPrimary = parseHexColor(theme?.onPrimary)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
     return BrandColors(Color(primary), Color(onPrimary))
 }
 
 @Composable
 fun HubiplanTheme(theme: Theme?, content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalBrand provides brandFor(theme)) {
-        MaterialTheme(colorScheme = colorSchemeFor(theme, isSystemInDarkTheme()), content = content)
+    val dark = isSystemInDarkTheme()
+    CompositionLocalProvider(LocalBrand provides brandFor(theme, dark)) {
+        MaterialTheme(colorScheme = colorSchemeFor(theme, dark), content = content)
     }
 }
