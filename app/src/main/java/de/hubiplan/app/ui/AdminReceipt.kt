@@ -325,7 +325,7 @@ suspend fun sendReceipts(client: AdminClient, store: ReceiptStore): Int {
         } catch (e: ApiException) {
             if (e.status == 0) break
             if (e.status == 401) throw e
-            store.save(current.copy(error = e.message))
+            store.save(current.copy(error = e.userText()))
         }
     }
     return sent
@@ -496,7 +496,7 @@ fun ReceiptScreen(
                     // Noch nicht auf dem Server: Entwurf verwerfen, die Angaben bleiben im Formular.
                     // Schon angelegt: in der Kasse mit Fehler stehen lassen (dort verwerfen oder erneut senden)
                     withContext(Dispatchers.IO) {
-                        if (current.serverId == null) store.delete(draft.key) else store.save(current.copy(error = e.message))
+                        if (current.serverId == null) store.delete(draft.key) else store.save(current.copy(error = e.userText()))
                     }
                     error = fields.receive(e, errors)
                 }

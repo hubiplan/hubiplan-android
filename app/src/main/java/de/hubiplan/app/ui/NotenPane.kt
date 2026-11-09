@@ -110,7 +110,7 @@ fun NotenPane(accessId: Int, main: Screen.Main, vm: AppViewModel) {
             folders = NotenSync(api, store, accessId).refresh()
             stale = false
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else if (folders == null) error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else if (folders == null) error = e.problem().text
         }
     }
 

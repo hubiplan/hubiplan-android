@@ -16,14 +16,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -107,9 +104,13 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
     }
     // Beim Öffnen und nach Rückkehr in die App: nach 5 Minuten Pause neu entsperren
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    var resumed by remember { mutableIntStateOf(0) }
     DisposableEffect(lifecycle) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) vm.checkAdminIdle()
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                vm.checkAdminIdle()
+                resumed++
+            }
         }
         lifecycle.addObserver(observer)
         onDispose { lifecycle.removeObserver(observer) }
@@ -126,16 +127,18 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
         Notice(tr("Die Aufgabe oder der Verwaltungsbereich ist nicht verfügbar. Bitte Verbindung und Berechtigung prüfen."), tr("Erneut laden"), vm::reload)
         return
     }
+    // Nach der Rückkehr aus den Einstellungen erneut prüfen (UX-Audit 08.11. A-17)
+    val screenLock = remember(resumed) { DeviceUnlock.available(context) }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         when {
             !overview.twoFactor -> Notice(
                 tr("Für die Verwaltung in der App ist die Zwei-Faktor-Anmeldung nötig. Bitte im Browser unter „Mein Konto › Anmeldung & Sicherheit“ einrichten, danach hier freischalten."),
                 tr("Mein Konto öffnen"),
             ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${main.account.server}/mein-konto/anmeldung"))) }
-            !DeviceUnlock.available(context) -> Notice(
+            !screenLock -> Notice(
                 tr("Für die Verwaltung braucht das Telefon eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
-                null,
-            ) {}
+                tr("Bildschirmsperre einrichten"),
+            ) { DeviceUnlock.openSetup(context) }
             !state.sealed -> UnlockForm(state, vm)
             state.token == null -> Column(
                 Modifier.widthIn(max = 520.dp).padding(Abstand.gross),
@@ -221,8 +224,9 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
  * scrollende Filterchips (UX-Audit 05.11. A-03); „Zu erledigen“ hebt sich von „Aufgaben“ ab (Begriff wie auf der Web-Startseite).
  */
 internal enum class Section(val label: String, val hint: String) {
-    TASKS(tr("Zu erledigen"), tr("Änderungsmeldungen, Fotos und Termine, die auf dich warten")),
-    TODOS(tr("Aufgaben"), tr("Aufgaben anlegen, verteilen und erledigen")),
+    TASKS(tr("Zu erledigen"), tr("Datenänderungen, Fotos und Termine, die auf dich warten")),
+    // „Aufgaben verteilen“: der Reiter „Aufgaben“ zeigt die eigenen (UX-Audit 08.11. A-04)
+    TODOS(tr("Aufgaben verteilen"), tr("Aufgaben anlegen, verteilen und erledigen")),
     MEMBERS(tr("Mitglieder"), tr("Suchen, anrufen, Mitgliedsakte öffnen")),
     EVENTS(tr("Termine"), tr("Termine anlegen, Zu- und Absagen eintragen")),
     FINANCE(tr("Kassenbuch"), tr("Buchungen und Quittungen")),
@@ -295,6 +299,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var invoiceId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var memberSearch by rememberSaveable(unit.key) { mutableStateOf("") }
     var reload by remember { mutableIntStateOf(0) }
+    var refreshing by remember { mutableStateOf(false) }
     var card by remember { mutableStateOf<CardCheck?>(null) }
     var cardError by remember { mutableStateOf<String?>(null) }
 
@@ -418,126 +423,140 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             val openBooking = bookingId
             val openInvoice = invoiceId
             val openTodo = todoId
-            when {
-                creatingTodo && showsTodos(unit) -> TodoCreateScreen(client, errors, onBack = { requestLeave { creatingTodo = false } }) { id, changeSet ->
-                    creatingTodo = false
-                    todoId = id
-                    onChanged(tr("Aufgabe angelegt"), changeSet)
-                }
-                openTodo != null && showsTodos(unit) -> TodoScreen(client, openTodo, errors, reload, onBack = { todoId = null; reload++ }, onChanged = onChanged)
-                current == null && !nested -> AdminStart(
-                    client = client,
-                    sections = sections,
-                    until = until,
-                    vm = vm,
-                    reloadKey = reload,
-                    onScan = if (hasMembers) {
-                        {
+            // Listen der Verwaltung lassen sich herunterziehen (UX-Audit 08.11. A-02); Formulare
+            // und Akten nicht, damit eine Geste keine Eingaben verwirft
+            val views: @Composable () -> Unit = {
+                when {
+                    creatingTodo && showsTodos(unit) -> TodoCreateScreen(client, errors, onBack = { requestLeave { creatingTodo = false } }) { id, changeSet ->
+                        creatingTodo = false
+                        todoId = id
+                        onChanged(tr("Aufgabe angelegt"), changeSet)
+                    }
+                    openTodo != null && showsTodos(unit) -> TodoScreen(client, openTodo, errors, reload, onBack = { todoId = null; reload++ }, onChanged = onChanged)
+                    current == null && !nested -> AdminStart(
+                        client = client,
+                        sections = sections,
+                        until = until,
+                        vm = vm,
+                        reloadKey = reload,
+                        onScan = if (hasMembers) {
+                            {
+                                scanner.launch(
+                                    ScanOptions()
+                                        .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                        .setPrompt(tr("Mitgliedsausweis scannen"))
+                                        .setBeepEnabled(false)
+                                        .setOrientationLocked(false),
+                                )
+                            }
+                        } else {
+                            null
+                        },
+                        onOpen = { section = it },
+                    )
+                    section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onLock = vm::lockAdmin, onOpen = { todoId = it })
+                    openInvoice != null -> InvoiceScreen(client, openInvoice, BILLING_EDIT in unit.permissions, errors, onBack = {
+                        invoiceId = null
+                        reload++
+                    }, onChanged = onChanged)
+                    newReceipt -> ReceiptScreen(client, unit.name, receiptStore, errors, onBack = { requestLeave { newReceipt = false; reload++ } }, onChanged = onChanged)
+                    newBooking -> BookingForm(client, unit.name, drafts, errors, onBack = { requestLeave { newBooking = false } }) { text ->
+                        newBooking = false
+                        reload++
+                        onChanged(text, null)
+                    }
+                    openBooking != null -> BookingScreen(client, openBooking, FINANCE_EDIT in unit.permissions, errors, onBack = { bookingId = null }, onChanged = onChanged)
+                    rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { requestLeave { creatingEvent = null } }) { id, text, changeSet ->
+                        creatingEvent = null
+                        eventId = id
+                        eventStart = null
+                        onChanged(text, changeSet)
+                    }
+                    openEvent != null -> EventScreen(client, openEvent, eventStart, errors, onBack = {
+                        eventId = null
+                        eventStart = null
+                    }, onChanged = onChanged, reload = reload)
+                    admitting -> AdmitScreen(client, errors, onBack = { requestLeave { admitting = false } }) { id, text ->
+                        admitting = false
+                        member = id
+                        onChanged(text, null)
+                    }
+                    open != null && unit.isDepartment -> DeptMemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
+                    open != null -> MemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
+                    requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
+                        requests = false
+                        member = it
+                    }, onChanged = onChanged)
+                    section == Section.MEMBERS && section in sections -> MemberList(
+                        client,
+                        errors,
+                        onAdmit = if (!unit.isDepartment && MEMBERS_EDIT in unit.permissions) {
+                            { admitting = true }
+                        } else {
+                            null
+                        },
+                        initialSearch = memberSearch,
+                        onSearch = { memberSearch = it },
+                    ) { member = it }
+                    section == Section.OCCASIONS && hasMembers -> OccasionsSection(client, errors, reload) { member = it }
+                    section == Section.FINANCE && section in sections -> FinanceSection(
+                        client,
+                        canEdit = FINANCE_EDIT in unit.permissions,
+                        store = drafts,
+                        receiptStore = receiptStore,
+                        errors = errors,
+                        reload = reload,
+                        onNew = { newBooking = true },
+                        onReceipt = { newReceipt = true },
+                        onOpen = { bookingId = it },
+                        onChanged = onChanged,
+                    )
+                    section == Section.BILLING && section in sections -> BillingSection(client, errors, reload) { invoiceId = it }
+                    section == Section.COMPETITIONS && section in sections -> CompetitionsSection(
+                        client,
+                        server = main.account.server,
+                        deviceName = android.os.Build.MODEL.take(60),
+                        errors = errors,
+                        reload = reload,
+                        onScan = {
                             scanner.launch(
                                 ScanOptions()
                                     .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                    .setPrompt(tr("Mitgliedsausweis scannen"))
+                                    .setPrompt(tr("Stand-QR scannen"))
                                     .setBeepEnabled(false)
                                     .setOrientationLocked(false),
                             )
+                        },
+                        onOpenStand = vm::openStand,
+                    )
+                    section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
+                        eventId = o.eventId
+                        eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
+                    }
+                    else -> TaskList(client, errors, until, vm, reload) { task ->
+                        when {
+                            task.kind == "change_request" -> requests = true
+                            task.kind == "todo" -> { if (showsTodos(unit)) todoId = task.ref }
+                            task.kind == "photo" && task.membership != null -> member = task.membership
+                            task.kind == "event" && task.ref != null -> {
+                                eventId = task.ref
+                                eventStart = null
+                            }
+                            // Wechselanfragen: im Browser
+                            else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(main.account.server + task.link)))
                         }
-                    } else {
-                        null
-                    },
-                    onOpen = { section = it },
-                )
-                section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onLock = vm::lockAdmin, onOpen = { todoId = it })
-                openInvoice != null -> InvoiceScreen(client, openInvoice, BILLING_EDIT in unit.permissions, errors, onBack = {
-                    invoiceId = null
-                    reload++
-                }, onChanged = onChanged)
-                newReceipt -> ReceiptScreen(client, unit.name, receiptStore, errors, onBack = { requestLeave { newReceipt = false; reload++ } }, onChanged = onChanged)
-                newBooking -> BookingForm(client, unit.name, drafts, errors, onBack = { requestLeave { newBooking = false } }) { text ->
-                    newBooking = false
-                    reload++
-                    onChanged(text, null)
-                }
-                openBooking != null -> BookingScreen(client, openBooking, FINANCE_EDIT in unit.permissions, errors, onBack = { bookingId = null }, onChanged = onChanged)
-                rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { requestLeave { creatingEvent = null } }) { id, text, changeSet ->
-                    creatingEvent = null
-                    eventId = id
-                    eventStart = null
-                    onChanged(text, changeSet)
-                }
-                openEvent != null -> EventScreen(client, openEvent, eventStart, errors, onBack = {
-                    eventId = null
-                    eventStart = null
-                }, onChanged = onChanged, reload = reload)
-                admitting -> AdmitScreen(client, errors, onBack = { requestLeave { admitting = false } }) { id, text ->
-                    admitting = false
-                    member = id
-                    onChanged(text, null)
-                }
-                open != null && unit.isDepartment -> DeptMemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
-                open != null -> MemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
-                requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
-                    requests = false
-                    member = it
-                }, onChanged = onChanged)
-                section == Section.MEMBERS && section in sections -> MemberList(
-                    client,
-                    errors,
-                    onAdmit = if (!unit.isDepartment && MEMBERS_EDIT in unit.permissions) {
-                        { admitting = true }
-                    } else {
-                        null
-                    },
-                    initialSearch = memberSearch,
-                    onSearch = { memberSearch = it },
-                ) { member = it }
-                section == Section.OCCASIONS && hasMembers -> OccasionsSection(client, errors) { member = it }
-                section == Section.FINANCE && section in sections -> FinanceSection(
-                    client,
-                    canEdit = FINANCE_EDIT in unit.permissions,
-                    store = drafts,
-                    receiptStore = receiptStore,
-                    errors = errors,
-                    reload = reload,
-                    onNew = { newBooking = true },
-                    onReceipt = { newReceipt = true },
-                    onOpen = { bookingId = it },
-                    onChanged = onChanged,
-                )
-                section == Section.BILLING && section in sections -> BillingSection(client, errors, reload) { invoiceId = it }
-                section == Section.COMPETITIONS && section in sections -> CompetitionsSection(
-                    client,
-                    server = main.account.server,
-                    deviceName = android.os.Build.MODEL.take(60),
-                    errors = errors,
-                    reload = reload,
-                    onScan = {
-                        scanner.launch(
-                            ScanOptions()
-                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                .setPrompt(tr("Stand-QR scannen"))
-                                .setBeepEnabled(false)
-                                .setOrientationLocked(false),
-                        )
-                    },
-                    onOpenStand = vm::openStand,
-                )
-                section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
-                    eventId = o.eventId
-                    eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
-                }
-                else -> TaskList(client, errors, until, vm, reload) { task ->
-                    when {
-                        task.kind == "change_request" -> requests = true
-                        task.kind == "todo" -> { if (showsTodos(unit)) todoId = task.ref }
-                        task.kind == "photo" && task.membership != null -> member = task.membership
-                        task.kind == "event" && task.ref != null -> {
-                            eventId = task.ref
-                            eventStart = null
-                        }
-                        // Wechselanfragen: im Browser
-                        else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(main.account.server + task.link)))
                     }
                 }
+            }
+            if (nested) {
+                views()
+            } else {
+                Refreshable(refreshing, onRefresh = {
+                    refreshing = true
+                    reload++
+                    // Die Bereiche zeigen ihr eigenes Laden; die Geste bestätigt nur kurz
+                    scope.launch { kotlinx.coroutines.delay(600); refreshing = false }
+                }) { views() }
             }
         }
     }
@@ -571,7 +590,7 @@ private fun TaskList(
         tasks = null
         error = null
         val api = vm.adminApi() ?: return@LaunchedEffect
-        // Untereinheiten nutzen den eigenen Bereich „Aufgaben“, keine gemischte Übersicht.
+        // Untereinheiten nutzen den eigenen Bereich „Aufgaben verteilen“, keine gemischte Übersicht.
         if (client.scope == "d") {
             tasks = emptyList()
             return@LaunchedEffect
@@ -675,13 +694,14 @@ private fun AdminStart(
     }
 }
 
-private fun sectionIcon(s: Section) = when (s) {
-    Section.TASKS -> Icons.Filled.Notifications
+/** Symbole nach `docs/begriffe.md` (UX-Audit 08.11. A-04): keine Glocke, kein Einkaufswagen. */
+internal fun sectionIcon(s: Section) = when (s) {
+    Section.TASKS -> Symbole.ZuErledigen
     Section.TODOS -> Icons.Filled.CheckCircle
     Section.MEMBERS -> Icons.Filled.Person
     Section.EVENTS -> Icons.Filled.DateRange
-    Section.FINANCE -> Icons.Filled.ShoppingCart
-    Section.BILLING -> Icons.AutoMirrored.Filled.List
+    Section.FINANCE -> Symbole.Kassenbuch
+    Section.BILLING -> Symbole.Rechnungen
     Section.OCCASIONS -> Icons.Filled.Star
     Section.COMPETITIONS -> Icons.Filled.LocationOn
 }

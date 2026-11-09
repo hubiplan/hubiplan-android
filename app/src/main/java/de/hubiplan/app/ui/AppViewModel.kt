@@ -312,7 +312,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 loadAdmin(target)
                 if (target.current()) _admin.value = _admin.value.copy(token = result.token)
             } catch (e: ApiException) {
-                if (target.current()) _admin.value = _admin.value.copy(busy = false, error = e.message)
+                if (target.current()) _admin.value = _admin.value.copy(busy = false, error = e.userText())
             }
         }
     }
@@ -720,10 +720,27 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun showLogo(account: Account, access: PortalAccess) {
         _logo.value = withContext(Dispatchers.IO) { ClubLogo.load(context, account, access.id) }
+        val id = ClubShortcut.id(account, access.id)
         _shortcutOffer.value = ClubShortcut.supported(context) &&
             !ClubShortcut.isPinned(context, account, access.id) &&
-            !shortcutDeclined(ClubShortcut.id(account, access.id))
+            !shortcutDeclined(id) &&
+            // Einmal gezeigt genügt; in derselben Sitzung bleibt es bis „Hinzufügen“/„Nicht jetzt“ (A-15)
+            (id in shortcutShownNow || !shortcutPrefs.getBoolean("$id$SHORTCUT_SEEN", false))
     }
+
+    // Verknüpfungsangebote, die in dieser Sitzung schon zu sehen waren
+    private val shortcutShownNow = mutableSetOf<String>()
+
+    /** Das Angebot war zu sehen: beim nächsten Start nicht erneut zeigen (UX-Audit 08.11. A-15). */
+    fun shortcutOfferSeen() {
+        val main = screen.value as? Screen.Main ?: return
+        val access = main.access ?: return
+        val id = ClubShortcut.id(main.account, access.id)
+        shortcutShownNow += id
+        shortcutPrefs.edit().putBoolean("$id$SHORTCUT_SEEN", true).apply()
+    }
+
+    private val SHORTCUT_SEEN = "#gesehen"
 
     private val shortcutPrefs get() = context.getSharedPreferences("verknuepfungen", android.content.Context.MODE_PRIVATE)
 
@@ -885,7 +902,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             } catch (e: ApiException) {
                 if (created) DeviceKeys.delete(alias)
-                _connect.value = _connect.value.copy(busy = false, error = e.message)
+                _connect.value = _connect.value.copy(busy = false, error = e.userText())
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -930,7 +947,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     sendDrafts(client, drafts)
                     sendReceipts(client, receipts)
                 } catch (e: ApiException) {
-                    return@withContext e.message ?: tr("Senden ist fehlgeschlagen.")
+                    return@withContext e.userText()
                 }
             }
             val left = runCatching { drafts.count() + receipts.count() }.getOrDefault(0)

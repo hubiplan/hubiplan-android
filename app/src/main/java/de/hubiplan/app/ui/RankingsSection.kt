@@ -48,7 +48,7 @@ fun RankingsSection(access: PortalAccess, vm: AppViewModel) {
                 401 -> vm.deviceRevoked(e)
                 // Ältere HUBIplan-Stände kennen die Ranglisten noch nicht: Abschnitt weglassen
                 404 -> data = Rankings()
-                else -> error = e.message
+                else -> error = e.userText()
             }
         }
     }
@@ -94,7 +94,7 @@ private fun RankingDetailView(access: PortalAccess, id: String, vm: AppViewModel
                 }
             }
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.userText()
         }
     }
     Column(Modifier.padding(horizontal = Abstand.rand, vertical = Abstand.klein), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {

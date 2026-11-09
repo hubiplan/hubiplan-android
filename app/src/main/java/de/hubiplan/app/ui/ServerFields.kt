@@ -31,7 +31,7 @@ class ServerFields {
     internal val targets = linkedMapOf<String, Target>()
     fun clear(field: String) { messages = messages - field }
     fun receive(e: ApiException, errors: AdminErrors? = null): String {
-        val fallback = errors?.message(e) ?: e.message.orEmpty()
+        val fallback = errors?.message(e) ?: e.userText()
         messages = e.fieldErrors
         revision++
         return if (messages.isNotEmpty() && messages.keys.all { it in targets } && e.generalError == null) tr("Bitte prüfe die markierten Angaben.") else fallback

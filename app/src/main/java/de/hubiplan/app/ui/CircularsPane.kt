@@ -42,12 +42,11 @@ import de.hubiplan.app.tr
 @Composable
 fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
     val leave = LocalFormLeaveGuard.current
-    var items by remember(access.id) { mutableStateOf<List<CircularItem>?>(null) }
-    var error by remember(access.id) { mutableStateOf<String?>(null) }
+    // Liste bleibt beim Aktualisieren sichtbar; Ziehen lädt neu (UX-Audit 08.11. A-02)
+    val circulars = remember(access.id) { Loadable<List<CircularItem>>() }
     var selected by rememberSaveable(access.id) { mutableStateOf<Int?>(null) }
     val canSend by vm.canSend.collectAsStateWithLifecycle()
     var notice by remember(access.id) { mutableStateOf<String?>(null) }
-    var reload by remember { mutableStateOf(0) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, access.id, leave?.busy) {
         val request = openRequest ?: return@LaunchedEffect
@@ -57,14 +56,9 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
         }
     }
 
-    LaunchedEffect(access.id, reload) {
+    LaunchedEffect(access.id, circulars.tick) {
         val api = vm.api() ?: return@LaunchedEffect
-        error = null
-        try {
-            items = api.circulars(access.id)
-        } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
-        }
+        circulars.load(vm::deviceRevoked) { api.circulars(access.id) }
     }
 
     ListDetail(
@@ -72,29 +66,25 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
         onBack = { selected = null },
         emptyDetail = tr("Mitteilung auswählen"),
         list = {
-            val list = items
-            Column(Modifier.fillMaxSize()) {
-                if (canSend) {
-                    Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
-                        Button(onClick = { if (selected != SEND) { notice = null; if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
-                    }
-                }
-                notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
-                when {
-                    // Fehler mit erneutem Versuch statt leerer Liste (UX-Audit 31.10. A07)
-                    error != null -> Column(Modifier.padding(Abstand.rand)) {
-                        Text(error ?: "", color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true))
-                        TextButton(onClick = { reload++ }) { Text(tr("Erneut laden")) }
-                    }
-                    list == null -> Loading()
-                    list.isEmpty() -> Message(tr("Noch keine Mitteilungen."))
-                    else -> LazyColumn(Modifier.fillMaxSize()) {
-                        items(list, key = { it.id }) { c ->
-                            CircularRow(c, c.id == selected) {
-                                if (leave == null) selected = c.id else leave.request { selected = c.id }
-                            }
-                            HorizontalDivider()
+            LoadableList(
+                circulars,
+                empty = tr("Noch keine Mitteilungen."),
+                isEmpty = { it.isEmpty() },
+                header = {
+                    if (canSend) {
+                        Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
+                            Button(onClick = { if (selected != SEND) { notice = null; if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
                         }
+                    }
+                    notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
+                },
+            ) { list ->
+                LazyColumn(Modifier.fillMaxSize()) {
+                    items(list, key = { it.id }) { c ->
+                        CircularRow(c, c.id == selected) {
+                            if (leave == null) selected = c.id else leave.request { selected = c.id }
+                        }
+                        HorizontalDivider()
                     }
                 }
             }
@@ -107,7 +97,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                     onDone = { text ->
                         notice = text
                         selected = null
-                        reload++
+                        circulars.reload()
                     },
                     onCancel = { selected = null },
                 )
@@ -135,7 +125,7 @@ private const val SEND = -1
 @Composable
 private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBack: () -> Unit) {
     var item by remember(access.id, id) { mutableStateOf<CircularItem?>(null) }
-    var error by remember(access.id, id) { mutableStateOf<String?>(null) }
+    var error by remember(access.id, id) { mutableStateOf<Problem?>(null) }
     var attempt by remember(access.id, id) { mutableStateOf(0) }
     LaunchedEffect(access.id, id, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
@@ -143,7 +133,7 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         try {
             item = api.circular(access.id, id)
         } catch (e: ApiException) {
-            if (e.status == 401) vm.deviceRevoked(e) else error = e.message
+            if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
         }
     }
     Column(
@@ -151,10 +141,10 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         BackHead(item?.subject, onBack = onBack)
-        error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         val c = item
+        error?.let { ProblemNotice(it, onRetry = if (c == null) ({ attempt++ }) else null, inset = false) }
         if (c == null) {
-            if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }
+            if (error == null) Loading()
             return@Column
         }
         Text(c.subject, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())

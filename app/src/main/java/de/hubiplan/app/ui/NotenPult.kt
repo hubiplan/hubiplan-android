@@ -610,7 +610,7 @@ fun NotenPult(session: PultSession, vm: AppViewModel, onClose: () -> Unit) {
                                 val here = pieces.indexOfFirst { it.arrangement == arrangement }
                                 if (here >= 0) jump(mappeKey, here) else auswahl = null
                             } catch (e: ApiException) {
-                                hint = e.generalError ?: e.message
+                                hint = e.generalError ?: e.problem().text
                             }
                         }
                     },

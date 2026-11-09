@@ -201,6 +201,8 @@ data class MyPlacing(
     val place: Int? = null,
     @SerialName("value_text") val valueText: String = "",
     val field: Int? = null,
+    /** Einheit des Werts („Ringe“, „Teiler“); ältere Server senden sie nicht. */
+    @SerialName("unit_label") val unitLabel: String = "",
 )
 
 @Serializable
