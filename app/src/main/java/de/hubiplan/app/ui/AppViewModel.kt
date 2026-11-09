@@ -162,6 +162,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val stand: StateFlow<StandSession?> = _stand
     fun openStand(session: StandSession) { _stand.value = session }
     fun closeStand() { _stand.value = null }
+
+    // Notenpult im Vollbild statt der Reiter (Noten in der App, N4), wie der Standmodus
+    private val _pult = MutableStateFlow<PultSession?>(null)
+    val pult: StateFlow<PultSession?> = _pult
+    fun openPult(session: PultSession) { _pult.value = session }
+    fun closePult() { _pult.value = null }
     private val _openTodo = MutableStateFlow<TodoOpenRequest?>(null)
     val openTodo: StateFlow<TodoOpenRequest?> = _openTodo
     private val _selectedTodo = MutableStateFlow<de.hubiplan.app.data.TodoTarget?>(null)

@@ -141,8 +141,13 @@ data class PortalAccess(
     @SerialName("member_name") val memberName: String = "",
     /** Eingeschaltete Module der Einheit (Modulverzeichnis; ältere Stände: fehlt) */
     val modules: List<String>? = null,
+    /** Aktives Musikerprofil in diesem Verein (Modul Musik an; ältere Stände: fehlt) */
+    val musician: Boolean = false,
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
+
+    /** Bereich „Noten“: Musiker, Module Musik und Notenarchiv an (Konzept Noten in der App, E2) */
+    val hasScores: Boolean get() = musician && moduleOn("music", false) && moduleOn("scores", false)
 
     /**
      * Ist das Modul eingeschaltet? Ältere HUBIplan-Stände liefern keine Modulliste; dann gilt

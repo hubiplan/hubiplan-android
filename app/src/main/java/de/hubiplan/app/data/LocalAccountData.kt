@@ -43,6 +43,7 @@ object LocalAccountData {
         DraftCrypto.deleteKey(alias(accountKey))
         StandStore.forget(context, accountKey)
         LastUnitStore.forget(context, accountKey)
+        NotenStore.forget(context, accountKey)
     }
 
     /**
@@ -52,6 +53,8 @@ object LocalAccountData {
      */
     fun retire(context: Context, accountKey: String, server: String = "", email: String = "") {
         dir(context, "ausweise", accountKey).deleteRecursively()
+        // Noten nie behalten, wenn das Gerät abgemeldet ist (Konzept Noten, Abschnitt 5)
+        NotenStore.forget(context, accountKey)
         LastUnitStore.forget(context, accountKey)
         ReceiptCache.forget(context.cacheDir, accountKey)
         File(context.cacheDir, WALLET_PASS).deleteRecursively()

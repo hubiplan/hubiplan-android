@@ -66,13 +66,41 @@ import de.hubiplan.app.tr
  * liegen Ausweis, Foto und eigene Daten (A-02, wie „Mein Bereich › Ausweis“ im Browser).
  */
 internal enum class Tab(val label: String, val short: String = label) {
-    TERMINE(tr("Termine")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen"), tr("Neues")), AUSWEIS(tr("Ausweis")),
+    TERMINE(tr("Termine")), NOTEN(tr("Noten")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen"), tr("Neues")), AUSWEIS(tr("Ausweis")),
     VERWALTUNG(tr("Verwaltung"), tr("Verwalten")), KONTO(tr("Mein Konto")),
 }
 
-/** Ziele der Navigationsleiste: nie mehr als fünf, „Mein Konto“ nie (A-01). */
-internal fun barTabs(adminVisible: Boolean, tasksVisible: Boolean): List<Tab> =
-    Tab.entries.filter { it != Tab.KONTO && (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) }
+/**
+ * Ziele der Navigationsleiste: auf dem Telefon nie mehr als fünf, „Mein Konto“ nie (A-01).
+ * „Noten“ nur für Musiker (Konzept Noten in der App, E2). Würden es auf dem Telefon sechs,
+ * wandert „Verwaltung“ als Symbol in die Kopfleiste; die seitliche Leiste ([wide]) zeigt alle.
+ */
+internal fun barTabs(adminVisible: Boolean, tasksVisible: Boolean, notesVisible: Boolean = false, wide: Boolean = false): List<Tab> {
+    val all = Tab.entries.filter {
+        it != Tab.KONTO && (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) && (it != Tab.NOTEN || notesVisible)
+    }
+    return if (all.size > 5 && !wide) all - Tab.VERWALTUNG else all
+}
+
+/** Zugang für den Bereich „Noten“: online aus den Modulen, ohne Netz aus dem Speicher. */
+@Composable
+private fun notesAccessId(main: Screen.Main, context: android.content.Context): Int? {
+    val access = main.access
+    if (access != null) return access.id.takeIf { access.hasScores }
+    val selected = main.account.selectedAccess ?: return null
+    if (!main.offline) return null
+    val stored = remember(main.account.server, main.account.deviceId, selected) {
+        de.hubiplan.app.data.NotenStore(context, de.hubiplan.app.data.LocalAccountData.key(main.account.server, main.account.deviceId))
+            .hasFolders(selected)
+    }
+    return selected.takeIf { stored }
+}
+
+/** Steht „Verwaltung“ als Symbol in der Kopfleiste statt unten? */
+internal fun adminInHeader(adminVisible: Boolean, tabs: List<Tab>): Boolean = adminVisible && Tab.VERWALTUNG !in tabs
+
+/** Seitliche Leiste statt unterer: breiter Bildschirm, der nicht flach ist (Tablet). */
+internal fun wideNavigation(widthDp: Int, heightDp: Int): Boolean = widthDp >= 600 && heightDp >= 480
 
 /**
  * Wohin System-Zurück auf oberster Ebene führt (A-04): aus „Mein Konto“ zum vorherigen Reiter,
@@ -138,8 +166,16 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     }
     val adminVisible = admin.visible || pendingTodo?.target?.scope?.let { it != "p" } == true
     val tasksVisible = main.me?.portal?.any { it.hasTodos || it.hasHelpers } == true || selectedTodo?.scope == "p"
-    val tabs = barTabs(adminVisible, tasksVisible)
+    // Ohne Netz zählt der zuletzt gespeicherte Stand: das Notenpult muss offline gehen
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val notesAccess = notesAccessId(main, context)
+    val notesVisible = notesAccess != null
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val wide = wideNavigation(configuration.screenWidthDp, configuration.screenHeightDp)
+    val tabs = barTabs(adminVisible, tasksVisible, notesVisible, wide)
+    val adminIcon = adminInHeader(adminVisible, tabs)
     LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
+    LaunchedEffect(notesVisible) { if (tab == Tab.NOTEN && !notesVisible) tab = Tab.TERMINE }
     // Zurück auf oberster Ebene: zum Startreiter statt die App zu schließen (A-04). Hier vor dem
     // Inhalt angelegt, damit Zurück in Listen, Details und Formularen zuerst dort wirkt.
     val back = backTarget(tab, previousTab)
@@ -154,6 +190,16 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     val openStand = stand
     if (openStand != null) {
         StandScreen(openStand, onClose = vm::closeStand)
+        return
+    }
+    // Notenpult ebenso im Vollbild; beim Kontowechsel schließen
+    val pult by vm.pult.collectAsStateWithLifecycle()
+    LaunchedEffect(pult, main.account.server, main.account.deviceId) {
+        if (pult?.accountKey?.let { it != accountKey(main.account) } == true) vm.closePult()
+    }
+    val openPult = pult
+    if (openPult != null && openPult.accountKey == accountKey(main.account)) {
+        NotenPult(openPult, vm, onClose = vm::closePult)
         return
     }
     // Aktiver Reiter deutlich markiert: Fläche in der (kontrastgeprüften) Primärfarbe, mind. 3 : 1
@@ -181,6 +227,11 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
     CompositionLocalProvider(LocalBackHost provides backHost) {
     NavigationSuiteScaffold(
+        layoutType = if (wide) {
+            androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType.NavigationRail
+        } else {
+            androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType.NavigationBar
+        },
         navigationSuiteItems = {
             tabs.forEach { t ->
                 item(
@@ -191,6 +242,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                             when (t) {
                                 Tab.AUFGABEN -> Icons.Filled.CheckCircle
                                 Tab.TERMINE -> Icons.Filled.DateRange
+                                Tab.NOTEN -> NotenSymbol
                                 Tab.MITTEILUNGEN -> Icons.Filled.Email
                                 Tab.AUSWEIS -> Icons.Filled.AccountBox
                                 Tab.VERWALTUNG -> Symbole.Verwaltung
@@ -240,6 +292,12 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 },
                 // „Mein Konto“ oben rechts wie im Browser (A-01)
                 actions = {
+                    // Sechs Ziele auf dem Telefon: „Verwaltung“ hier statt unten (Noten, E2)
+                    if (adminIcon && tab != Tab.KONTO) {
+                        IconButton(onClick = { if (tab != Tab.VERWALTUNG) leave.request { tab = Tab.VERWALTUNG } }) {
+                            Icon(Symbole.Verwaltung, contentDescription = tr("Verwaltung"))
+                        }
+                    }
                     if (tab != Tab.KONTO) {
                         IconButton(onClick = { leave.request { previousTab = tab; tab = Tab.KONTO } }) {
                             Icon(Icons.Filled.AccountCircle, contentDescription = tr("Mein Konto"))
@@ -264,6 +322,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     tab == Tab.KONTO -> AccountPane(main, vm)
                     tab == Tab.VERWALTUNG -> AdminPane(main, vm)
                     tab == Tab.AUFGABEN -> MemberTodosPane(main, vm)
+                    tab == Tab.NOTEN && notesAccess != null -> NotenPane(notesAccess, main, vm)
                     main.me == null && !main.offline -> Loading()
                     access == null && main.me != null -> Message(
                         tr("Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an den Vorstand."),

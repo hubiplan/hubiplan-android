@@ -76,6 +76,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val now = OffsetDateTime.now()
                 items.filter { it.needsRsvpReminder(now) }.forEach { hints += Triple(access.id, it, access.title) }
             }
+            // Noten: Mappen abgleichen, Verwaistes löschen, am Vortag über WLAN vorladen
+            // (ohne Kontosperre: das Laden kann dauern und soll keinen Kontowechsel aufhalten)
+            if (store.ifCurrent(account) { true } == true) syncNoten(account, api, me.portal)
             missedPushes(store, account, api, me.portal.map { it.id }, firstSync = settings.lastSync == null)
             store.ifCurrent(account) {
                 if (settings.calendarOn) calendar.removeCalendarsExcept(keep, account.server)
@@ -113,6 +116,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             // Kalendererlaubnis entzogen
             store.ifCurrent(account) { store.setCalendarOn(false) }
             false
+        }
+    }
+
+    /** Noten in der App (Konzept Abschnitt 5, E10): nie mehr behalten, als der Server liefert. */
+    private suspend fun syncNoten(account: de.hubiplan.app.data.Account, api: Api, portal: List<de.hubiplan.app.data.PortalAccess>) {
+        val notes = de.hubiplan.app.data.NotenStore(
+            applicationContext,
+            de.hubiplan.app.data.LocalAccountData.key(account.server, account.deviceId),
+        )
+        val prefs = de.hubiplan.app.data.PultEinstellungen.load(applicationContext)
+        val connectivity = applicationContext.getSystemService(android.net.ConnectivityManager::class.java)
+        val unmetered = connectivity?.isActiveNetworkMetered == false
+        val musician = portal.filter { it.hasScores }.map { it.id }.toSet()
+        notes.storedAccesses().filter { it !in musician }.forEach { notes.forgetAccess(it) }
+        for (id in musician) {
+            runCatching { de.hubiplan.app.data.NotenSync(api, notes, id).background(unmetered, prefs.prefetch, prefs.lastLayout) }
         }
     }
 

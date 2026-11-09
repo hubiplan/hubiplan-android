@@ -86,6 +86,16 @@ class MainActivity : FragmentActivity() {
         super.onStop()
     }
 
+    // Notenpult: Pedal, Pfeiltasten und Lautstärketasten blättern (Noten in der App, N4).
+    // Activity.dispatchKeyEvent ist öffentlich; nur die Überschreibung in androidx.core ist als
+    // eingeschränkt markiert. Ohne diesen Weg kämen Pfeiltasten nicht sicher an Compose vorbei.
+    @android.annotation.SuppressLint("RestrictedApi")
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        val pult = de.hubiplan.app.ui.PultKeys.handler
+        if (pult != null && pult(event)) return true
+        return super.dispatchKeyEvent(event)
+    }
+
     override fun onUserInteraction() {
         super.onUserInteraction()
         vm.userInteracted()
