@@ -75,6 +75,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
@@ -903,7 +904,7 @@ private fun Schnellwahl(
                     // In der aktuellen Mappe bleiben, wenn das Stück dort steht
                     val place = hit.stellen.firstOrNull { it.mappe.key == mappe.key } ?: hit.stellen.first()
                     ListItem(
-                        modifier = Modifier.clickable { pick(place.mappe, place.item) },
+                        modifier = Modifier.clickable(role = Role.Button) { pick(place.mappe, place.item) },
                         headlineContent = { Text(hit.item.title) },
                         supportingContent = { Text(stellenText(hit.stellen)) },
                     )
@@ -912,7 +913,7 @@ private fun Schnellwahl(
                 item { Text(mappe.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = Abstand.klein).asHeading()) }
                 items(mappe.pieces, key = { "p-${it.arrangement}-${it.position}" }) { p ->
                     ListItem(
-                        modifier = Modifier.clickable { pick(mappe, p) },
+                        modifier = Modifier.clickable(role = Role.Button) { pick(mappe, p) },
                         leadingContent = if (p.number.isNotBlank()) {
                             { Text(p.number, style = MaterialTheme.typography.titleMedium) }
                         } else null,
