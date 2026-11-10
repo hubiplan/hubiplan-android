@@ -18,6 +18,10 @@ data class PushMessage(
     val todo: Int? = null,
     val org: Int? = null,
     val department: Int? = null,
+    // Termin: Rundschreiben dazu (bei "circular") bzw. Einladung/Erinnerung (bei "event")
+    val event: Int? = null,
+    val rsvp: Boolean = false,
+    val maybe: Boolean = false,
 ) {
     companion object {
         fun parse(text: String): PushMessage? =

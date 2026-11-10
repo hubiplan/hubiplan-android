@@ -47,6 +47,10 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.ui.Alignment
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.platform.LocalContext
 
 /** Termine wie im Kalender-Abo: von heute bis gut ein Jahr voraus. */
 private const val DAYS_AHEAD = 400L
@@ -160,6 +164,7 @@ private fun EventDetailView(
                 notice = when (event?.rsvp?.mine?.status) {
                     "yes" -> tr("Deine Zusage ist gespeichert.")
                     "no" -> tr("Deine Absage ist gespeichert.")
+                    "maybe" -> tr("Deine Antwort „Vielleicht“ ist gespeichert.")
                     else -> tr("Deine Rückmeldung ist zurückgenommen.")
                 }
                 onChanged()
@@ -194,19 +199,18 @@ private fun EventDetailView(
         } else if (occ.note.isNotBlank()) {
             Text(occ.note)
         }
-        listOf(occ.location.ifBlank { e.location }, occ.address.ifBlank { e.address }).filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.let {
-            Text(it.joinToString("\n"))
-        }
+        PlaceSection(occ.location.ifBlank { e.location }, occ.address.ifBlank { e.address }, e)
         if (e.owner.isNotBlank()) Text(e.owner, style = MaterialTheme.typography.bodySmall)
         if (e.description.isNotBlank()) Text(e.description)
+        if (e.attachments.isNotEmpty()) AttachmentSection(access, e, vm)
 
         if (e.rsvp.enabled) {
             HorizontalDivider()
             if (series) Text(tr("Bei Serien gilt die Rückmeldung für alle Termine der Serie."), style = MaterialTheme.typography.bodySmall)
-            RsvpSection(e, busy) { status, guests ->
+            RsvpSection(e, busy) { status, guests, note ->
                 val api = vm.api() ?: return@RsvpSection
                 change {
-                    if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests)
+                    if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests, note)
                 }
             }
         }
@@ -214,10 +218,11 @@ private fun EventDetailView(
 }
 
 @Composable
-private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int) -> Unit) {
+private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int, String) -> Unit) {
     val rsvp = e.rsvp
     val mine = rsvp.mine
     var guests by remember(e.id, mine?.guests) { mutableIntStateOf(mine?.guests ?: 0) }
+    var note by remember(e.id, mine?.note) { mutableStateOf(mine?.note.orEmpty()) }
     Text(tr("Rückmeldung"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     rsvp.deadline?.let { Text(tr("Anmeldeschluss: {date}", "date" to formatDate(it))) }
     rsvp.free?.let { Text(tr("Noch {it} Plätze frei", "it" to it)) }
@@ -228,9 +233,14 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int)
                 tr("Du hast zugesagt") + if (count > 0) tr(" (mit {count} Begleitung).", "count" to count) else "."
             }
             "no" -> tr("Du hast abgesagt.")
+            "maybe" -> tr("Du hast mit „Vielleicht“ geantwortet.")
             else -> tr("Du hast dich noch nicht zurückgemeldet.")
         },
     )
+    if (mine != null && mine.note.isNotBlank()) Text(mine.note, style = MaterialTheme.typography.bodySmall)
+    if (mine != null && rsvp.canRespond) {
+        Text(tr("Du kannst deine Rückmeldung bis zum Anmeldeschluss jederzeit ändern."), style = MaterialTheme.typography.bodySmall)
+    }
     if (!rsvp.canRespond) {
         rsvp.reason?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         return
@@ -252,12 +262,26 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int)
             )
         }
     }
+    if (rsvp.noteAllowed) {
+        OutlinedTextField(
+            value = note,
+            onValueChange = { if (it.length <= 200) note = it },
+            label = { Text(rsvp.noteQuestion.ifBlank { tr("Bemerkung (optional)") }) },
+            enabled = !busy,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    val sentNote = if (rsvp.noteAllowed) note else ""
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
-        Button(onClick = { onRespond("yes", guests) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Zusagen")) }
-        OutlinedButton(onClick = { onRespond("no", 0) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Absagen")) }
+        Button(onClick = { onRespond("yes", guests, sentNote) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Zusagen")) }
+        OutlinedButton(onClick = { onRespond("no", 0, sentNote) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Absagen")) }
+    }
+    if (rsvp.maybeAllowed) {
+        OutlinedButton(onClick = { onRespond("maybe", 0, sentNote) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(tr("Vielleicht")) }
     }
     if (mine != null) {
-        TextButton(onClick = { onRespond(null, 0) }, enabled = !busy) { Text(tr("Rückmeldung zurücknehmen")) }
+        TextButton(onClick = { onRespond(null, 0, "") }, enabled = !busy) { Text(tr("Rückmeldung zurücknehmen")) }
     }
 }
 
@@ -267,6 +291,7 @@ internal fun RsvpStatus(response: String?) {
     val (icon, text) = when (response) {
         "yes" -> Icons.Filled.Check to tr("Zugesagt")
         "no" -> Icons.Filled.Close to tr("Nicht dabei")
+        "maybe" -> null to tr("Vielleicht")
         else -> null to tr("Noch offen")
     }
     val color = if (response == null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
@@ -274,4 +299,43 @@ internal fun RsvpStatus(response: String?) {
         icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(18.dp)) }
         Text(text, color = color)
     }
+}
+
+/** Ort mit Anfahrt: „Navigation starten“ öffnet die Navigations-App, dazu Links zu OSM und Google. */
+@Composable
+private fun PlaceSection(location: String, address: String, e: EventDetail) {
+    val context = LocalContext.current
+    fun start(intent: Intent) = runCatching { context.startActivity(intent) }
+    val lines = listOf(location, address).filter { it.isNotBlank() }
+    if (lines.isEmpty() && e.directions.isBlank()) return
+    if (lines.isNotEmpty()) Text(lines.joinToString("\n"))
+    if (e.directions.isNotBlank()) Text(tr("Anfahrt: {text}", "text" to e.directions), style = MaterialTheme.typography.bodySmall)
+    val lat = e.latitude
+    val lon = e.longitude
+    val geo = when {
+        lat != null && lon != null -> "geo:%.5f,%.5f?q=%.5f,%.5f".format(java.util.Locale.ROOT, lat, lon, lat, lon)
+        address.isNotBlank() -> "geo:0,0?q=" + Uri.encode(lines.joinToString(", "))
+        else -> null
+    }
+    if (geo != null) {
+        OutlinedButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(geo))) }, modifier = Modifier.fillMaxWidth()) {
+            Text(tr("Navigation starten"))
+        }
+        e.mapLinks.osm?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in OpenStreetMap")) } }
+        e.mapLinks.google?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in Google Maps")) } }
+    }
+}
+
+/** Anhänge des Termins direkt in der App öffnen (PDF-Betrachter o. Ä.). */
+@Composable
+private fun AttachmentSection(access: PortalAccess, e: EventDetail, vm: AppViewModel) {
+    val viewer = rememberViewer(vm)
+    Text(tr("Anhänge"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+    e.attachments.forEach { file ->
+        TextButton(
+            onClick = { viewer.open(file.name, file.contentType.ifBlank { "application/octet-stream" }) { it.eventAttachment(access.id, e.id, file.id) } },
+            enabled = !viewer.busy,
+        ) { Text(file.name) }
+    }
+    viewer.message?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
 }

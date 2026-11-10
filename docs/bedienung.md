@@ -164,6 +164,18 @@ Terminantworten und Aufgabenaktionen bestätigen einen erfolgreichen Serverabsch
 höfliche Statusmeldung. Fehler entfernen vorherige Erfolge und bleiben mit Korrektur- oder
 Wiederholungsmöglichkeit sichtbar.
 
+Im Termin stehen Ort, Anfahrt und der Knopf **Navigation starten** (öffnet die Navigations-App
+des Telefons), dazu **Route in OpenStreetMap** und **Route in Google Maps**, wenn der Verein den
+Ort angegeben hat. Anhänge des Termins öffnen sich direkt in der App. Bis zum Anmeldeschluss
+lässt sich die Rückmeldung jederzeit ändern; erlaubt der Termin es, gibt es **Vielleicht** und
+eine Bemerkung (auf Wunsch mit eigener Frage). Einladungen und Rundschreiben zu einem Termin
+kommen als Benachrichtigung mit den Knöpfen Zusage, Absage und gegebenenfalls Vielleicht.
+
+**English:** The event shows place, directions and **Start navigation**, plus route links to
+OpenStreetMap and Google Maps. Event attachments open in the app. Replies can be changed until
+the deadline; where allowed there is **Maybe** and a comment. Invitations and circulars about an
+event arrive as notifications with accept, decline and, if allowed, maybe buttons.
+
 **English:** **Messages** shows the same received circulars as the member area on the web,
 with native formatting. Attachments open in the browser for the selected message and
 membership.

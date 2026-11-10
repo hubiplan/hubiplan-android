@@ -257,7 +257,7 @@ data class Occurrence(
 data class EventList(val items: List<Occurrence>)
 
 @Serializable
-data class MyResponse(val status: String, val guests: Int = 0, val note: String = "")
+data class MyResponse(val status: String, val guests: Int = 0, val note: String = "", val source: String = "")
 
 @Serializable
 data class Rsvp(
@@ -270,6 +270,23 @@ data class Rsvp(
     val mine: MyResponse? = null,
     @SerialName("can_respond") val canRespond: Boolean = false,
     val reason: String? = null,
+    // Je Termin einschaltbar: „Vielleicht“ und Bemerkung (mit eigener Frage)
+    @SerialName("maybe_allowed") val maybeAllowed: Boolean = false,
+    @SerialName("note_allowed") val noteAllowed: Boolean = false,
+    @SerialName("note_question") val noteQuestion: String = "",
+)
+
+/** Routenlinks zum Ort (OpenStreetMap, Google Maps). */
+@Serializable
+data class MapLinks(val osm: String? = null, val google: String? = null)
+
+/** Anhang eines Termins. */
+@Serializable
+data class EventFile(
+    val id: Int,
+    val name: String,
+    val size: Long = 0,
+    @SerialName("content_type") val contentType: String = "",
 )
 
 @Serializable
@@ -286,6 +303,11 @@ data class EventDetail(
     @SerialName("cancel_note") val cancelNote: String = "",
     val owner: String = "",
     val rsvp: Rsvp = Rsvp(),
+    val directions: String = "",
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    @SerialName("map_links") val mapLinks: MapLinks = MapLinks(),
+    val attachments: List<EventFile> = emptyList(),
 )
 
 @Serializable
