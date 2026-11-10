@@ -1,0 +1,4 @@
+• Events: reply with "Maybe" and a note where the event allows it; you can change it until the deadline.
+• Location with directions, "Start navigation" and route links; open attachments right in the app.
+• Notifications for invitations and reminders with accept and decline right in the notification.
+• Shared exports and PDFs are removed from the device after about an hour.

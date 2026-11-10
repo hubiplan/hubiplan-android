@@ -1,0 +1,4 @@
+• Termine: Rückmeldung auch mit „Vielleicht“ und Bemerkung, wenn der Termin es erlaubt; änderbar bis zum Anmeldeschluss.
+• Ort mit Anfahrt, „Navigation starten“ und Routenlinks; Anhänge direkt in der App öffnen.
+• Benachrichtigung zu Einladung und Erinnerung mit Zusage und Absage direkt in der Mitteilung.
+• Geteilte Exporte und PDFs werden nach etwa einer Stunde vom Gerät gelöscht.
