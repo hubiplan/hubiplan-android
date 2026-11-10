@@ -46,7 +46,7 @@ if [ "$DEFAULT" = 1 ]; then
     # F-Droid: in der foss-Fassung dürfen keine Google-Dienste stecken (Firebase, Play-Dienste)
     DEPS=$(./gradlew --no-daemon -q :app:dependencies --configuration fossReleaseRuntimeClasspath)
     if grep -E "com\.google\.(firebase|android\.gms|android\.play)|com\.google\.android\.datatransport" <<< "$DEPS"; then
-        echo "Abbruch: Google-Bibliothek in der foss-Fassung." >&2
+        echo "Abbruch: proprietäre Google-Dienste in der foss-Fassung." >&2
         exit 1
     fi
     # Activity-Result-API (QR-Scan, Kamera, Berechtigungen) braucht androidx.fragment ab 1.3:

@@ -20,7 +20,8 @@ Projektregeln (gelten wie im Hauptprojekt `hubiplan`):
 - **Jeder PR füllt „Für die Änderungshinweise“** der PR-Vorlage aus (Deutsch und Englisch).
   App-Versionen bleiben `versionName` (SemVer, im Store ab 1.0.0) + `versionCode`; Tags `v0.x.y`
   nur nach ausdrücklicher Freigabe durch den Herausgeber (siehe `docs/veroeffentlichen.md`).
-- Variante `foss` ohne jede Google-Bibliothek (F-Droid); Google-Dienste nur in `play`.
+- Variante `foss` ohne proprietäre Google-Dienste (kein Firebase, keine Play-Dienste); freie
+  Google-Bibliotheken unter Apache 2.0 (AndroidX, ZXing) sind erlaubt. Google-Dienste nur in `play`.
 - Die App spricht nur mit der HUBIplan-Instanz des Mitglieds (`/api/app/v1/`, `/api/portal/…`),
   Beschreibung in `hubiplan/docs/app.md`.
 - Ohne lokal verfügbares Android-SDK keine erfolgreichen Builds oder Tests behaupten;

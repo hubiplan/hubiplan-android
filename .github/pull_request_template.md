@@ -16,7 +16,7 @@ ein bis drei Sätze für Mitglieder, auf Deutsch und Englisch. „–“, wenn n
 - [ ] `scripts/test.sh` ist grün, oder: <!-- was wurde stattdessen geprüft? -->
 - [ ] Nur erfundene Daten in Code, Tests und Bildschirmfotos
 - [ ] Keine Zugangsdaten, internen Chat-/Sitzungslinks, privaten Pfade, nicht öffentlichen Hostnamen oder realen Betriebsdaten in Änderungen und PR-Text
-- [ ] Keine Google-Bibliothek in der Variante `foss`
+- [ ] Keine proprietären Google-Dienste (Firebase, Play-Dienste) in der Variante `foss`
 
 ## Beitragsbedingungen
 

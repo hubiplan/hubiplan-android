@@ -188,8 +188,8 @@ Textbaustein für die Datenschutzhinweise des Vereins:
 ## Mitwirken
 
 Fehlermeldungen, Ideen und Pull Requests sind willkommen: [CONTRIBUTING.md](CONTRIBUTING.md).
-Bitte nur erfundene Daten in Code, Tests und Bildschirmfotos, und keine Google-Bibliothek in
-der Variante `foss`.
+Bitte nur erfundene Daten in Code, Tests und Bildschirmfotos, und keine proprietären
+Google-Dienste (Firebase, Play-Dienste) in der Variante `foss`.
 
 ## Sicherheit
 
