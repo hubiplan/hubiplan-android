@@ -52,7 +52,7 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
 - **Rechnungen**: offene zuerst mit Betrag und Fälligkeit, „PDF ansehen“, darunter Beiträge über
   eine Sammelrechnung und das Lastschriftmandat (nur ansehen; erteilen, ändern und widerrufen im
   Browser). PDFs öffnet die App nur online; sie liegen nur kurz im Cache und werden beim nächsten
-  Öffnen, beim Start und beim Abmelden gelöscht.
+  Öffnen, spätestens nach etwa einer Stunde, beim Start und beim Abmelden gelöscht.
 - **Versammlungen**: Einladungen mit Ort, Zeit und Tagesordnung, „Antrag stellen“ bis zur Frist,
   eigene Anträge mit Stand und „Antrag zurückziehen“, darunter freigegebene Protokolle als PDF.
 - **Meine Ergebnisse**: Plätze, Werte, Titel und Ranglisten.

@@ -6,7 +6,7 @@ import java.io.File
 /**
  * Dateien aus dem Mitgliederbereich (Rechnung, Protokoll, Dokument) nur zum Ansehen: die App
  * legt sie kurz in den Cache, damit ein PDF-Betrachter sie öffnen kann, und löscht sie beim
- * nächsten Öffnen, beim Start und beim Abmelden. Offline gespeichert wird nichts (Konzept app-ich,
+ * nächsten Öffnen, spätestens nach etwa einer Stunde, beim Start und beim Abmelden. Offline gespeichert wird nichts (Konzept app-ich,
  * Entscheidung 3).
  */
 object Ansicht {
@@ -24,7 +24,7 @@ object Ansicht {
         val dir = File(context.cacheDir, FOLDER)
         dir.deleteRecursively()
         dir.mkdirs()
-        return File(dir, safeName(name)).apply { writeBytes(bytes) }
+        return File(dir, safeName(name)).apply { writeBytes(bytes) }.also { GeteilteDateien.schedule(context) }
     }
 
     fun clear(context: Context) {
