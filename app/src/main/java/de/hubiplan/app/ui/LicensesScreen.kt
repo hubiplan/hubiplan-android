@@ -38,7 +38,8 @@ import de.hubiplan.app.BuildConfig
 import de.hubiplan.app.data.Licenses
 import de.hubiplan.app.tr
 
-const val SOURCE_URL = "https://github.com/hubiplan/hubiplan-android"
+/** Quellcode genau dieser Version der App (Tag v<versionName>). */
+val SOURCE_URL: String get() = Licenses.sourceUrl(BuildConfig.VERSION_NAME)
 
 // Datenschutzerklärung des Herausgebers zur App (Google Play verlangt den Link auch in der App)
 const val APP_PRIVACY_URL = "https://hubiplan.de/datenschutz/"
@@ -124,7 +125,10 @@ private fun LicenseList(
                     (context.asset(Licenses.APP_LICENSE_ASSET) ?: tr("Text nicht gefunden: https://www.gnu.org/licenses/agpl-3.0.txt")),
             )
         }) { Text(tr("Lizenztext der App (AGPL)")) }
-        TextButton(onClick = { onOpen(SOURCE_URL) }) { Text(tr("Quellcode")) }
+        TextButton(onClick = { onOpen(SOURCE_URL) }) {
+            Text(tr("Quellcode dieser Version (v{VERSION_NAME})", "VERSION_NAME" to BuildConfig.VERSION_NAME))
+        }
+        TextButton(onClick = { onOpen(Licenses.SOURCE_REPO) }) { Text(tr("Alle Fassungen des Quellcodes")) }
 
         HorizontalDivider()
         Text(tr("Enthaltene Bibliotheken"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
@@ -152,6 +156,9 @@ private fun LicenseList(
         for ((name, notice) in Licenses.NOTICES) {
             Text(name, style = MaterialTheme.typography.titleSmall)
             Text(notice, style = MaterialTheme.typography.bodySmall)
+        }
+        Licenses.publicSuffixSource(libraries)?.let { url ->
+            TextButton(onClick = { onOpen(url) }) { Text(tr("Eingebaute Fassung der Public Suffix List")) }
         }
         Licenses.KNOWN["MPL-2.0"]?.let { mpl ->
             TextButton(onClick = {

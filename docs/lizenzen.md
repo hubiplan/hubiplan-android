@@ -1,17 +1,23 @@
 # Lizenzen
 
 Die App steht unter der **AGPL-3.0-or-later** ([LICENSE](../LICENSE)). Grundlage dieses
-Dokuments ist das Lizenzaudit vom 31.10.2026 (Bericht im Projektordner unter
-`audit/lizenzaudit-2026-10-31.md`); es ist keine anwaltliche Prüfung.
+Dokuments sind die Lizenzaudits vom 31.10.2026 und 10.11.2026 (Berichte im Projektordner unter
+`audit/`); es ist keine anwaltliche Prüfung.
 
 ## Lizenzseite in der App
 
 „Lizenzen“ steht auf der Startseite (ohne Anmeldung) und unter Konto. Dort:
 
-- AGPL-Text der App (beim Bauen aus `LICENSE` kopiert) und Link zum Quellcode,
+- AGPL-Text der App (beim Bauen aus `LICENSE` kopiert),
+- Link zum Quellcode **genau dieser Version** (`…/tree/v<versionName>`, `Licenses.sourceUrl`)
+  und zum Repository mit allen Fassungen. Der Link passt nur, wenn jede ausgelieferte Version
+  ihren Tag bekommt (siehe unten, „Offen“),
 - alle Bibliotheken der jeweiligen Variante mit Version und Lizenz, dazu die Lizenztexte
   (`app/src/main/assets/lizenzen/`: Apache 2.0, MPL 2.0),
-- Hinweise der Bibliotheken: OkHttp enthält die Public Suffix List (MPL 2.0).
+- Hinweise der Bibliotheken: OkHttp enthält die Public Suffix List (MPL 2.0). Als Quellform
+  (MPL § 3.2) verlinkt die Seite die Datei `publicsuffixes.gz` im Tag der eingebauten
+  OkHttp-Version (`Licenses.publicSuffixSource`, Pfad gilt für OkHttp 4.x; `LicensesTest`
+  schlägt bei einem Wechsel auf 5.x fehl, damit der Pfad geprüft wird).
 
 Die Bibliotheksliste schreibt die Gradle-Aufgabe `lizenzliste<Variante>` (in
 `app/build.gradle.kts`) beim Bauen aus dem tatsächlichen Laufzeit-Abhängigkeitsgraphen der
@@ -44,8 +50,12 @@ Beiträge.
 
 ## Offen
 
-- **Quellcode:** Das Repository ist seit 31.10.2026 öffentlich. Vor einer Verteilung der
-  App (Play Store, F-Droid, APK) bekommt jede ausgelieferte Version einen Tag (`v0.30.0`),
-  damit der passende Quellcode dauerhaft erreichbar ist.
+- **Quellcode:** Das Repository ist seit 31.10.2026 öffentlich. Jede ausgelieferte Version
+  (Play Store, F-Droid, APK) braucht ihren Tag `v<versionName>`, damit der Link in der App
+  und der passende Quellcode dauerhaft erreichbar sind (AGPL § 6). Stand 10.11.2026 fehlen die
+  Tags für die bereits im Play Store erschienenen Versionen 1.0.0 bis 1.3.0 (Lizenzaudit
+  10.11.2026, L02); sie setzt der Herausgeber nach Freigabe nachträglich.
+- **Variante `play`:** vor einer Veröffentlichung die Weitergaberechte für die sieben
+  Google-Bausteine und die Hinweise je Baustein klären (Lizenzaudit 10.11.2026, L03/FQ-03).
 - **Symbole:** Die Material-Symbole stammen aus der Bibliothek material-icons-core (Apache 2.0).
 - **Storematerial:** Nur erfundene oder freigegebene Inhalte (keine echten Vereinsdaten).
