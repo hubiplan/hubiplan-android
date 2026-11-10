@@ -224,9 +224,13 @@ der englische Wortlaut:
 > Google Play services libraries or the Firebase libraries (or modified versions of those
 > libraries), containing parts covered by the terms of the Android Software Development Kit
 > License Agreement, the licensors of this Program grant you additional permission to convey
-> the resulting work. Corresponding Source for a non-source form of such a combination shall
-> not include the source code for the parts of those libraries used as well as that of the
-> covered work.
+> the resulting work. Corresponding Source for a non-source form of such a combination need
+> not include the source code for the parts of those libraries used, but shall include the
+> source code of the covered work.
+
+Der letzte Satz ist seit 10.11.2026 klarer gefasst; die frühere Fassung („shall not include
+… as well as that of the covered work“) ließ sich so lesen, als sei auch der Code der App
+ausgenommen. Gemeint war immer, was hier steht (Lizenzaudit 10.11.2026, L03).
 
 Die Erlaubnis gilt nur für diese Google-Bibliotheken. Für den eigenen Code der App bleibt
 alles wie in der AGPL: Wer die App weitergibt, muss ihren Quellcode anbieten. Wer die App

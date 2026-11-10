@@ -13,6 +13,24 @@ data class Library(val group: String, val name: String, val version: String, val
 data class LicenseInfo(val title: String, val asset: String?, val url: String)
 
 object Licenses {
+    /** Öffentliches Repository der App (AGPL §§ 6, 13). */
+    const val SOURCE_REPO = "https://github.com/hubiplan/hubiplan-android"
+
+    /**
+     * Quellcode genau dieser App-Version: Jede veröffentlichte Version bekommt den Tag
+     * `v<versionName>` (docs/veroeffentlichen.md), so passt der Link zur ausgelieferten Datei
+     * (Lizenzaudit 10.11.2026, L02).
+     */
+    fun sourceUrl(versionName: String): String = "$SOURCE_REPO/tree/v$versionName"
+
+    /**
+     * Quellform der Public Suffix List, die in OkHttp steckt (MPL 2.0 § 3.2): die Datei im Tag
+     * der eingebauten OkHttp-Version (Lizenzaudit 10.11.2026, L08). Der Pfad gilt für OkHttp 4.x.
+     */
+    fun publicSuffixSource(libraries: List<Library>): String? =
+        libraries.firstOrNull { it.group == "com.squareup.okhttp3" && it.name == "okhttp" }?.version
+            ?.let { "https://github.com/square/okhttp/blob/parent-$it/okhttp/src/main/resources/okhttp3/internal/publicsuffix/publicsuffixes.gz" }
+
     const val LIBRARIES_ASSET = "lizenzen/bibliotheken.tsv"
     const val APP_LICENSE_ASSET = "lizenzen/LICENSE.txt"
 
