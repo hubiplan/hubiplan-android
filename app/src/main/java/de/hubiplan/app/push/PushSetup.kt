@@ -252,10 +252,35 @@ object PushSetup {
                 val key = circularKey(access, id)
                 if (key in store.notifiedKeys()) return
                 val logo = ClubLogo.load(context, account, access)
+                val event = message.event
                 store.ifCurrent(account) {
-                    Notifications.showCircular(context, store.slot, accountId, access, id, message.title, message.text, message.from, message.kind == "short", logo)
+                    if (event != null && message.rsvp) {
+                        // Rundschreiben zum Termin: Antippen öffnet den Termin, Knöpfe sagen zu oder ab
+                        Notifications.showRsvpMissing(
+                            context, store.slot, accountId, access, event, message.title, message.text, logo,
+                            heading = message.title, maybe = message.maybe,
+                        )
+                    } else {
+                        Notifications.showCircular(context, store.slot, accountId, access, id, message.title, message.text, message.from, message.kind == "short", logo)
+                    }
                     store.addNotified(setOf(key))
                 }
+            }
+            "event" -> {
+                val access = message.access ?: return
+                val id = message.id ?: return
+                val logo = ClubLogo.load(context, account, access)
+                store.ifCurrent(account) {
+                    if (message.rsvp) {
+                        Notifications.showRsvpMissing(
+                            context, store.slot, accountId, access, id, message.title, message.text, logo,
+                            heading = message.title, maybe = message.maybe,
+                        )
+                    } else {
+                        Notifications.showInfo(context, store.slot, accountId, access, message.title, message.text, logo)
+                    }
+                }
+                SyncWorker.now(context)
             }
             "info" -> {
                 val access = message.access ?: return

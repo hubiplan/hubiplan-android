@@ -951,5 +951,15 @@
  "Die Frist für Anträge ist vorbei.": "The deadline for motions has passed.",
  "Begründung": "Reason",
  "Einreichen": "Submit",
- "Für dich sind keine Dokumente freigegeben.": "No documents are shared with you."
+ "Für dich sind keine Dokumente freigegeben.": "No documents are shared with you.",
+ "Anfahrt: {text}": "Directions: {text}",
+ "Antwort „Vielleicht“ gesendet": "Answer “Maybe” sent",
+ "Bemerkung (optional)": "Comment (optional)",
+ "Deine Antwort „Vielleicht“ ist gespeichert.": "Your answer “Maybe” has been saved.",
+ "Du hast mit „Vielleicht“ geantwortet.": "You answered “Maybe”.",
+ "Du kannst deine Rückmeldung bis zum Anmeldeschluss jederzeit ändern.": "You can change your reply at any time until the deadline.",
+ "Navigation starten": "Start navigation",
+ "Route in Google Maps": "Route in Google Maps",
+ "Route in OpenStreetMap": "Route in OpenStreetMap",
+ "Vielleicht": "Maybe"
 }

@@ -251,13 +251,13 @@ internal fun openForViewing(context: Context, file: File, mime: String): String?
 
 /** Gemeinsamer Ablauf für „PDF ansehen“: laden, kurz ablegen, öffnen; Fehler als Text. */
 @Composable
-private fun rememberViewer(vm: AppViewModel): Viewer {
+internal fun rememberViewer(vm: AppViewModel): Viewer {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     return remember(vm) { Viewer(context, scope, vm) }
 }
 
-private class Viewer(val context: Context, val scope: kotlinx.coroutines.CoroutineScope, val vm: AppViewModel) {
+internal class Viewer(val context: Context, val scope: kotlinx.coroutines.CoroutineScope, val vm: AppViewModel) {
     var busy by mutableStateOf(false)
     var message by mutableStateOf<String?>(null)
 

@@ -103,7 +103,11 @@ class RsvpWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 applicationContext,
                 expected,
                 notification,
-                if (status == "yes") tr("Zusage gesendet") else tr("Absage gesendet"),
+                when (status) {
+                    "yes" -> tr("Zusage gesendet")
+                    "maybe" -> tr("Antwort „Vielleicht“ gesendet")
+                    else -> tr("Absage gesendet")
+                },
                 detail.title,
             )
             SyncWorker.now(applicationContext)

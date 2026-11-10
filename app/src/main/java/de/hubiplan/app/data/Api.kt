@@ -552,6 +552,10 @@ class Api(
         file("/api/portal/$accessId/invoices/$invoiceId/pdf/" + if (cancellation) "?storno=1" else "")
 
     /** Freigegebenes Protokoll einer Versammlung als PDF. */
+    /** Anhang eines Termins (nur zum Ansehen, die App speichert ihn nicht dauerhaft). */
+    suspend fun eventAttachment(accessId: Int, eventId: Int, attachmentId: Int): ByteArray =
+        file("/api/portal/$accessId/events/$eventId/attachments/$attachmentId/")
+
     suspend fun minutesPdf(accessId: Int, meetingId: Int): ByteArray =
         file("/api/portal/$accessId/meetings/$meetingId/minutes/")
 

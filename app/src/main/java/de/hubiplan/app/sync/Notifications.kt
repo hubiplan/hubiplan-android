@@ -148,6 +148,9 @@ object Notifications {
         title: String,
         text: String,
         logo: Bitmap? = null,
+        // Eigene Überschrift (Einladung, Rundschreiben zum Termin) statt „Rückmeldung fehlt“
+        heading: String? = null,
+        maybe: Boolean = false,
     ) {
         if (!allowed(context)) return
         val id = notificationId(slot, accessId, eventId)
@@ -175,7 +178,7 @@ object Notifications {
             // Während das Notenpult offen ist: still, ohne Einblenden (Noten in der App, E6)
             .setSilent(de.hubiplan.app.data.PultOffen.offen)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(tr("Rückmeldung fehlt: {title}", "title" to title))
+            .setContentTitle(heading?.ifBlank { null } ?: tr("Rückmeldung fehlt: {title}", "title" to title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(open)
@@ -184,6 +187,7 @@ object Notifications {
             .setAutoCancel(true)
             .addAction(action("yes", tr("Zusage"), id * 2))
             .addAction(action("no", tr("Absage"), id * 2 + 1))
+            .apply { if (maybe) addAction(action("maybe", tr("Vielleicht"), id * 2 + 2)) }
             .lockScreen(context, CHANNEL_RSVP, tr("Rückmeldung fehlt"))
             .build()
         try {
