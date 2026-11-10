@@ -83,7 +83,7 @@ object LocalAccountData {
 
     private const val OWNER = ".konto"
 
-    /** Cache-Ordner für den zuletzt geöffneten Wallet-Pass (wird beim nächsten Öffnen überschrieben). */
+    /** Cache-Ordner für den zuletzt geöffneten Wallet-Pass (beim nächsten Öffnen überschrieben, nach etwa einer Stunde gelöscht). */
     const val WALLET_PASS = "ausweis"
 
     /** Nach dieser Zeit fragt die App, ob alte Belege aus der Quarantäne gelöscht werden dürfen. */
@@ -215,7 +215,7 @@ object LocalAccountData {
             .minOrNull()
             ?.let { it + FINAL_DAYS * DAY_MS }
 
-    /** Ordner im Cache für den Export (geteilt über FileProvider, beim nächsten Start gelöscht). */
+    /** Ordner im Cache für den Export (geteilt über FileProvider, nach etwa einer Stunde und beim nächsten Start gelöscht). */
     const val EXPORT = "export"
 
     /**
@@ -249,6 +249,7 @@ object LocalAccountData {
         val dir = File(context.cacheDir, EXPORT).apply { deleteRecursively(); mkdirs() }
         val file = File(dir, "hubiplan-belege.json")
         file.writeText(Json { prettyPrint = true }.encodeToString(JsonObject.serializer(), doc))
+        GeteilteDateien.schedule(context)
         return file to items.size
     }
 

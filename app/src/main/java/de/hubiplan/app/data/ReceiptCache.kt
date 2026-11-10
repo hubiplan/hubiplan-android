@@ -8,7 +8,8 @@ import java.util.UUID
  * Quittungs-PDFs zum Teilen oder Ansehen (Gesamtaudit 01.11., GA-S06): je Konto ein eigener
  * Ordner und je Ausgabe ein zufälliger Unterordner. Eine einmal geteilte Adresse zeigt so nie
  * eine spätere oder kontofremde Datei. Aufgeräumt wird beim App-Start, vor jeder neuen
- * Ausgabe (älter als 10 Minuten) und beim Abmelden (alles des Kontos).
+ * Ausgabe (älter als 10 Minuten), spätestens nach etwa einer Stunde ([GeteilteDateien]) und
+ * beim Abmelden (alles des Kontos).
  */
 object ReceiptCache {
     const val FOLDER = "quittungen"
@@ -26,7 +27,7 @@ object ReceiptCache {
     }
 
     fun write(context: Context, accountKey: String, name: String, bytes: ByteArray): File =
-        write(context.cacheDir, accountKey, name, bytes)
+        write(context.cacheDir, accountKey, name, bytes).also { GeteilteDateien.schedule(context) }
 
     /** Alte Ausgaben löschen (auch verwaiste aus früheren Versionen direkt im Ordner). */
     fun clear(cacheDir: File, olderThanMillis: Long = MAX_AGE_MS, now: Long = System.currentTimeMillis()) {

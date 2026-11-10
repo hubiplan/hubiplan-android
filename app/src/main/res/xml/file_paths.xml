@@ -3,10 +3,10 @@
 <paths>
     <cache-path name="fotos" path="fotos/" />
     <cache-path name="quittungen" path="quittungen/" />
-    <!-- Export alter, nicht gesendeter Belege vor dem Löschen (Fachfrage FQ24), beim Start gelöscht -->
+    <!-- Export alter, nicht gesendeter Belege vor dem Löschen (Fachfrage FQ24), nach etwa einer Stunde und beim Start gelöscht -->
     <cache-path name="export" path="export/" />
-    <!-- Wallet-Pass zum Öffnen in einer Wallet-App, wird beim nächsten Laden überschrieben -->
+    <!-- Wallet-Pass zum Öffnen in einer Wallet-App, beim nächsten Laden überschrieben, nach etwa einer Stunde gelöscht -->
     <cache-path name="ausweis" path="ausweis/" />
-    <!-- Rechnung, Protokoll oder Dokument zum Ansehen (Reiter „Ich“), beim nächsten Öffnen, beim Start und beim Abmelden gelöscht -->
+    <!-- Rechnung, Protokoll oder Dokument zum Ansehen (Reiter „Ich“), beim nächsten Öffnen, nach etwa einer Stunde, beim Start und beim Abmelden gelöscht -->
     <cache-path name="ansicht" path="ansicht/" />
 </paths>

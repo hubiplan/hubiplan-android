@@ -27,6 +27,8 @@ class HubiplanApp : Application() {
             runCatching { de.hubiplan.app.data.PultDateien.clear(this) }
             // Zuletzt angesehene Rechnung oder Dokument (Reiter „Ich“)
             runCatching { de.hubiplan.app.data.Ansicht.clear(this) }
+            // Geteilte Exporte und Wallet-Pass nach etwa einer Stunde (Gesamtaudit 10.11., V04)
+            runCatching { de.hubiplan.app.data.GeteilteDateien.clearAndSchedule(this) }
         }.start()
     }
 }

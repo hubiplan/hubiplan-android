@@ -183,6 +183,7 @@ private fun WalletButtons(vm: AppViewModel, accessId: Int, wallet: CardWallet) {
                         val bytes = api.walletApple(accessId)
                         val file = withContext(Dispatchers.IO) {
                             File(context.cacheDir, LocalAccountData.WALLET_PASS).apply { mkdirs() }.resolve("mitgliedsausweis.pkpass").apply { writeBytes(bytes) }
+                                .also { de.hubiplan.app.data.GeteilteDateien.schedule(context) }
                         }
                         message = openPass(context, file)
                     }
