@@ -30,7 +30,8 @@ HUBIplan-Instanz noch nicht kann (`hubiplan/docs/versionen.md`).
 
 ## F-Droid (Variante `foss`)
 
-- Keine Google-Bibliothek: `scripts/test.sh` bricht ab, wenn `fossReleaseRuntimeClasspath`
+- Keine proprietären Google-Dienste (freie Google-Bibliotheken wie AndroidX und ZXing unter
+  Apache 2.0 sind erlaubt, Entscheidung 10.11.2026): `scripts/test.sh` bricht ab, wenn `fossReleaseRuntimeClasspath`
   Firebase oder Play-Dienste enthält.
 - Beschreibung, Titel und Änderungen liest F-Droid aus `fastlane/metadata/android/`.
 - F-Droid baut selbst aus einem Git-Tag (`v0.6.0`) und signiert mit eigenem Schlüssel.

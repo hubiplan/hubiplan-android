@@ -25,7 +25,7 @@ willkommen. Contributions in English are welcome as well.
 Hinweise zum Stil:
 
 - Oberfläche, Dokumentation und Commit-Nachrichten sind **deutsch**, in einfacher Sprache.
-- **Keine Google-Bibliothek in `foss`**: Firebase und Play-Dienste nur in `play`
+- **Keine proprietären Google-Dienste in `foss`**: Firebase und Play-Dienste nur in `play`
   (`app/src/play/`). Freie Bibliotheken unter Apache-2.0 (z. B. AndroidX) sind in Ordnung.
 - Die App spricht nur mit der HUBIplan-Instanz des Mitglieds (`/api/app/v1/`,
   `/api/portal/…`), nie mit Analyse-, Werbe- oder anderen Fremddiensten. Neue Endpunkte
