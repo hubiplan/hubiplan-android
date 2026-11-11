@@ -6,6 +6,7 @@ import de.hubiplan.app.ui.canEditDeptMembers
 import de.hubiplan.app.ui.canEditPhotos
 import de.hubiplan.app.ui.showsEvents
 import de.hubiplan.app.ui.showsMembers
+import de.hubiplan.app.ui.showsPartners
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,5 +39,15 @@ class RechteTest {
         assertTrue(canEditDeptMembers(listOf("members.edit")))
         assertTrue(canEditDeptMembers(listOf("dept.members.edit")))
         assertFalse(canEditDeptMembers(listOf("members.view")))
+    }
+
+    @Test
+    fun geschaeftspartnerNurMitEigenemRecht() {
+        assertTrue(showsPartners(AdminUnit(1, "Verein", permissions = listOf("partners.view"), stufen = true)))
+        // Ältere Server kennen keine Geschäftspartner: Kasse allein zeigt den Bereich nicht
+        assertFalse(showsPartners(AdminUnit(1, "Verein", permissions = listOf("finance.view"), stufen = true)))
+        assertFalse(showsPartners(AdminUnit(1, "Verein", permissions = listOf("events.view"), stufen = true)))
+        val zug = AdminDepartment(3, "1. Zug", permissions = listOf("partners.view"), stufen = true).asUnit()
+        assertFalse(showsPartners(zug))
     }
 }
