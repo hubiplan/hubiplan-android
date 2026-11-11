@@ -132,7 +132,7 @@ fun PartnersSection(client: AdminClient, errors: AdminErrors, reload: Int) {
 private fun PartnerScreen(p: PartnerItem, onBack: () -> Unit) {
     LazyColumn(Modifier.fillMaxSize()) {
         item {
-            BackHead(p.name, onBack)
+            BackHead(p.name, onBack = onBack)
             Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 val line = listOfNotNull(
                     p.number.ifBlank { null },
