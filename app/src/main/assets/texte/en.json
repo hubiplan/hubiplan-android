@@ -961,5 +961,22 @@
  "Navigation starten": "Start navigation",
  "Route in Google Maps": "Route in Google Maps",
  "Route in OpenStreetMap": "Route in OpenStreetMap",
- "Vielleicht": "Maybe"
+ "Vielleicht": "Maybe",
+ "Lieferant": "Supplier",
+ "Dienstleister": "Service provider",
+ "Kunde/Auftraggeber": "Customer/client",
+ "Sponsor": "Sponsor",
+ "Spender": "Donor",
+ "Vermieter/Veranstaltungsort": "Landlord/venue",
+ "Künstler/Musiker": "Artist/musician",
+ "Behörde": "Authority",
+ "Presse": "Press",
+ "Versicherung": "Insurance",
+ "Bank": "Bank",
+ "Geschäftspartner": "Business partners",
+ "Lieferanten, Sponsoren und Ansprechpartner nachschlagen": "Look up suppliers, sponsors and contact persons",
+ "Name, Ort oder Ansprechpartner": "Name, town or contact person",
+ "Keine Geschäftspartner gefunden.": "No business partners found.",
+ "{n} Geschäftspartner": "{n} business partners",
+ "Geschäftspartner anlegen und ändern geht im Browser.": "Business partners are created and changed in the browser."
 }

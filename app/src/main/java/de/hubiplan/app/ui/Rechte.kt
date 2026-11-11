@@ -41,3 +41,12 @@ private val COMPETITION_RIGHTS = setOf("competitions.manage", "competitions.resu
 /** Bereich „Wettbewerbe“: Modul an (Server ab 08.11.2026 melden Module) und Recht zum Erfassen. */
 fun showsCompetitions(unit: AdminUnit): Boolean =
     !unit.isDepartment && "competitions" in unit.modules && unit.permissions.any { it in COMPETITION_RIGHTS }
+
+// Geschäftspartner (hubiplan konzepte/geschaeftspartner.md): nur Server mit Geschäftspartnern
+// melden partners.view/.edit (Kasse und Beiträge bekommen es dort per Migration dazu); so zeigt
+// die App den Bereich bei älteren Servern nicht
+private val PARTNER_RIGHTS = setOf("partners.view", "partners.edit")
+
+/** Bereich „Geschäftspartner“: nur in der Einheit selbst, mit Recht auf Geschäftspartner. */
+fun showsPartners(unit: AdminUnit): Boolean =
+    !unit.isDepartment && unit.permissions.any { it in PARTNER_RIGHTS }

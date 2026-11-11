@@ -568,3 +568,53 @@ data class ReceiptChoices(
     val categories: List<FinanceCategory> = emptyList(),
     val signature: SignatureShape? = null,
 )
+
+// Geschäftspartner (hubiplan konzepte/geschaeftspartner.md, P5): Kontaktsuche, nur lesen
+
+@Serializable
+data class PartnerDetails(
+    val name: String = "",
+    val street: String = "",
+    val postcode: String = "",
+    val city: String = "",
+    val country: String = "",
+    val email: String = "",
+    val phone: String = "",
+    val website: String = "",
+)
+
+@Serializable
+data class PartnerContact(
+    val id: Int,
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("first_name") val firstName: String = "",
+    val function: String = "",
+    val email: String = "",
+    val phone: String = "",
+    @SerialName("is_primary") val isPrimary: Boolean = false,
+) {
+    val fullName: String get() = listOf(firstName, lastName).filter { it.isNotBlank() }.joinToString(" ")
+}
+
+@Serializable
+data class PartnerItem(
+    val id: Int,
+    val name: String = "",
+    val kind: String = "",
+    val roles: List<String> = emptyList(),
+    val number: String = "",
+    val details: PartnerDetails = PartnerDetails(),
+    val notes: String = "",
+    val contacts: List<PartnerContact> = emptyList(),
+) {
+    /** Anschrift und Kontakt des Partners selbst, für die gemeinsamen Kontaktzeilen. */
+    val contact: Contact
+        get() = Contact(
+            email = details.email,
+            phone = details.phone,
+            street = details.street,
+            postalCode = details.postcode,
+            city = details.city,
+            country = details.country,
+        )
+}

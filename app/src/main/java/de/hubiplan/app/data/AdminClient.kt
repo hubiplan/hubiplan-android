@@ -352,6 +352,12 @@ class AdminClient(
         return Changed(Unit, r.changeSet.takeIf { r.undoable }, r.label)
     }
 
+    /** Geschäftspartner mit Ansprechpartnern (nur lesen); [search] wie im Browser. */
+    suspend fun partners(search: String): List<PartnerItem> {
+        val q = URLEncoder.encode(search.trim(), "UTF-8")
+        return decodeList(get("billing/partners/?suche=$q"))
+    }
+
     private suspend fun get(path: String): String = use().admin("GET", base + path).text
 
     // --- Wettbewerbe und Standzugang (konzepte/schiessen-android.md) ---

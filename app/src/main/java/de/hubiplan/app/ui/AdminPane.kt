@@ -234,6 +234,7 @@ internal enum class Section(val label: String, val hint: String) {
     BILLING(tr("Rechnungen"), tr("Offene und bezahlte Rechnungen der Mitglieder")),
     OCCASIONS(tr("Jubiläen und Geburtstage"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
     COMPETITIONS(tr("Wettbewerbe"), tr("Schießen im Standmodus erfassen, auch ohne Empfang")),
+    PARTNERS(tr("Geschäftspartner"), tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen")),
 }
 
 /**
@@ -259,6 +260,7 @@ internal fun sectionsFor(unit: AdminUnit): List<Section> {
         Section.BILLING.takeIf { BILLING_VIEW in p || BILLING_EDIT in p },
         Section.OCCASIONS.takeIf { members },
         Section.COMPETITIONS.takeIf { showsCompetitions(unit) },
+        Section.PARTNERS.takeIf { showsPartners(unit) },
     )
 }
 
@@ -530,6 +532,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         },
                         onOpenStand = vm::openStand,
                     )
+                    section == Section.PARTNERS && section in sections -> PartnersSection(client, errors, reload)
                     section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
                         eventId = o.eventId
                         eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
@@ -705,6 +708,7 @@ internal fun sectionIcon(s: Section) = when (s) {
     Section.BILLING -> Symbole.Rechnungen
     Section.OCCASIONS -> Icons.Filled.Star
     Section.COMPETITIONS -> Icons.Filled.LocationOn
+    Section.PARTNERS -> Icons.Filled.AccountBox
 }
 
 @Composable

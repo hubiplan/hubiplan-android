@@ -255,6 +255,20 @@ contents and drafts are kept only in memory. Leaving a form requires confirmatio
 administration discards the draft. If creating a task loses connection, refresh the list
 before trying again.
 
+## Geschäftspartner nachschlagen
+
+Wer im Verein das Recht „Geschäftspartner“ hat (lesen oder bearbeiten), findet in der
+Verwaltung den Bereich „Geschäftspartner“. Die Suche findet Name, Ort und Ansprechpartner. Die
+Akte zeigt Rollen, Telefon, E-Mail und Anschrift des Partners und seine Ansprechpartner; Tippen
+auf Telefon oder E-Mail ruft an bzw. öffnet das Mailprogramm. Anlegen und ändern geht nur im
+Browser. Braucht HUBIplan ab der Fassung mit Geschäftspartnern (November 2026).
+
+**English:** Whoever has the right “Business partners” in the club (view or edit) finds
+the area “Business partners” in Admin. The search finds name, town and contact persons. The
+record shows the partner's roles, phone, e-mail and address and its contact persons; tapping
+the phone or e-mail calls or opens the mail program. Creating and changing is only possible in
+the browser. Needs a HUBIplan version with business partners (November 2026).
+
 ## Schießen auswerten (Standmodus)
 
 Wer „Ergebnisse erfassen“ oder „Wettbewerbe verwalten“ darf, sieht in der Verwaltung den
