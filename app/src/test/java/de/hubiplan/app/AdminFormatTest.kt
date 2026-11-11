@@ -52,6 +52,9 @@ class AdminFormatTest {
         assertEquals(mapOf("phone" to "0211 1"), masterDataChanges(before, after))
         assertEquals(mapOf("birth_date" to "1981-05-17"), masterDataChanges(before, after + mapOf("phone" to "", "birth_date" to "17.5.1981")))
         assertNull(masterDataChanges(before, mapOf("birth_date" to "17.13.1980")))
+        // Geburtsdatum ist freiwillig: Leeren schickt "" mit, war es schon leer, nichts
+        assertEquals(mapOf("birth_date" to ""), masterDataChanges(before, mapOf("birth_date" to " ")))
+        assertEquals(emptyMap<String, String>(), masterDataChanges(mapOf("birth_date" to ""), mapOf("birth_date" to "")))
     }
 
     @Test

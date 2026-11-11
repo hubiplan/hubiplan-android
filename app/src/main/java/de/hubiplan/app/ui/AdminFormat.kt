@@ -40,7 +40,7 @@ private val PERSON_ONLY = setOf("first_name", "birth_date", "gender")
 
 /** Beschriftung eines Stammdatenfelds; bei Organisationen heißt der Nachname „Name der Organisation“. */
 fun masterDataLabel(key: String, organization: Boolean): String = when {
-    key == "birth_date" -> tr("Geburtsdatum (TT.MM.JJJJ)")
+    key == "birth_date" -> tr("Geburtsdatum (freiwillig, TT.MM.JJJJ)")
     organization && key == "last_name" -> tr("Name der Organisation")
     else -> FIELD_LABELS[key] ?: key
 }
@@ -51,6 +51,7 @@ fun genderLabel(value: String): String = GENDERS.firstOrNull { it.first == value
 
 /**
  * Geänderte Stammdaten für PATCH: Text wie eingegeben (am Rand gekürzt), Geburtsdatum als ISO.
+ * Ein geleertes Geburtsdatum geht als "" mit (freiwillig, der Server entfernt es).
  * Gibt null zurück, wenn ein Datum ungültig ist.
  */
 fun masterDataChanges(before: Map<String, String>, after: Map<String, String>): Map<String, String>? {
@@ -59,7 +60,10 @@ fun masterDataChanges(before: Map<String, String>, after: Map<String, String>): 
         val value = raw.trim()
         val old = (before[key] ?: "").trim()
         if (key == "birth_date") {
-            if (value.isEmpty()) continue
+            if (value.isEmpty()) {
+                if (old.isNotEmpty()) out[key] = ""
+                continue
+            }
             val iso = parseGermanDate(value) ?: return null
             if (iso != old) out[key] = iso
         } else if (value != old) {

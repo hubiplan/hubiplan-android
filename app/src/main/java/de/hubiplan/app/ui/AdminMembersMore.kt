@@ -680,7 +680,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                 label = {
                     Text(
                         when {
-                            k == "birth_date" -> tr("Geburtsdatum (TT.MM.JJJJ)")
+                            k == "birth_date" -> tr("Geburtsdatum (freiwillig, TT.MM.JJJJ)")
                             organization && k == "last_name" -> tr("Name der Organisation")
                             k == "name_suffix" -> tr("Namenszusatz (optional)")
                             else -> FIELD_LABELS[k] ?: k
@@ -710,7 +710,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                 error = when {
                     organization && values["last_name"].isNullOrBlank() -> tr("Bitte den Namen der Organisation angeben.")
                     !organization && (values["first_name"].isNullOrBlank() || values["last_name"].isNullOrBlank()) -> tr("Bitte Vor- und Nachname angeben.")
-                    !organization && birth == null -> tr("Bitte das Geburtsdatum als TT.MM.JJJJ eingeben.")
+                    !organization && !values["birth_date"].isNullOrBlank() && birth == null -> tr("Bitte das Geburtsdatum als TT.MM.JJJJ eingeben.")
                     listOf("street", "postal_code", "city").any { values[it].isNullOrBlank() } -> tr("Bitte die vollständige Anschrift angeben.")
                     type == null -> tr("Bitte eine Mitgliedsart wählen.")
                     parseGermanDate(values["entry_date"] ?: "") == null -> tr("Bitte das Eintrittsdatum als TT.MM.JJJJ eingeben.")
@@ -718,14 +718,14 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                 }
                 if (error == null) {
                     // Erst nach möglichen Dubletten suchen (gleicher Name und Geburtstag bzw.
-                    // bei Organisationen gleicher Name)
+                    // bei Organisationen gleicher Name; ohne Geburtsdatum nur eigene Mitglieder)
                     scope.launch {
                         busy = true
                         try {
                             val found = if (organization) {
                                 client.organizationDuplicates(values["last_name"]!!)
                             } else {
-                                client.duplicates(values["last_name"]!!, values["first_name"]!!, birth!!)
+                                client.duplicates(values["last_name"]!!, values["first_name"]!!, birth ?: "")
                             }
                             if (found.isEmpty()) admit(null) else duplicates = found
                         } catch (e: ApiException) {
@@ -750,7 +750,11 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                             Column(Modifier.weight(1f)) {
                                 Text(if (p.kind == ORGANIZATION) p.lastName else "${p.firstName} ${p.lastName}")
                                 Text(
-                                    (p.birthDate?.let { formatPlainDate(it) } ?: tr("Organisation")) +
+                                    when {
+                                        p.kind == ORGANIZATION -> tr("Organisation")
+                                        p.birthDate != null -> formatPlainDate(p.birthDate)
+                                        else -> tr("ohne Geburtsdatum")
+                                    } +
                                         if (p.alreadyMemberHere) tr(" · schon Mitglied hier") else "",
                                     style = MaterialTheme.typography.bodySmall,
                                 )
