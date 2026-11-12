@@ -169,6 +169,12 @@ Testläufe gleichzeitig laufen und wie viele Kerne jeder bekommt, stellt jeder R
 ein (siehe [hubiplan/docs/testserver.md](https://github.com/hubiplan/hubiplan/blob/main/docs/testserver.md)).
 Temporäre Dateien gehören in ein lokal konfiguriertes Temp-Verzeichnis.
 
+Gradle prüft jede heruntergeladene Abhängigkeit und jedes Plugin gegen die SHA-256-Prüfsummen in
+`gradle/verification-metadata.xml` und bricht bei Abweichung ab. Wer Abhängigkeiten, Plugins oder
+die Gradle-Fassung ändert, ergänzt die Prüfsummen mit `scripts/pruefsummen.sh` (läuft wie
+`scripts/test.sh` über einen Testplatz), sieht die neuen Einträge durch und checkt die Datei mit
+ein; `scripts/pruefsummen.sh --neu` baut sie neu auf.
+
 Nur beim Herausgeber, nie im Repository:
 
 - `keystore.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`): Signatur
