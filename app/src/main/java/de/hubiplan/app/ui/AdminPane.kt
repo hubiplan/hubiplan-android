@@ -76,6 +76,7 @@ import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CardCheck
 import de.hubiplan.app.data.DraftStore
 import de.hubiplan.app.data.ReceiptStore
+import de.hubiplan.app.data.serverLink
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
 
@@ -547,7 +548,11 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                                 eventStart = null
                             }
                             // Wechselanfragen: im Browser
-                            else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(main.account.server + task.link)))
+                            // Nur Pfade auf der eigenen Instanz (Gesamtaudit 11.11.2026, H-08)
+                            else -> when (val url = serverLink(main.account.server, task.link)) {
+                                null -> scope.launch { snackbar.showSnackbar(tr("Dieser Verweis lässt sich nicht öffnen.")) }
+                                else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                            }
                         }
                     }
                 }

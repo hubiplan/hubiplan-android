@@ -979,5 +979,6 @@
  "Name, Ort oder Ansprechpartner": "Name, town or contact person",
  "Keine Geschäftspartner gefunden.": "No business partners found.",
  "{n} Geschäftspartner": "{n} business partners",
- "Geschäftspartner anlegen und ändern geht im Browser.": "Business partners are created and changed in the browser."
+ "Geschäftspartner anlegen und ändern geht im Browser.": "Business partners are created and changed in the browser.",
+ "Dieser Verweis lässt sich nicht öffnen.": "This link cannot be opened."
 }
