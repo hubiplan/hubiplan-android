@@ -594,7 +594,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
     var values by rememberSaveable {
         mutableStateOf(
             mapOf(
-                "first_name" to "", "last_name" to "", "birth_date" to "", "gender" to "",
+                "first_name" to "", "last_name" to "", "birth_date" to "", "gender" to "", "title" to "",
                 "email" to "", "phone" to "", "street" to "", "postal_code" to "", "city" to "",
                 "entry_date" to todayInput(), "name_suffix" to "",
             ),
@@ -640,6 +640,8 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
                 put("first_name", values["first_name"]!!.trim())
                 put("birth_date", birth)
                 if (person != null) put("person", person) else put("gender", values["gender"])
+                // Titel ergänzt der Server auch bei einer gefundenen Person, wenn sie noch keinen hat
+                put("title", values["title"].orEmpty().trim())
             }
             for (k in listOf("email", "phone", "street", "postal_code", "city")) put(k, values[k]!!.trim())
             unit?.let { put("department_ids", kotlinx.serialization.json.JsonArray(listOf(JsonPrimitive(it.id)))) }
@@ -700,6 +702,7 @@ fun AdmitScreen(client: AdminClient, errors: AdminErrors, onBack: () -> Unit, on
             )
         }
         if (!organization) ChoicePicker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
+        if (!organization) TitleInput(values["title"] ?: "", enabled = !busy) { values = values + ("title" to it) }
         ChoicePicker(tr("Mitgliedsart"), types.map { it to it.name }, type, { it.name }, field = "member_type", errors = fields, enabled = !busy) { typeId = it?.id }
         if (units.isNotEmpty()) ChoicePicker(tr("Untereinheit (optional)"), listOf<DepartmentItem?>(null).map { it to "keine" } + units.map { it to it.label }, unit, { it?.label ?: "keine" }, field = "department_ids", errors = fields, enabled = !busy) { unitId = it?.id }
         ServerTextField(field = "entry_date", errors = fields, value = values["entry_date"] ?: "", onValueChange = { values = values + ("entry_date" to it) }, label = { Text(tr("Eintritt am")) }, enabled = !busy, singleLine = true, trailingIcon = { DatePickButton(values["entry_date"].orEmpty()) { values = values + ("entry_date" to it) } })

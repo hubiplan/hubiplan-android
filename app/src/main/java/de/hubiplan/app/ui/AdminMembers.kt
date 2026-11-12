@@ -519,6 +519,7 @@ private fun EditDialog(d: MemberDetail, saving: Boolean, saveError: String?, onD
             "last_name" to d.lastName,
             "birth_date" to (d.birthDate ?: ""),
             "gender" to d.gender,
+            "title" to d.title,
             "club_number" to d.clubNumber,
             "email" to (d.contact?.email ?: ""),
             "phone" to (d.contact?.phone ?: ""),
@@ -558,6 +559,7 @@ private fun EditDialog(d: MemberDetail, saving: Boolean, saveError: String?, onD
                 }
                 if (!d.isOrganization) {
                     Picker(tr("Geschlecht"), GENDERS, values["gender"] ?: "", { genderLabel(it) }) { values = values + ("gender" to it) }
+                    TitleInput(values["title"] ?: "", enabled = !saving) { values = values + ("title" to it) }
                 } else {
                     Text(tr("Rechtsform, Zusatz und Ansprechpartner im Browser ändern."), style = MaterialTheme.typography.bodySmall)
                 }
