@@ -74,6 +74,8 @@ data class MemberDetail(
     @SerialName("first_name") val firstName: String = "",
     @SerialName("birth_date") val birthDate: String? = null,
     val gender: String = "",
+    /** Titel vor dem Namen (Dr., Prof. … oder frei); leer = keiner */
+    val title: String = "",
     @SerialName("club_number") val clubNumber: String = "",
     @SerialName("pays_fee_self") val paysFeeSelf: Boolean = true,
     @SerialName("info_opt_out_at") val infoOptOutAt: String? = null,

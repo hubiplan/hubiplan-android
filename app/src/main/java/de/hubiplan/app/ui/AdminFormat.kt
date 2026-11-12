@@ -22,6 +22,7 @@ val FIELD_LABELS: Map<String, String> get() = mapOf(
     "last_name" to tr("Nachname"),
     "birth_date" to tr("Geburtsdatum"),
     "gender" to tr("Geschlecht"),
+    "title" to tr("Titel"),
     "club_number" to tr("Mitgliedsnummer"),
     "email" to tr("E-Mail"),
     "phone" to tr("Telefon"),
@@ -31,12 +32,12 @@ val FIELD_LABELS: Map<String, String> get() = mapOf(
     "country" to tr("Land"),
 )
 
-/** Felder im Dialog „Stammdaten und Kontakt“; Organisationen ohne Vorname, Geburtsdatum, Geschlecht. */
+/** Felder im Dialog „Stammdaten und Kontakt“; Organisationen ohne Vorname, Geburtsdatum, Geschlecht, Titel. */
 fun masterDataKeys(organization: Boolean): List<String> =
     listOf("first_name", "last_name", "birth_date", "club_number", "email", "phone", "street", "postal_code", "city", "country")
         .filterNot { organization && it in PERSON_ONLY }
 
-private val PERSON_ONLY = setOf("first_name", "birth_date", "gender")
+private val PERSON_ONLY = setOf("first_name", "birth_date", "gender", "title")
 
 /** Beschriftung eines Stammdatenfelds; bei Organisationen heißt der Nachname „Name der Organisation“. */
 fun masterDataLabel(key: String, organization: Boolean): String = when {

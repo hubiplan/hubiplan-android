@@ -979,5 +979,9 @@
  "Name, Ort oder Ansprechpartner": "Name, town or contact person",
  "Keine Geschäftspartner gefunden.": "No business partners found.",
  "{n} Geschäftspartner": "{n} business partners",
- "Geschäftspartner anlegen und ändern geht im Browser.": "Business partners are created and changed in the browser."
+ "Geschäftspartner anlegen und ändern geht im Browser.": "Business partners are created and changed in the browser.",
+ "kein Titel": "no title",
+ "anderer Titel …": "other title …",
+ "Anderer Titel": "Other title",
+ "z. B. Dipl.-Ing.": "e.g. Dipl.-Ing."
 }
