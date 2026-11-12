@@ -11,7 +11,11 @@ willkommen. Contributions in English are welcome as well.
 - **Sicherheitslücken** nie öffentlich, sondern wie in [SECURITY.md](SECURITY.md) beschrieben.
 - **Nur erfundene Daten**: in Code, Tests, Beispielen, Bildschirmfotos und Fehlerberichten
   nie echte Namen, Anschriften, Bankverbindungen oder Fotos von Vereinsmitgliedern.
-- **Keine Geheimnisse**: keine Passwörter, Schlüssel oder `.env`-Dateien einchecken.
+- **Keine Geheimnisse**: keine Passwörter, Signaturschlüssel, `keystore.properties`,
+  `firebase.properties` oder `.env`-Dateien einchecken.
+- **Öffentliche Unterlagen neutral halten**: keine internen Chat- oder Sitzungslinks,
+  nicht öffentlichen Hostnamen, persönlichen Rechnerpfade oder echten Betriebsdaten in
+  Dateien, Commit-Nachrichten oder Pull Requests.
 
 ## Pull Requests
 
@@ -21,6 +25,7 @@ willkommen. Contributions in English are welcome as well.
    scripts/test.sh          # Unit-Tests, Lint, Debug-APKs, Prüfung „foss ohne Google“
    ```
 3. Pull Request gegen `main` öffnen und kurz beschreiben, was sich ändert und warum.
+   Den Abschnitt „Für die Änderungshinweise“ der Vorlage auf Deutsch und Englisch ausfüllen.
 
 Hinweise zum Stil:
 
@@ -34,7 +39,10 @@ Hinweise zum Stil:
 - Neue Abhängigkeiten müssen mit der AGPL-3.0 verträglich sein (z. B. MIT, BSD, Apache-2.0,
   LGPL, MPL-2.0). Nicht möglich: GPL-2.0-only, SSPL, „nur nicht-kommerziell“, proprietär.
   Jede neue Bibliothek braucht einen Eintrag in der Lizenzzuordnung, sonst bricht der Bau ab;
-  siehe [docs/lizenzen.md](docs/lizenzen.md).
+  siehe [docs/lizenzen.md](docs/lizenzen.md). Neue oder geänderte Abhängigkeiten brauchen
+  außerdem ihre Prüfsummen in `gradle/verification-metadata.xml` (`scripts/pruefsummen.sh`).
+- Jeder neue Text in der App gleich auch auf Englisch: `tr(…)`/`trn(…)` und ein Eintrag in
+  `app/src/main/assets/texte/en.json`; `TexteTest` schlägt sonst fehl.
 - Es gibt keine automatische CI; vor dem Merge testet der Betreuer jeden Pull Request lokal
   mit `scripts/test.sh`.
 

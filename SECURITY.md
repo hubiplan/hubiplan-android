@@ -48,6 +48,10 @@ Gemeint ist der Code in diesem Repository, beide Varianten. Besonders interessan
 - Verknüpfungen auf dem Startbildschirm, Push-Hinweise oder Links, die ein fremdes Konto
   oder einen fremden Mitgliedszugang öffnen oder Aktionen ohne Freischaltung auslösen,
 - Wallet-Pässe oder Wallet-Links mit Daten eines anderen Mitglieds oder Kontos,
+- Noten, Rechnungs- oder Protokoll-PDFs und geteilte Exporte, die nach dem Abmelden, nach
+  Entzug der Freigabe oder nach Ablauf der Frist noch auf dem Telefon lesbar sind,
+- ein eingebetteter Standmodus, der Seiten außerhalb der eigenen Instanz lädt oder mit dem
+  Standzugang mehr als den eigenen Wettbewerb erreicht,
 - Aufgaben, Helferdienste oder Mitteilungen, die nach dem Abmelden oder Kontowechsel noch
   auf dem Telefon lesbar sind.
 
