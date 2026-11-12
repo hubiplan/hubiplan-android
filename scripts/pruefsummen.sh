@@ -9,15 +9,23 @@
 #   scripts/pruefsummen.sh --neu    # Datei neu aufbauen (entfernt nicht mehr genutzte Einträge)
 #
 # Läuft wie scripts/test.sh über einen lokalen Testplatz und baut dabei alle Fassungen, damit
-# jede Konfiguration (Tests, Lint, foss, play, Veröffentlichung) erfasst ist.
+# jede Konfiguration (Tests, Lint, foss, play, Veröffentlichung) erfasst ist. Danach ergänzt
+# scripts/pruefsummen_plattformen.py die Fassungen plattformabhängiger Artefakte (aapt2 für
+# Linux, macOS und Windows), die Gradle auf diesem Rechner nicht selbst lädt.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 DATEI=gradle/verification-metadata.xml
+# Unter Windows (Git Bash) heißt Python oft nur „python“
+PYTHON=$(command -v python3 || command -v python || true)
+if [ -z "$PYTHON" ]; then
+    echo "Abbruch: Python 3 fehlt." >&2
+    exit 2
+fi
 if [ "${1:-}" = "--neu" ]; then
     # Die Vertrauensregeln (z. B. für Quelltext-Jars der IDE) bleiben erhalten
     if [ -f "$DATEI" ]; then
-        python3 - "$DATEI" <<'PY'
+        "$PYTHON" - "$DATEI" <<'PY'
 import re, sys
 pfad = sys.argv[1]
 text = open(pfad, encoding="utf-8").read()
@@ -31,3 +39,4 @@ scripts/test.sh --write-verification-metadata sha256 "$@" \
     testFossDebugUnitTest lintFossDebug \
     assembleFossDebug assemblePlayDebug assembleFossDebugAndroidTest \
     assembleFossRelease assemblePlayRelease bundleFossRelease bundlePlayRelease
+"$PYTHON" -I scripts/pruefsummen_plattformen.py "$DATEI"

@@ -173,7 +173,8 @@ Gradle prüft jede heruntergeladene Abhängigkeit und jedes Plugin gegen die SHA
 `gradle/verification-metadata.xml` und bricht bei Abweichung ab. Wer Abhängigkeiten, Plugins oder
 die Gradle-Fassung ändert, ergänzt die Prüfsummen mit `scripts/pruefsummen.sh` (läuft wie
 `scripts/test.sh` über einen Testplatz), sieht die neuen Einträge durch und checkt die Datei mit
-ein; `scripts/pruefsummen.sh --neu` baut sie neu auf.
+ein; `scripts/pruefsummen.sh --neu` baut sie neu auf. Plattformabhängige Dateien (aapt2 für Linux,
+macOS und Windows) trägt das Skript für alle Betriebssysteme ein, damit der Bau überall gelingt.
 
 Nur beim Herausgeber, nie im Repository:
 
