@@ -13,7 +13,7 @@ nur mit der HUBIplan-Instanz des eigenen Vereins, nie mit einem fremden Dienst. 
 > English; the developer documentation is in German. Issues and security reports in English
 > are welcome.
 
-Paketname `de.hubiplan.app`, Version 1.0.0, ab Android 9, für Telefon und Tablet.
+Paketname `de.hubiplan.app`, Version 1.4.0, ab Android 9, für Telefon und Tablet.
 
 ## Inhalt
 
@@ -30,25 +30,31 @@ Paketname `de.hubiplan.app`, Version 1.0.0, ab Android 9, für Telefon und Table
 
 ## Für Mitglieder
 
-Unten (auf dem Tablet links) stehen höchstens fünf Ziele: Termine, Aufgaben, Mitteilungen,
-Ausweis und – mit Rechten – Verwaltung. „Mein Konto“ öffnet das Symbol oben rechts. Die
-Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schließt sie die App.
+Unten (auf dem Tablet seitlich) stehen Termine, Aufgaben, Neues (die Mitteilungen), Ich und
+– mit Rechten – Verwalten, für Musiker zusätzlich Noten. „Mein Konto“ öffnet das Symbol oben
+rechts. Die Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schließt sie
+die App.
 
 - Termine der eigenen Einheiten (Verein, Untereinheit, weitergegebene Termine des
-  Dachverbands), Zu- und Absage mit einem Fingertipp
+  Dachverbands), Zu- und Absage (auf Wunsch des Vereins auch „Vielleicht“) mit einem
+  Fingertipp, Bemerkung, Anhänge, Anfahrt mit Navigation und Push zur Einladung
 - Termine im Gerätekalender mit Erinnerungen und Hinweis „Rückmeldung fehlt“
 - Mitteilungen des Vereins lesen, Anhänge im Browser öffnen
 - Aufgaben: zugewiesene Aufgaben und offene Angebote übernehmen, erledigen oder zurückgeben;
   Helferdienste: eigene Schichten sehen und absagen, sich in freie Schichten eintragen
 - Push ohne Google über eine UnifiedPush-App (z. B. ntfy), Inhalt Ende-zu-Ende
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
-- Mitgliedsausweis mit QR-Code unter „Ausweis“, auch ohne Netz (verschlüsselt gespeichert);
+- Reiter „Ich“ wie „Mein Bereich“ im Browser: Mitgliedsausweis, Meine Daten, Rechnungen mit
+  Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen und Protokollen, Meine
+  Ergebnisse mit Ranglisten, Helferdienste und Dokumente
+- Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
+  zeigen“), auch ohne Netz (verschlüsselt gespeichert);
   zum Vorzeigen bildschirmfüllend und mit voller Helligkeit; auf Wunsch in Google Wallet oder
   als Wallet-Pass (`.pkpass`), wenn der Verein das anbietet (auch in `foss`, ohne
   Google-Bibliothek)
 - eigenes Profil ansehen und Änderungen melden (der Verein prüft sie)
-- „Meine Ergebnisse“ unter „Ausweis“: eigene Wettbewerbe mit Platz und Wert, Titel und Auszeichnungen
-  (wenn der Verein das Modul Wettbewerbe nutzt)
+- Noten für Musiker: Notenmappen und Programme der eigenen Stimme, verschlüsselt für
+  unterwegs, Notenpult im Vollbild mit Fußpedal, Anhören und Transponieren
 - Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen, mit Einwilligung;
   der Verein gibt es frei, Foto und Einwilligung lassen sich in der App widerrufen
 - Ansprechpartner einer Organisation (Firma, Verein, Behörde …) melden sich wie Mitglieder an;
@@ -66,7 +72,8 @@ Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird ein
 Passwort und Zwei-Faktor-Code freigeschaltet, danach mit Fingerabdruck oder PIN geöffnet;
 Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was möchtest du
 tun?“: oben „Ausweis prüfen“, darunter „Zu erledigen“ mit Anzahl und die Bereiche
-Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburtstage, je nach Rechten.
+Aufgaben, Mitglieder, Termine, Wettbewerbe, Geschäftspartner, Kassenbuch, Rechnungen sowie
+Jubiläen und Geburtstage, je nach Rechten.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
@@ -74,7 +81,7 @@ Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburt
   Aufgaben mit optionaler Frist anlegen, mit Bearbeitungsrecht erledigen und wieder öffnen;
   Änderungen lassen sich im Hinweis rückgängig machen. Auch ein Konto nur mit Aufgabenleserecht
   erreicht diesen Bereich nach der üblichen Freischaltung und Entsperrung.
-- Mitglieder suchen, anrufen und bearbeiten (Stammdaten, Mitgliedsart, Untereinheit,
+- Mitglieder suchen, anrufen und bearbeiten (Stammdaten mit Titel, Mitgliedsart, Untereinheit,
   Beitrag, Austritt, Wiedereintritt, Ehrungen, Zusatzfelder, Bankverbindung) mit
   Bestätigung der Folgen und „Rückgängig“; neue Mitglieder aufnehmen, mit Dublettenprüfung
 - Organisationsmitglieder: Filter „Personen/Organisationen“ in der Liste, Akte mit Rechtsform,
@@ -83,19 +90,23 @@ Aufgaben, Mitglieder, Termine, Kassenbuch, Rechnungen sowie Jubiläen und Geburt
 - Änderungsmeldungen und Fotos freigeben, Mitgliedsausweis per QR-Code prüfen
 - Termine mit Zu- und Absagen, Rückmeldung für Mitglieder eintragen, einfache Termine
   anlegen und absagen
+- Wettbewerbe: Standmodus eingebettet in der App, auch ohne Empfang, mit QR-Code für weitere
+  Geräte
+- Geschäftspartner nachschlagen (Suche, Akte, anrufen, mailen; nur lesen)
 - Kassenbuch mit Belegfoto (ohne Netz als verschlüsselter Entwurf)
 - offene Rechnungen suchen, Barzahlung verbuchen, Quittung als PDF teilen
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,
   Belegnummer aus dem Kassenbuch)
 
-Wie sich Aufgaben, Helferdienste, Mitteilungen, Unterschrift und Benachrichtigungen im
+Wie sich Ich, Noten, Aufgaben, Helferdienste, Mitteilungen, Standmodus, Unterschrift und Benachrichtigungen im
 Einzelnen verhalten (mit englischer Kurzfassung): [docs/bedienung.md](docs/bedienung.md).
 
 ## Verbinden
 
 Im Browser unter **Mein Konto › App & andere Instanzen › App auf dem Telefon** auf
-„App verbinden“ tippen und den QR-Code in der App scannen. Alternativ mit E-Mail, Passwort
-und ggf. Zwei-Faktor-Code anmelden. Die App erhält einen eigenen Geräteschlüssel, der nur
+„App verbinden“ tippen und den QR-Code in der App scannen; im Browser des Telefons selbst
+führt „In der HUBIplan-App öffnen“ direkt in die App. Alternativ mit E-Mail, Passwort und ggf.
+Zwei-Faktor-Code anmelden. Die App erhält einen eigenen Geräteschlüssel, der nur
 für den Mitgliederbereich gilt und sich jederzeit unter „Mein Konto“ abmelden lässt.
 Passwort vergessen: Adresse des Vereins eintragen, dann „Passwort vergessen? Im Browser
 zurücksetzen“ ([Einzelheiten](docs/bedienung.md#passwort-vergessen)).
