@@ -88,3 +88,18 @@ internal fun httpsOrigin(uri: URI): String? {
 /** Vorhandene Web-Wiederherstellung derselben Instanz; keine Anmeldedaten im Link. */
 fun passwordResetUrl(serverInput: String): String? =
     normalizeServer(serverInput)?.let { "$it/passwort-vergessen" }
+
+/**
+ * Pfad aus einer Serverantwort als Adresse auf derselben Instanz (Gesamtaudit 11.11.2026, H-08).
+ * Nur Pfade mit genau einem führenden „/“; ohne Schrägstrich würde aus `https://verein.example.de`
+ * und `.boese.example` eine fremde Adresse, „//“ und „\“ wären ebenfalls ein fremder Host.
+ * Das Ergebnis muss Schema, Host und Port der Instanz behalten.
+ */
+fun serverLink(server: String, path: String): String? {
+    if (!path.startsWith("/") || path.startsWith("//")) return null
+    if (path.any { it == '\\' || it.isWhitespace() || it.isISOControl() }) return null
+    val base = server.toHttpUrlOrNull() ?: return null
+    val url = (server.trimEnd('/') + path).toHttpUrlOrNull() ?: return null
+    if (url.scheme != "https" || url.scheme != base.scheme || url.host != base.host || url.port != base.port) return null
+    return url.toString()
+}
