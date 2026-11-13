@@ -245,6 +245,10 @@ fun MemberScreen(
     onBack: () -> Unit,
     onChanged: OnChanged,
     reload: Int,
+    /** Modul Qualifikationen an: Nachweise in der Akte zeigen */
+    qualifications: Boolean = false,
+    /** Anderes Mitglied öffnen (z. B. aus dem Haushalt) */
+    onOpenMember: ((Int) -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     var detail by remember(id) { mutableStateOf<MemberDetail?>(null) }
@@ -337,6 +341,7 @@ fun MemberScreen(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+        if (d.households.isNotEmpty()) HouseholdsSection(d.households, onOpenMember)
         // Vom Mitglied hochgeladenes Foto freigeben
         d.photo?.pending?.let { pending ->
             Card(Modifier.fillMaxWidth()) {
@@ -386,6 +391,7 @@ fun MemberScreen(
             OutlinedButton(onClick = { dialog = Dialog.Reentry }, modifier = Modifier.fillMaxWidth()) { Text(tr("Wiedereintritt eintragen")) }
         }
         AwardsSection(client, id, canEdit, errors, onChanged, reload)
+        if (qualifications) MemberQualificationsSection(client, id, errors, reload)
         FieldsButton(client, id, canEdit, errors, onChanged, reload)
         BankSection(client, d, permissions, errors, onChanged, reload)
     }

@@ -167,3 +167,27 @@ data class MyDocuments(val folders: List<DocFolder> = emptyList()) {
  */
 fun documentPathOk(accessId: Int, path: String): Boolean =
     Regex("^/api/portal/$accessId/documents/versions/\\d+/$").matches(path)
+
+/** Mitglied, für das die Firma zahlt (Mein Bereich › Mitarbeiter; nur Name und Zeitraum). */
+@Serializable
+data class CompanyMember(
+    val link: Int,
+    val name: String = "",
+    val since: String? = null,
+    val until: String? = null,
+    @SerialName("pays_via") val paysVia: Boolean = false,
+)
+
+@Serializable
+data class CompanyEntry(
+    val id: Int,
+    val name: String = "",
+    val members: List<CompanyMember> = emptyList(),
+)
+
+/** `GET /api/portal/<Zugang>/company/` */
+@Serializable
+data class CompanyOverview(
+    @SerialName("can_report") val canReport: Boolean = false,
+    val companies: List<CompanyEntry> = emptyList(),
+)

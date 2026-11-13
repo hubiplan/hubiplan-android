@@ -50,3 +50,13 @@ private val PARTNER_RIGHTS = setOf("partners.view", "partners.edit")
 /** Bereich „Geschäftspartner“: nur in der Einheit selbst, mit Recht auf Geschäftspartner. */
 fun showsPartners(unit: AdminUnit): Boolean =
     !unit.isDepartment && unit.permissions.any { it in PARTNER_RIGHTS }
+
+/** Bereich „Qualifikationen“: Modul an, Mitglieder lesen, nur in der Einheit selbst. */
+fun showsQualifications(unit: AdminUnit): Boolean =
+    !unit.isDepartment && "qualifications" in unit.modules && unit.permissions.any { it.startsWith("members.") }
+
+private val OBLIGATION_RIGHTS = setOf("obligations.view", "obligations.edit")
+
+/** Bereich „Fristen“ (Fristenkalender): Modul an und Recht zum Lesen, nur Verein oder Dachverband. */
+fun showsObligations(unit: AdminUnit): Boolean =
+    !unit.isDepartment && "obligations" in unit.modules && unit.permissions.any { it in OBLIGATION_RIGHTS }

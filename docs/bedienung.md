@@ -269,6 +269,31 @@ record shows the partner's roles, phone, e-mail and address and its contact pers
 the phone or e-mail calls or opens the mail program. Creating and changing is only possible in
 the browser. Needs a HUBIplan version with business partners (November 2026).
 
+## Haushalte, Qualifikationen und Fristen
+
+In der Mitgliedsakte steht unter „Haushalt und Firma“, zu welchem Haushalt oder welcher Firma
+das Mitglied gehört, mit Rolle, Datum und den übrigen Mitgliedern; Tippen öffnet deren Akte.
+Ist das Modul Qualifikationen an, zeigt die Akte die aktuellen Nachweise mit Stand und
+Gültigkeit, und die Verwaltung hat den Bereich „Qualifikationen“ (Vorgabe: was bald abläuft
+oder abgelaufen ist; „Alle“ zeigt alle maßgeblichen Nachweise). Wer den Fristenkalender lesen
+darf, findet den Bereich „Fristen“: überfällige und bald fällige Pflichten zuerst, mit Frist,
+zuständiger Rolle, Hinweis und Verlauf. Alles nur lesen; gepflegt wird im Browser.
+
+Ansprechpartner einer Firma, die für Mitarbeiter zahlt, sehen unter „Ich“ den Bereich
+„Mitarbeiter“: für wen die Firma zahlt (Name, seit wann, ob über die Firma) und ein Formular, um
+einen neuen Mitarbeiter mit Name und Mail zu melden. Die Zahlung für jemanden beenden geht im
+Browser. Braucht HUBIplan ab der Fassung mit Haushalten (November 2026).
+
+**English:** The member record shows under “Household and company” which household or company
+the member belongs to, with role, date and the other members; tapping opens their record. With
+the Qualifications module on, the record shows current records with status and validity, and
+Admin has the area “Qualifications” (default: what expires soon or has expired; “All” shows all
+relevant records). Whoever may read the deadline calendar finds the area “Deadlines”: overdue
+and soon due obligations first, with deadline, responsible role, note and history. All of this
+is read only; changes are made in the browser. Contact persons of a company that pays for
+employees see the area “Employees” under “Me”: who the company pays for and a form to report a
+new employee with name and email. Ending the payment for someone is done in the browser.
+
 ## Schießen auswerten (Standmodus)
 
 Wer „Ergebnisse erfassen“ oder „Wettbewerbe verwalten“ darf, sieht in der Verwaltung den

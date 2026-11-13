@@ -46,7 +46,8 @@ die App.
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
 - Reiter „Ich“ wie „Mein Bereich“ im Browser: Mitgliedsausweis, Meine Daten, Rechnungen mit
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen und Protokollen, Meine
-  Ergebnisse mit Ranglisten, Helferdienste und Dokumente
+  Ergebnisse mit Ranglisten, Helferdienste, Dokumente und für Ansprechpartner einer Firma
+  „Mitarbeiter“ (für wen die Firma zahlt, neue Mitarbeiter melden)
 - Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
   zeigen“), auch ohne Netz (verschlüsselt gespeichert);
   zum Vorzeigen bildschirmfüllend und mit voller Helligkeit; auf Wunsch in Google Wallet oder
@@ -72,8 +73,8 @@ Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird ein
 Passwort und Zwei-Faktor-Code freigeschaltet, danach mit Fingerabdruck oder PIN geöffnet;
 Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was möchtest du
 tun?“: oben „Ausweis prüfen“, darunter „Zu erledigen“ mit Anzahl und die Bereiche
-Aufgaben, Mitglieder, Termine, Wettbewerbe, Geschäftspartner, Kassenbuch, Rechnungen sowie
-Jubiläen und Geburtstage, je nach Rechten.
+Aufgaben, Mitglieder, Termine, Wettbewerbe, Geschäftspartner, Kassenbuch, Rechnungen,
+Jubiläen und Geburtstage, Qualifikationen und Fristen, je nach Rechten.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
@@ -93,6 +94,7 @@ Jubiläen und Geburtstage, je nach Rechten.
 - Wettbewerbe: Standmodus eingebettet in der App, auch ohne Empfang, mit QR-Code für weitere
   Geräte
 - Geschäftspartner nachschlagen (Suche, Akte, anrufen, mailen; nur lesen)
+- Haushalt und Firma in der Akte, Qualifikationen (was bald abläuft) und Fristenkalender (nur lesen)
 - Kassenbuch mit Belegfoto (ohne Netz als verschlüsselter Entwurf)
 - offene Rechnungen suchen, Barzahlung verbuchen, Quittung als PDF teilen
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,

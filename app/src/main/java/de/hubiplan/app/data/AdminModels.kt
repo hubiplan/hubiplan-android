@@ -92,6 +92,8 @@ data class MemberDetail(
     /** Bei Personen: Ansprechpartner für diese Organisationen */
     @SerialName("contact_for") val contactFor: List<ContactFor> = emptyList(),
     @SerialName("billing_address") val billingAddress: BillingAddress? = null,
+    /** Aktuelle Haushalte und Firmen (HUBIplan ab 13.11.2026; ältere Stände: fehlt) */
+    val households: List<HouseholdInfo> = emptyList(),
 ) {
     val isOrganization: Boolean get() = kind == ORGANIZATION
 
@@ -620,3 +622,83 @@ data class PartnerItem(
             country = details.country,
         )
 }
+
+/** Haushalt oder Firma eines Mitglieds mit den übrigen Mitgliedern (nur lesen). */
+@Serializable
+data class HouseholdInfo(
+    val id: Int,
+    val name: String = "",
+    /** "family" oder "company" */
+    val kind: String = "family",
+    /** "adult" oder "child" */
+    val role: String = "",
+    val since: String? = null,
+    val others: List<HouseholdOther> = emptyList(),
+) {
+    val isCompany: Boolean get() = kind == "company"
+}
+
+@Serializable
+data class HouseholdOther(
+    @SerialName("member_id") val memberId: Int,
+    val name: String = "",
+    val role: String = "",
+)
+
+/** Nachweis eines Mitglieds (`members/<id>/qualifications/`, nur lesen). */
+@Serializable
+data class MemberQualification(
+    val id: Int,
+    @SerialName("kind_name") val kindName: String = "",
+    @SerialName("inspection_only") val inspectionOnly: Boolean = false,
+    @SerialName("acquired_on") val acquiredOn: String? = null,
+    @SerialName("valid_until") val validUntil: String? = null,
+    val note: String = "",
+    /** "valid", "expiring", "expired" */
+    val status: String = "",
+    /** Maßgeblicher (neuester) Nachweis dieser Art */
+    val current: Boolean = true,
+)
+
+/** Zeile der Übersicht `qualifications/` (maßgebliche Nachweise aller aktuellen Mitglieder). */
+@Serializable
+data class QualificationRow(
+    val id: Int,
+    val member: Int,
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String = "",
+    @SerialName("kind_name") val kindName: String = "",
+    @SerialName("inspection_only") val inspectionOnly: Boolean = false,
+    @SerialName("acquired_on") val acquiredOn: String? = null,
+    @SerialName("valid_until") val validUntil: String? = null,
+    val status: String = "",
+) {
+    val name: String get() = "$firstName $lastName".trim()
+}
+
+/** Fristenkalender (`obligations/`, nur lesen). */
+@Serializable
+data class ObligationList(
+    val items: List<ObligationItem> = emptyList(),
+)
+
+@Serializable
+data class ObligationItem(
+    val id: Int,
+    val title: String = "",
+    val note: String = "",
+    @SerialName("due_date") val dueDate: String? = null,
+    /** "overdue", "soon", "planned", "election", "done", "inactive" */
+    val status: String = "",
+    @SerialName("role_name") val roleName: String = "",
+    @SerialName("interval_months") val intervalMonths: Int? = null,
+    val history: List<ObligationDoneItem> = emptyList(),
+)
+
+@Serializable
+data class ObligationDoneItem(
+    val id: Int,
+    @SerialName("done_on") val doneOn: String = "",
+    val note: String = "",
+    @SerialName("done_by") val doneBy: String = "",
+)

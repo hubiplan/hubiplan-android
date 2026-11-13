@@ -133,6 +133,16 @@ class AdminClient(
     suspend fun endAward(id: Int, award: Int, validUntil: String): Changed<Unit> =
         changeUnit("PATCH", "members/$id/honorary-titles/$award/", obj("valid_until" to validUntil))
 
+    /** Nachweise eines Mitglieds (Modul Qualifikationen, nur lesen). */
+    suspend fun memberQualifications(id: Int): List<MemberQualification> = decodeList(get("members/$id/qualifications/"))
+
+    /** Maßgebliche Nachweise; [soonOnly]: nur bald ablaufende oder abgelaufene. */
+    suspend fun qualifications(soonOnly: Boolean): List<QualificationRow> =
+        decodeList(get(if (soonOnly) "qualifications/?stand=bald" else "qualifications/"))
+
+    /** Fristenkalender der Einheit (nur lesen). */
+    suspend fun obligations(): ObligationList = decodeApi(get("obligations/"))
+
     suspend fun fields(id: Int): List<FieldEntry> = decodeList(get("members/$id/fields/"))
 
     suspend fun saveFields(id: Int, values: Map<String, JsonElement>): Changed<Unit> =
