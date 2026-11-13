@@ -87,6 +87,9 @@ fun accountKey(account: Account): String = "${account.server}#${account.deviceId
 
 data class TodoOpenRequest(val accountId: String, val target: de.hubiplan.app.data.TodoTarget, val ready: Boolean = true)
 
+/** Konto, mit dem die App gerade über einen Link verbunden wurde. */
+data class PairedNotice(val name: String, val email: String, val server: String)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val accounts = (app as HubiplanApp).accounts
@@ -125,6 +128,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun dismissRestored() {
         _restored.value = 0
+    }
+
+    /**
+     * Nach dem Verbinden über einen Link oder QR-Code: mit welchem Konto die App jetzt verbunden
+     * ist. Wer einen fremden Link bekommen hat, sieht so, dass es nicht das eigene Konto ist, und
+     * kann sofort trennen (Gesamtaudit 13.11.2026, H-07).
+     */
+    private val _pairedAs = MutableStateFlow<PairedNotice?>(null)
+    val pairedAs: StateFlow<PairedNotice?> = _pairedAs
+
+    fun dismissPairedAs() {
+        _pairedAs.value = null
+    }
+
+    /** „Das bin ich nicht“: Konto auf diesem Gerät sofort wieder trennen. */
+    fun rejectPairedAs() {
+        _pairedAs.value = null
+        // Nicht logout(): Die Hauptansicht ist direkt nach dem Verbinden vielleicht noch nicht da
+        val slot = accounts.active.value
+        val slotStore = accounts.store(slot)
+        viewModelScope.launch {
+            val account = slotStore.currentAccount() ?: return@launch
+            if (!loggingOut.add(slot)) return@launch
+            try {
+                runCatching { PushSetup.disable(context, slotStore) }
+                runCatching { Api(account.server, account.token).logout(account.deviceId) }
+                dropSlot(slot, account, null)
+            } finally {
+                loggingOut.remove(slot)
+            }
+        }
     }
 
     /** Alte Belege behalten: erst beim nächsten Start wieder fragen. */
@@ -863,7 +897,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun confirmPairing() {
         val link = _connect.value.pendingPairing ?: return
         _connect.value = _connect.value.copy(pendingPairing = null)
-        run(link.server) { api, key -> api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion, deviceKey = key()) }
+        run(link.server, viaLink = true) { api, key -> api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion, deviceKey = key()) }
     }
 
     fun cancelPairing() {
@@ -904,7 +938,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** [action] bekommt die Api und eine Funktion, die das Geräteschlüsselpaar erzeugt (H7). */
-    private fun run(server: String, action: suspend (Api, suspend () -> String) -> Paired?) {
+    private fun run(server: String, viaLink: Boolean = false, action: suspend (Api, suspend () -> String) -> Paired?) {
         _connect.value = _connect.value.copy(busy = true, error = null, server = server)
         viewModelScope.launch {
             val alias = DeviceKeys.newAlias()
@@ -945,6 +979,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         if (back > 0) _restored.value = back
                     }
                     accounts.setActive(slot)
+                    if (viaLink) _pairedAs.value = PairedNotice(paired.user.display, paired.user.email, server)
                     _connect.value = ConnectState()
                     _theme.value = null
                     loadAccounts()
