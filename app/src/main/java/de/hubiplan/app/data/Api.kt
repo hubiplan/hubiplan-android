@@ -571,6 +571,16 @@ class Api(
     suspend fun myDocuments(accessId: Int): MyDocuments =
         decodeApi(expect("GET", "/api/portal/$accessId/documents/"))
 
+    /** Mein Bereich › Mitarbeiter: Firmen, für deren Mitarbeiter die Organisation zahlt. */
+    suspend fun myCompanies(accessId: Int): CompanyOverview =
+        decodeApi(expect("GET", "/api/portal/$accessId/company/"))
+
+    /** Neuen Mitarbeiter melden: Die Person bekommt per Mail den Link zum Online-Antrag. */
+    suspend fun reportEmployee(accessId: Int, household: Int, firstName: String, lastName: String, email: String) {
+        expect("POST", "/api/portal/$accessId/company/$household/report/",
+            json.encodeToString(JsonObject.serializer(), jsonObjectOf("first_name" to firstName, "last_name" to lastName, "email" to email)))
+    }
+
     /** Rechnung als PDF (nur zum Ansehen, die App speichert sie nicht). */
     suspend fun invoicePdf(accessId: Int, invoiceId: Int, cancellation: Boolean = false): ByteArray =
         file("/api/portal/$accessId/invoices/$invoiceId/pdf/" + if (cancellation) "?storno=1" else "")

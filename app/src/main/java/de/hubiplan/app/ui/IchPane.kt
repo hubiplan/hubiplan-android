@@ -76,6 +76,8 @@ internal enum class IchBereich(val label: String) {
     ERGEBNISSE(tr("Meine Ergebnisse")),
     HELFERDIENSTE(tr("Helferdienste")),
     DOKUMENTE(tr("Dokumente")),
+    // Ansprechpartner einer Firma, die für Mitarbeiter zahlt (wie Mein Bereich › Mitarbeiter)
+    MITARBEITER(tr("Mitarbeiter")),
 }
 
 /** Nur Bereiche, deren Modul an ist (gleiche Regeln wie `portalSections` im Browser). */
@@ -87,6 +89,7 @@ internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.en
         IchBereich.ERGEBNISSE -> access.hasResults
         IchBereich.HELFERDIENSTE -> access.hasHelpers
         IchBereich.DOKUMENTE -> access.hasDocs
+        IchBereich.MITARBEITER -> access.company
     }
 }
 
@@ -148,6 +151,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
                 IchBereich.VERSAMMLUNGEN -> MeetingsSection(access, vm)
                 IchBereich.ERGEBNISSE -> ResultsSection(access, vm)
                 IchBereich.DOKUMENTE -> DocumentsSection(access, vm)
+                IchBereich.MITARBEITER -> CompanySection(access, vm)
                 IchBereich.HELFERDIENSTE -> Unit
             }
         }
@@ -193,6 +197,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.ERGEBNISSE -> tr("Plätze, Werte und Titel") to 0
                     IchBereich.HELFERDIENSTE -> tr("unter „Aufgaben“") to 0
                     IchBereich.DOKUMENTE -> (documents?.let { trn("1 Dokument", "{n} Dokumente", it.count) } ?: "") to 0
+                    IchBereich.MITARBEITER -> tr("Für wen die Firma zahlt") to 0
                 }
                 IchRow(b.label, summary, count) { onOpen(b) }
             }
@@ -281,7 +286,7 @@ internal class Viewer(val context: Context, val scope: kotlinx.coroutines.Corout
 }
 
 @Composable
-private fun SectionColumn(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+internal fun SectionColumn(content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),

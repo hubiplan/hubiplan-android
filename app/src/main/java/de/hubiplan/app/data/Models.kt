@@ -147,6 +147,8 @@ data class PortalAccess(
     val musician: Boolean = false,
     @SerialName("meetings_enabled") val meetingsEnabled: Boolean = false,
     @SerialName("docs_enabled") val docsEnabled: Boolean = false,
+    /** Ansprechpartner einer Firma, die für Mitarbeiter zahlt (Mein Bereich › Mitarbeiter; ältere Stände: fehlt) */
+    val company: Boolean = false,
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
 
