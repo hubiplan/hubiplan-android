@@ -1,0 +1,4 @@
+• Administration: look up business partners, with contact persons, calling and email.
+• Member record: choose a title (Dr., Prof. …) or enter your own.
+• Add new members without a date of birth.
+• Dependencies are verified by checksum when the app is built.

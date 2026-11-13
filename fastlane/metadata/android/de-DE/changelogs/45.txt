@@ -1,0 +1,4 @@
+• Verwaltung: Geschäftspartner nachschlagen, mit Ansprechpartnern, Anrufen und E-Mail.
+• Mitgliedsakte: Titel (Dr., Prof. …) auswählen oder frei eintragen.
+• Neue Mitglieder auch ohne Geburtsdatum aufnehmen.
+• Abhängigkeiten werden beim Bauen per Prüfsumme geprüft.
