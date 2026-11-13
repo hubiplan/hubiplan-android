@@ -45,7 +45,8 @@ die App.
 - Push ohne Google über eine UnifiedPush-App (z. B. ntfy), Inhalt Ende-zu-Ende
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
 - Reiter „Ich“ wie „Mein Bereich“ im Browser: Mitgliedsausweis, Meine Daten, Rechnungen mit
-  Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen und Protokollen, Meine
+  Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
+  und Online-Abstimmung, Meine
   Ergebnisse mit Ranglisten, Helferdienste und Dokumente
 - Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
   zeigen“), auch ohne Netz (verschlüsselt gespeichert);

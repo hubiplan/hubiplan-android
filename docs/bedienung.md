@@ -55,6 +55,11 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
   Öffnen, spätestens nach etwa einer Stunde, beim Start und beim Abmelden gelöscht.
 - **Versammlungen**: Einladungen mit Ort, Zeit und Tagesordnung, „Antrag stellen“ bis zur Frist,
   eigene Anträge mit Stand und „Antrag zurückziehen“, darunter freigegebene Protokolle als PDF.
+  Läuft eine Versammlung, meldet „QR-Code scannen: Ich bin da“ mit dem wechselnden Code vom
+  Bildschirm der Leitung an; erlaubt der Verein die Teilnahme aus der Ferne, geht das auch mit
+  „Online teilnehmen“. In der Versammlungsansicht stimmt das Mitglied bei laufenden Abstimmungen
+  ab (für jede Vollmacht eine eigene Stimme, nicht änderbar), sieht danach das Ergebnis und meldet
+  sich mit „Ich gehe“ ab. Die Ansicht fragt alle vier Sekunden nach (HUBIplan ab Versammlungen V7).
 - **Meine Ergebnisse**: Plätze, Werte, Titel und Ranglisten.
 - **Helferdienste**: führt in den Reiter „Aufgaben“ zu den Helferdiensten.
 - **Dokumente**: freigegebene Dokumente des Vereins, nur lesen.
