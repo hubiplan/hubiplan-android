@@ -4,8 +4,12 @@ import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,7 +45,25 @@ fun QuarantineDialogs(vm: AppViewModel) {
     val scope = rememberCoroutineScope()
     var exportError by remember { mutableStateOf<String?>(null) }
     val sweep = swept
-    if (restored > 0) {
+    val pairedAs by vm.pairedAs.collectAsStateWithLifecycle()
+    val paired = pairedAs
+    if (paired != null) {
+        // Gesamtaudit 13.11.2026, H-07: Wer einen fremden Link geöffnet hat, sieht das fremde Konto
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(tr("Verbunden als")) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                    Text(paired.name.ifBlank { paired.email }, style = MaterialTheme.typography.headlineSmall)
+                    if (paired.name.isNotBlank()) Text(paired.email, style = MaterialTheme.typography.titleMedium)
+                    Text(paired.server.removePrefix("https://"), style = MaterialTheme.typography.titleMedium)
+                    Text(tr("Ist das dein Konto bei deinem Verein? Wenn nicht, trenne die Verbindung: Sonst landet, was du in der App einträgst, im Konto einer anderen Person."))
+                }
+            },
+            confirmButton = { Button(onClick = vm::dismissPairedAs) { Text(tr("Ja, das bin ich")) } },
+            dismissButton = { TextButton(onClick = vm::rejectPairedAs) { Text(tr("Nein, trennen")) } },
+        )
+    } else if (restored > 0) {
         AlertDialog(
             onDismissRequest = vm::dismissRestored,
             title = { Text(tr("Belege zurückgeholt")) },
