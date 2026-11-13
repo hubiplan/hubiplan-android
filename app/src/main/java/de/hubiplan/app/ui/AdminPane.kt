@@ -236,6 +236,8 @@ internal enum class Section(val label: String, val hint: String) {
     OCCASIONS(tr("Jubiläen und Geburtstage"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
     COMPETITIONS(tr("Wettbewerbe"), tr("Schießen im Standmodus erfassen, auch ohne Empfang")),
     PARTNERS(tr("Geschäftspartner"), tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen")),
+    QUALIFICATIONS(tr("Qualifikationen"), tr("Nachweise, die bald ablaufen")),
+    OBLIGATIONS(tr("Fristen"), tr("Vereinspflichten mit Frist und Zuständigkeit")),
 }
 
 /**
@@ -262,6 +264,8 @@ internal fun sectionsFor(unit: AdminUnit): List<Section> {
         Section.OCCASIONS.takeIf { members },
         Section.COMPETITIONS.takeIf { showsCompetitions(unit) },
         Section.PARTNERS.takeIf { showsPartners(unit) },
+        Section.QUALIFICATIONS.takeIf { showsQualifications(unit) },
+        Section.OBLIGATIONS.takeIf { showsObligations(unit) },
     )
 }
 
@@ -486,7 +490,11 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         onChanged(text, null)
                     }
                     open != null && unit.isDepartment -> DeptMemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
-                    open != null -> MemberScreen(client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload)
+                    open != null -> MemberScreen(
+                        client, unit.permissions, open, errors, onBack = { member = null }, onChanged = onChanged, reload = reload,
+                        qualifications = showsQualifications(unit),
+                        onOpenMember = { member = it },
+                    )
                     requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
                         requests = false
                         member = it
@@ -534,6 +542,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         onOpenStand = vm::openStand,
                     )
                     section == Section.PARTNERS && section in sections -> PartnersSection(client, errors, reload)
+                    section == Section.QUALIFICATIONS && section in sections -> QualificationsSection(client, errors, reload) { member = it }
+                    section == Section.OBLIGATIONS && section in sections -> ObligationsSection(client, errors, reload)
                     section == Section.EVENTS -> EventsSection(client, errors, reload, onCreate = { creatingEvent = it }) { o ->
                         eventId = o.eventId
                         eventStart = if (o.isSeries) o.originalStart ?: o.startsAt else null
@@ -714,6 +724,8 @@ internal fun sectionIcon(s: Section) = when (s) {
     Section.OCCASIONS -> Icons.Filled.Star
     Section.COMPETITIONS -> Icons.Filled.LocationOn
     Section.PARTNERS -> Icons.Filled.AccountBox
+    Section.QUALIFICATIONS -> Icons.Filled.CheckCircle
+    Section.OBLIGATIONS -> Icons.Filled.DateRange
 }
 
 @Composable
