@@ -10,6 +10,7 @@ ein bis drei Sätze für Mitglieder, auf Deutsch und Englisch. „–“, wenn n
 - en: –
 - Art: neu | verbessert | behoben | sicherheit
 - Braucht HUBIplan: – <!-- z. B. eine neue Schnittstellenfunktion; sonst „–“ -->
+- iOS-App: – <!-- nachgezogen in hubiplan-ios#…, noch offen, oder „–“ (nicht betroffen) -->
 
 ## Geprüft
 

@@ -52,11 +52,13 @@ Gemeint ist der Code in diesem Repository, beide Varianten. Besonders interessan
   Entzug der Freigabe oder nach Ablauf der Frist noch auf dem Telefon lesbar sind,
 - ein eingebetteter Standmodus, der Seiten außerhalb der eigenen Instanz lädt oder mit dem
   Standzugang mehr als den eigenen Wettbewerb erreicht,
-- Aufgaben, Helferdienste oder Mitteilungen, die nach dem Abmelden oder Kontowechsel noch
-  auf dem Telefon lesbar sind.
+- Aufgaben, Helferdienste, Mitteilungen oder Umfragen, die nach dem Abmelden oder Kontowechsel
+  noch auf dem Telefon lesbar sind,
+- Anmelden an einer Versammlung oder Abstimmen für ein anderes Mitglied.
 
 Liegt der Fehler in der Schnittstelle von HUBIplan, bitte
-[dort melden](https://github.com/hubiplan/hubiplan/security/advisories/new).
+[dort melden](https://github.com/hubiplan/hubiplan/security/advisories/new); Lücken der iOS-App in
+[hubiplan-ios](https://github.com/hubiplan/hubiplan-ios/security/advisories/new).
 
 Nicht gemeint sind Lücken in Fremdsoftware (bitte dort melden), reine Last- oder
 Überlastungsangriffe, Social Engineering sowie Befunde ohne Auswirkung (z. B. Befunde, die ein
