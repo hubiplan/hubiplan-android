@@ -104,6 +104,7 @@ private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) 
         } else {
             ListItemDefaults.colors()
         },
+        leadingContent = { DatumKaestchen(occ.startsAt, gedaempft = occ.isCancelled) },
         headlineContent = {
             Text(
                 occ.title,
@@ -115,7 +116,7 @@ private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) 
                 Text(formatWhen(occ.startsAt, occ.endsAt, occ.allDay))
                 val place = listOf(occ.location, occ.owner).filter { it.isNotBlank() }.joinToString(" · ")
                 if (place.isNotBlank()) Text(place, style = MaterialTheme.typography.bodySmall)
-                if (occ.isCancelled) Text(tr("Abgesagt"), color = MaterialTheme.colorScheme.error)
+                if (occ.isCancelled) Abzeichen(tr("Abgesagt"), Zustand.FEHLER, Modifier.padding(top = Abstand.eng))
             }
         },
         trailingContent = {
@@ -288,16 +289,12 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int,
 /** Eigene Rückmeldung als Symbol mit Klartext statt „✓“/„✗“ (UX-Audit 08.11. A-07). */
 @Composable
 internal fun RsvpStatus(response: String?) {
-    val (icon, text) = when (response) {
-        "yes" -> Icons.Filled.Check to tr("Zugesagt")
-        "no" -> Icons.Filled.Close to tr("Nicht dabei")
-        "maybe" -> null to tr("Vielleicht")
-        else -> null to tr("Noch offen")
-    }
-    val color = if (response == null) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Abstand.eng)) {
-        icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(18.dp)) }
-        Text(text, color = color)
+    // Abzeichen in den Zustandsfarben der Weboberfläche (Design „Frisch“)
+    when (response) {
+        "yes" -> Abzeichen(tr("Zugesagt"), Zustand.GUT, icon = Icons.Filled.Check)
+        "no" -> Abzeichen(tr("Nicht dabei"), Zustand.NEUTRAL, icon = Icons.Filled.Close)
+        "maybe" -> Abzeichen(tr("Vielleicht"), Zustand.HINWEIS)
+        else -> Abzeichen(tr("Noch offen"), Zustand.WARNUNG)
     }
 }
 
