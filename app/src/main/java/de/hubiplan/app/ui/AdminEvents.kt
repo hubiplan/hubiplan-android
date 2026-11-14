@@ -427,7 +427,7 @@ private fun RespondDialog(
     )
 }
 
-private val DAY_INPUT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+private val DAY_INPUT: DateTimeFormatter get() = DAY_INPUT_FORMAT
 
 /** Einfachen Termin anlegen: einmalig, Titel, Tag, Zeit, Ort, Sichtbarkeit, Zu-/Absagen. */
 @Composable

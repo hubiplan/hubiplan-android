@@ -47,7 +47,6 @@ import de.hubiplan.app.data.Preview
 import de.hubiplan.app.data.TitleItem
 import de.hubiplan.app.data.obj
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonElement
@@ -60,7 +59,7 @@ import de.hubiplan.app.tr
 const val BILLING_VIEW = "billing.view"
 const val BILLING_EDIT = "billing.edit"
 
-private fun todayInput(): String = LocalDate.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+private fun todayInput(): String = LocalDate.now().format(DAY_INPUT_FORMAT)
 
 @Composable
 private fun DateInput(label: String, value: String, onChange: (String) -> Unit) {
@@ -234,7 +233,7 @@ fun fieldText(def: de.hubiplan.app.data.FieldDef, value: JsonElement?): String {
             false -> "nein"
             null -> ""
         }
-        "number" -> p.contentOrNull?.replace(".", ",") ?: ""
+        "number" -> p.contentOrNull?.let { if (de.hubiplan.app.Texte.sprache == "en") it else it.replace(".", ",") } ?: ""
         else -> p.contentOrNull ?: ""
     }
 }
