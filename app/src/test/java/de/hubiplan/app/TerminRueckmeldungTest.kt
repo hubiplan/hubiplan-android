@@ -33,6 +33,20 @@ class TerminRueckmeldungTest {
         assertEquals("Plan.pdf", e.attachments.single().name)
     }
 
+    @Test fun verknuepftesDokumentAusDerAblage() {
+        val e = json.decodeFromString(
+            EventDetail.serializer(),
+            """
+            {"id":5,"title":"Sommerfest","starts_at":"2099-06-13T14:00:00+02:00","ends_at":"2099-06-13T18:00:00+02:00",
+             "attachments":[{"id":4,"kind":"document","name":"Ablaufplan","file_name":"Ablauf-2099.pdf","size":1024,
+               "content_type":"application/pdf","document":7,"available":true,"url":"/x/"}]}
+            """.trimIndent(),
+        )
+        val file = e.attachments.single()
+        assertEquals("Ablaufplan", file.name)
+        assertEquals("Ablauf-2099.pdf", file.fileName)
+    }
+
     @Test fun aeltererServerOhneNeueFelder() {
         val e = json.decodeFromString(
             EventDetail.serializer(),

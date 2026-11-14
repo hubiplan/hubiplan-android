@@ -288,9 +288,12 @@ data class MapLinks(val osm: String? = null, val google: String? = null)
 @Serializable
 data class EventFile(
     val id: Int,
+    /** Anzeigename; bei verknüpften Dokumenten der Titel aus der Ablage */
     val name: String,
     val size: Long = 0,
     @SerialName("content_type") val contentType: String = "",
+    /** Dateiname der Datei (bei Dokumenten die neueste Fassung); leer bei älteren Servern */
+    @SerialName("file_name") val fileName: String = "",
 )
 
 @Serializable

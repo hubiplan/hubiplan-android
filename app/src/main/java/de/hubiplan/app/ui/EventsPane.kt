@@ -333,7 +333,7 @@ private fun AttachmentSection(access: PortalAccess, e: EventDetail, vm: AppViewM
     Text(tr("Anhänge"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     e.attachments.forEach { file ->
         TextButton(
-            onClick = { viewer.open(file.name, file.contentType.ifBlank { "application/octet-stream" }) { it.eventAttachment(access.id, e.id, file.id) } },
+            onClick = { viewer.open(file.fileName.ifBlank { file.name }, file.contentType.ifBlank { "application/octet-stream" }) { it.eventAttachment(access.id, e.id, file.id) } },
             enabled = !viewer.busy,
         ) { Text(file.name) }
     }
