@@ -544,6 +544,30 @@ class Api(
         expect("POST", "/api/portal/$accessId/meetings/motions/$motionId/withdraw/", "{}")
     }
 
+    // --- Versammlung: Anmelden per App und Online-Abstimmung (HUBIplan V7) ---
+
+    suspend fun meetingLive(accessId: Int, meetingId: Int): MeetingLive =
+        decodeApi(expect("GET", "/api/portal/$accessId/meetings/$meetingId/live/"))
+
+    /** „Ich bin da“ mit dem Code aus dem QR-Code oder aus der Ferne ([remote]). */
+    suspend fun meetingCheckin(accessId: Int, meetingId: Int, code: String?, remote: Boolean = false): MeetingLive {
+        val body = if (remote) JsonObject(mapOf("remote" to JsonPrimitive(true))) else jsonObjectOf("code" to (code ?: ""))
+        return decodeApi(expect("POST", "/api/portal/$accessId/meetings/$meetingId/live/checkin/",
+            json.encodeToString(JsonObject.serializer(), body)))
+    }
+
+    suspend fun meetingLeave(accessId: Int, meetingId: Int): MeetingLive =
+        decodeApi(expect("POST", "/api/portal/$accessId/meetings/$meetingId/live/leave/", "{}"))
+
+    /** Stimmen abgeben: je Stimme (Anwesenheitseintrag) die gewählte Antwort. */
+    suspend fun meetingVote(accessId: Int, meetingId: Int, pollId: Int, votes: Map<Int, Int>): MeetingLive {
+        val list = JsonArray(votes.map { (attendance, option) ->
+            JsonObject(mapOf("attendance" to JsonPrimitive(attendance), "option" to JsonPrimitive(option)))
+        })
+        return decodeApi(expect("POST", "/api/portal/$accessId/meetings/$meetingId/polls/$pollId/vote/",
+            json.encodeToString(JsonObject.serializer(), JsonObject(mapOf("votes" to list)))))
+    }
+
     suspend fun myDocuments(accessId: Int): MyDocuments =
         decodeApi(expect("GET", "/api/portal/$accessId/documents/"))
 

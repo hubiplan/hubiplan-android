@@ -438,8 +438,14 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
     var withdraw by remember { mutableStateOf<OwnMotion?>(null) }
     var sending by remember { mutableStateOf(false) }
     var formError by remember { mutableStateOf<String?>(null) }
+    // Laufende Versammlung (V7): nach Scan oder „Online teilnehmen“
+    var live by remember(access.id) { mutableStateOf<LiveTarget?>(null) }
     val viewer = rememberViewer(vm)
     val scope = rememberCoroutineScope()
+    val scan = rememberMeetingScanner { text ->
+        val (target, problem) = meetingTarget(text, vm.api()?.server ?: "", access)
+        if (target != null) live = target else notice = problem
+    }
     LaunchedEffect(access.id, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
         error = null
@@ -448,6 +454,11 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
         } catch (e: ApiException) {
             if (e.status == 401) vm.deviceRevoked(e) else error = e.problem()
         }
+    }
+    live?.let { target ->
+        androidx.activity.compose.BackHandler { live = null; attempt++ }
+        MeetingLivePane(access, vm, target)
+        return
     }
     SectionColumn {
         error?.let { ProblemNotice(it, onRetry = { attempt++ }, inset = false) }
@@ -462,7 +473,13 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
             Text(tr("Zurzeit gibt es keine Einladung und kein Protokoll für dich."))
         }
         l.upcoming.forEach { m ->
-            MeetingCard(m, onMotion = { formError = null; motionFor = m }, onWithdraw = { withdraw = it })
+            MeetingCard(
+                m,
+                onMotion = { formError = null; motionFor = m },
+                onWithdraw = { withdraw = it },
+                onScan = scan,
+                onOpenLive = { live = LiveTarget(m.id, null) },
+            )
         }
         if (l.minutes.isNotEmpty()) {
             Text(tr("Protokolle"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
@@ -535,7 +552,13 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
 }
 
 @Composable
-private fun MeetingCard(m: UpcomingMeeting, onMotion: () -> Unit, onWithdraw: (OwnMotion) -> Unit) {
+private fun MeetingCard(
+    m: UpcomingMeeting,
+    onMotion: () -> Unit,
+    onWithdraw: (OwnMotion) -> Unit,
+    onScan: () -> Unit,
+    onOpenLive: () -> Unit,
+) {
     var agendaOpen by rememberSaveable(m.id) { mutableStateOf(true) }
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Abstand.mittel), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
@@ -547,6 +570,13 @@ private fun MeetingCard(m: UpcomingMeeting, onMotion: () -> Unit, onWithdraw: (O
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (m.address.isNotBlank()) Text(m.address, style = MaterialTheme.typography.bodySmall)
+            if (m.checkinOpen) {
+                Text(tr("Die Versammlung läuft: Melde dich mit dem QR-Code im Saal an."), style = MaterialTheme.typography.bodyMedium)
+                Button(onClick = onScan) { Text(tr("QR-Code scannen: Ich bin da")) }
+                OutlinedButton(onClick = onOpenLive) {
+                    Text(if (m.remote) tr("Online teilnehmen und abstimmen") else tr("Anmeldung und Abstimmungen"))
+                }
+            }
             if (m.agenda.isNotEmpty()) {
                 TextButton(onClick = { agendaOpen = !agendaOpen }) {
                     Text(

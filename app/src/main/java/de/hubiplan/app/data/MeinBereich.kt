@@ -108,6 +108,9 @@ data class UpcomingMeeting(
     val address: String = "",
     /** Letzter Zeitpunkt für Anträge; null, wenn die Art keine Anträge vorsieht. */
     @SerialName("motion_until") val motionUntil: String? = null,
+    /** Anmeldung per App offen bzw. Teilnahme aus der Ferne erlaubt (HUBIplan V7; ältere Stände: aus) */
+    @SerialName("checkin_open") val checkinOpen: Boolean = false,
+    val remote: Boolean = false,
     val motions: List<OwnMotion> = emptyList(),
     val agenda: List<AgendaPoint> = emptyList(),
 ) {

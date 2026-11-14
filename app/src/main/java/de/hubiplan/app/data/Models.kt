@@ -126,6 +126,8 @@ data class Theme(
 data class PortalAccess(
     val id: Int,
     @SerialName("club_name") val clubName: String,
+    /** Verein des Zugangs (für den QR-Code einer Versammlung; ältere Stände: 0) */
+    @SerialName("club_id") val clubId: Int = 0,
     @SerialName("club_display_name") val clubDisplayName: String = "",
     @SerialName("first_name") val firstName: String = "",
     @SerialName("last_name") val lastName: String = "",
