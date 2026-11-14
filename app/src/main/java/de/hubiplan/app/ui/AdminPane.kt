@@ -133,7 +133,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
     val screenLock = remember(resumed) { DeviceUnlock.available(context) }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
         when {
-            !overview.twoFactor -> Notice(
+            !overview.twoFactor && !overview.passkey -> Notice(
                 tr("Für die Verwaltung in der App ist die Zwei-Faktor-Anmeldung nötig. Bitte im Browser unter „Mein Konto › Anmeldung & Sicherheit“ einrichten, danach hier freischalten."),
                 tr("Mein Konto öffnen"),
             ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${main.account.server}/mein-konto/anmeldung"))) }
@@ -141,7 +141,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
                 tr("Für die Verwaltung braucht das Telefon eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
                 tr("Bildschirmsperre einrichten"),
             ) { DeviceUnlock.openSetup(context) }
-            !state.sealed -> UnlockForm(state, vm)
+            !state.sealed -> UnlockForm(state, vm, withCode = overview.twoFactor, withPasskey = overview.passkey)
             state.token == null -> Column(
                 Modifier.widthIn(max = 520.dp).padding(Abstand.gross),
                 verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
@@ -171,7 +171,7 @@ private fun Notice(text: String, action: String?, onAction: () -> Unit) {
 }
 
 @Composable
-private fun UnlockForm(state: AdminState, vm: AppViewModel) {
+private fun UnlockForm(state: AdminState, vm: AppViewModel, withCode: Boolean, withPasskey: Boolean) {
     val context = LocalContext.current
     var password by remember { mutableStateOf("") }
     var code by remember { mutableStateOf("") }
@@ -182,42 +182,60 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel) {
     ) {
         Text(tr("Verwaltung freischalten"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(
-            tr("Für Mitglieder, Termine und Kasse in der App bitte mit Passwort und Zwei-Faktor-Code bestätigen. Die Freischaltung gilt 30 Tage auf diesem Telefon; geöffnet wird jedes Mal mit Fingerabdruck oder PIN."),
+            tr("Für Mitglieder, Termine und Kasse in der App bitte mit Passwort und Zwei-Faktor-Code oder mit einem Passkey bestätigen. Die Freischaltung gilt 30 Tage auf diesem Telefon; geöffnet wird jedes Mal mit Fingerabdruck oder PIN."),
             style = MaterialTheme.typography.bodySmall,
         )
         if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         (error ?: state.error)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(tr("Passwort")) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth().autofill(ContentType.Password),
-        )
-        OutlinedTextField(
-            value = code,
-            onValueChange = { code = it.filter(Char::isDigit).take(8) },
-            label = { Text(tr("Code aus der Authenticator-App")) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Button(
-            onClick = {
-                error = null
-                // Erst das Telefon entsperren: Der Tresor für den Schlüssel braucht es
-                DeviceUnlock.ask(
-                    context,
-                    tr("Verwaltung freischalten"),
-                    onSuccess = { vm.unlockAdmin(password, code) },
-                    onError = { error = it },
-                )
-            },
-            enabled = !state.busy && password.isNotEmpty() && code.length >= 6,
-            modifier = Modifier.fillMaxWidth(),
-        ) { Text(tr("Freischalten")) }
+        if (withCode) {
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text(tr("Passwort")) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                modifier = Modifier.fillMaxWidth().autofill(ContentType.Password),
+            )
+            OutlinedTextField(
+                value = code,
+                onValueChange = { code = it.filter(Char::isDigit).take(8) },
+                label = { Text(tr("Code aus der Authenticator-App")) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Button(
+                onClick = {
+                    error = null
+                    // Erst das Telefon entsperren: Der Tresor für den Schlüssel braucht es
+                    DeviceUnlock.ask(
+                        context,
+                        tr("Verwaltung freischalten"),
+                        onSuccess = { vm.unlockAdmin(password, code) },
+                        onError = { error = it },
+                    )
+                },
+                enabled = !state.busy && password.isNotEmpty() && code.length >= 6,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(tr("Freischalten")) }
+        }
+        if (withPasskey) {
+            // Wahlweise mit Passkey statt Passwort und Code (zählt als Zwei-Faktor-Anmeldung)
+            OutlinedButton(
+                onClick = {
+                    error = null
+                    DeviceUnlock.ask(
+                        context,
+                        tr("Verwaltung freischalten"),
+                        onSuccess = { vm.unlockAdminWithPasskey(context) },
+                        onError = { error = it },
+                    )
+                },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text(tr("Mit Passkey freischalten")) }
+        }
     }
 }
 

@@ -108,6 +108,10 @@ dependencies {
     implementation(libs.zxing.embedded)
     implementation(libs.androidx.work)
     implementation(libs.androidx.biometric)
+    // Passkeys (Credential Manager, Apache 2.0). Bis Android 13 liefert sie nur Google Play,
+    // deshalb der Anschluss an die Play-Dienste nur in der Variante play; foss ab Android 14.
+    implementation(libs.androidx.credentials)
+    "playImplementation"(libs.androidx.credentials.play)
     debugImplementation(libs.compose.ui.tooling)
     "playImplementation"(libs.firebase.messaging)
     testImplementation(libs.junit)

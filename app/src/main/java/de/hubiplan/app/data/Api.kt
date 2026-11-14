@@ -270,6 +270,36 @@ class Api(
             ),
         )
 
+    /** Aufgabe für die Anmeldung mit Passkey (5 Minuten, einmal nutzbar). */
+    suspend fun passkeyBegin(): PasskeyStart {
+        val data = json.parseToJsonElement(expect("POST", "/api/app/v1/passkey/begin/")).jsonObject
+        return PasskeyStart(
+            challengeId = data["challenge_id"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            options = data["options"]?.toString().orEmpty(),
+        )
+    }
+
+    /** Antwort des Passkeys ([credential], WebAuthn-JSON) gegen einen Geräteschlüssel tauschen. */
+    suspend fun passkeyLogin(start: PasskeyStart, credential: String, deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
+        decodeApi(
+            expect(
+                "POST",
+                "/api/app/v1/passkey/",
+                json.encodeToString(
+                    JsonObject.serializer(),
+                    JsonObject(
+                        jsonObjectOf(
+                            "challenge_id" to start.challengeId,
+                            "name" to deviceName,
+                            "platform" to "android",
+                            "app_version" to appVersion,
+                            "device_key" to deviceKey,
+                        ) + ("credential" to json.parseToJsonElement(credential)),
+                    ),
+                ),
+            ),
+        )
+
     /** Anmeldung mit Passwort über allauth (Client „app“). */
     suspend fun login(email: String, password: String): LoginStep {
         val (status, text) = call(
@@ -390,6 +420,21 @@ class Api(
             "POST",
             "/api/app/v1/admin/unlock/",
             """{"password":${quote(password)},"code":${quote(code)},"admin_key":${quote(adminKey)}}""",
+        ),
+    )
+
+    /** Mit Passkey statt Passwort und Code freischalten (Aufgabe aus [passkeyBegin]). */
+    suspend fun unlockAdminWithPasskey(start: PasskeyStart, credential: String, adminKey: String = ""): AdminUnlock = decodeApi(
+        expect(
+            "POST",
+            "/api/app/v1/admin/unlock/",
+            json.encodeToString(
+                JsonObject.serializer(),
+                JsonObject(
+                    jsonObjectOf("passkey_challenge_id" to start.challengeId, "admin_key" to adminKey) +
+                        ("passkey_credential" to json.parseToJsonElement(credential)),
+                ),
+            ),
         ),
     )
 

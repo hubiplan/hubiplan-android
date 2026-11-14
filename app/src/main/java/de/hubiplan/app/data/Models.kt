@@ -14,7 +14,12 @@ data class Instance(
     @SerialName("min_app_version") val minAppVersion: Int = 1,
     val url: String = "",
     val push: List<PushWay> = emptyList(),
+    /** Plattformen, deren App Passkeys dieser Adresse nutzen darf (`android`, `ios`). */
+    val passkey: List<String> = emptyList(),
 )
+
+/** Aufgabe für die Anmeldung mit Passkey (`passkey/begin/`); [options] ist WebAuthn-JSON. */
+data class PasskeyStart(val challengeId: String, val options: String)
 
 /** Einheit mit Verwaltungsrechten (Schritt A8). */
 @Serializable
@@ -52,6 +57,8 @@ data class AdminOverview(
     val units: List<AdminUnit> = emptyList(),
     val departments: List<AdminDepartment> = emptyList(),
     @SerialName("two_factor") val twoFactor: Boolean = false,
+    /** Freischalten mit Passkey möglich (Passkey für diese Adresse eingerichtet). */
+    val passkey: Boolean = false,
     val unlocked: Boolean = false,
     val until: String? = null,
 ) {
