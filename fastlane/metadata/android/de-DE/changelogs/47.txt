@@ -1,0 +1,2 @@
+• Frischeres Aussehen: ruhigere Formen wie in der Weboberfläche, Rückmeldung und „Abgesagt“ als farbige Abzeichen, Datumskästchen vor jedem Termin.
+• Englische Fassung: Beträge und Datumseingaben im britischen Format.

@@ -1,0 +1,2 @@
+• Fresher look: calmer shapes like the web interface, your reply and "Cancelled" as coloured badges, a date box in front of every event.
+• English version: amounts and date entry in British format.
