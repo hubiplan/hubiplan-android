@@ -188,7 +188,7 @@ private fun PollCard(poll: Poll, busy: Boolean, onVote: (Map<Int, Int>) -> Unit)
     val choice = remember(poll.id) { mutableStateMapOf<Int, Int>() }
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Abstand.mittel), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-            Text("${poll.agendaPosition}. ${poll.question}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+            Text("${poll.agendaNumber.ifBlank { poll.agendaPosition.toString() }}. ${poll.question}", style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
             val details = listOf(
                 poll.candidate,
                 poll.office,

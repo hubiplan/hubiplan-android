@@ -82,7 +82,17 @@ data class MandateState(
 )
 
 @Serializable
-data class AgendaPoint(val position: Int = 0, val title: String = "", val description: String = "")
+data class AgendaPoint(
+    val position: Int = 0,
+    val title: String = "",
+    val description: String = "",
+    /** 0 = Punkt, 1 = Unterpunkt (ab Server mit Unterpunkten) */
+    val level: Int = 0,
+    /** Angezeigte Nummer, z. B. „8“ oder „8.1“; ältere Server liefern sie nicht */
+    val number: String = "",
+) {
+    val shownNumber: String get() = number.ifBlank { position.toString() }
+}
 
 @Serializable
 data class OwnMotion(
