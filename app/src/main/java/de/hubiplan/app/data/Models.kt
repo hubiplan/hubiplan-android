@@ -147,6 +147,9 @@ data class PortalAccess(
     val musician: Boolean = false,
     @SerialName("meetings_enabled") val meetingsEnabled: Boolean = false,
     @SerialName("docs_enabled") val docsEnabled: Boolean = false,
+    /** Modul Umfragen an und Zahl unbeantworteter Umfragen (ältere Stände: fehlt) */
+    @SerialName("surveys_enabled") val surveysEnabled: Boolean = false,
+    @SerialName("surveys_open") val surveysOpen: Int = 0,
     /** Ansprechpartner einer Firma, die für Mitarbeiter zahlt (Mein Bereich › Mitarbeiter; ältere Stände: fehlt) */
     val company: Boolean = false,
 ) {
@@ -178,6 +181,9 @@ data class PortalAccess(
 
     /** „Versammlungen“ unter „Ich“ */
     val hasMeetings: Boolean get() = moduleOn("meetings", meetingsEnabled)
+
+    /** „Umfragen“ unter „Ich“ */
+    val hasSurveys: Boolean get() = moduleOn("surveys", surveysEnabled)
 
     /** „Dokumente“ unter „Ich“ (nur lesen) */
     val hasDocs: Boolean get() = moduleOn("docs", docsEnabled)

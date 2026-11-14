@@ -282,6 +282,15 @@ object PushSetup {
                 }
                 SyncWorker.now(context)
             }
+            // Neue Umfrage oder Erinnerung: Hinweis, Antippen öffnet die App (Ich › Umfragen)
+            "survey" -> {
+                val access = message.access ?: return
+                val logo = ClubLogo.load(context, account, access)
+                val text = listOf(message.from, message.text).filter { it.isNotBlank() }.joinToString(" · ")
+                store.ifCurrent(account) {
+                    Notifications.showInfo(context, store.slot, accountId, access, message.title, text, logo)
+                }
+            }
             "info" -> {
                 val access = message.access ?: return
                 val logo = ClubLogo.load(context, account, access)
