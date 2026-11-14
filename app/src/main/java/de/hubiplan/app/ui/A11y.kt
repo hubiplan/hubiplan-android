@@ -167,8 +167,9 @@ fun ContactRows(contact: de.hubiplan.app.data.Contact) {
     }
 }
 
-/** „TT.MM.JJJJ“ aus Tag, Monat (1–12) und Jahr. */
-fun germanDate(year: Int, month: Int, day: Int): String = "%02d.%02d.%04d".format(day, month, year)
+/** „TT.MM.JJJJ“ (auf Englisch „TT/MM/JJJJ“) aus Tag, Monat (1–12) und Jahr. */
+fun germanDate(year: Int, month: Int, day: Int): String =
+    java.time.LocalDate.of(year, month, day).format(DAY_INPUT_FORMAT)
 
 /**
  * Knopf am Datumsfeld: öffnet den Kalender des Systems (A-05). Die Eingabe per Tastatur

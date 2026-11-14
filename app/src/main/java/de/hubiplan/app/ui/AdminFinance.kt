@@ -510,7 +510,7 @@ fun BookingScreen(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
     }
 }
 
-private val DAY_INPUT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+private val DAY_INPUT: DateTimeFormatter get() = DAY_INPUT_FORMAT
 
 /** Neue Buchung mit Belegfoto. Ohne Netz bleibt sie als Entwurf auf dem Telefon. */
 @Composable

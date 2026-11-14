@@ -7,14 +7,22 @@ import de.hubiplan.app.tr
 import de.hubiplan.app.trn
 
 private val GERMAN_DATE = DateTimeFormatter.ofPattern("d.M.uuuu").withResolverStyle(ResolverStyle.STRICT)
+private val BRITISH_DATE = DateTimeFormatter.ofPattern("d/M/uuuu").withResolverStyle(ResolverStyle.STRICT)
 
-/** „31.12.2026“ (auch „1.2.2026“) → „2026-12-31“; ungültig → null. */
+/** „31.12.2026“ oder „31/12/2026“ (auch „1.2.2026“) → „2026-12-31“; ungültig → null. */
 fun parseGermanDate(text: String): String? {
     val t = text.trim()
     if (t.isEmpty()) return null
     return runCatching { LocalDate.parse(t, GERMAN_DATE).toString() }.getOrNull()
+        ?: runCatching { LocalDate.parse(t, BRITISH_DATE).toString() }.getOrNull()
         ?: runCatching { LocalDate.parse(t).toString() }.getOrNull()
 }
+
+private val english: Boolean get() = de.hubiplan.app.Texte.sprache == "en"
+
+/** Datum für ein Eingabefeld: „31.12.2026“, auf Englisch „31/12/2026“. */
+val DAY_INPUT_FORMAT: DateTimeFormatter
+    get() = DateTimeFormatter.ofPattern(if (english) "dd/MM/yyyy" else "dd.MM.yyyy")
 
 /** Felder einer Änderungsmeldung bzw. der Stammdaten in Worten. */
 val FIELD_LABELS: Map<String, String> get() = mapOf(
@@ -149,27 +157,44 @@ val VISIBILITIES: List<Pair<String, String>> get() = listOf("members" to tr("Mit
 
 // --- B4: Kasse ---
 
-/** „23,40“, „23.4“ oder „1.234,50“ → „23.40“ (positiv, höchstens zwei Nachkommastellen); sonst null. */
+/**
+ * „23,40“, „23.4“ oder „1.234,50“ → „23.40“ (positiv, höchstens zwei Nachkommastellen); sonst null.
+ * Englisch: „€1,234.50“; ein einzelnes Komma vor ein oder zwei Ziffern („23,40“) gilt auch dort
+ * als Dezimalkomma.
+ */
 fun parseAmount(text: String): String? {
-    var t = text.trim().removeSuffix("€").trim().replace(" ", "")
+    var t = text.trim().removeSuffix("€").trim().removePrefix("€").trim().replace(" ", "").replace("\u00A0", "")
     if (t.isEmpty()) return null
-    if (t.contains(',')) t = t.replace(".", "").replace(',', '.')
+    if (english && t.contains(',')) {
+        val decimalComma = !t.contains('.') && t.count { it == ',' } == 1 && t.substringAfter(',').length in 1..2
+        t = if (decimalComma) t.replace(',', '.') else t.replace(",", "")
+    } else if (t.contains(',')) {
+        t = t.replace(".", "").replace(',', '.')
+    }
     val value = t.toBigDecimalOrNull() ?: return null
     if (value.signum() <= 0 || value.scale() > 2 || value > java.math.BigDecimal("99999999.99")) return null
     return value.setScale(2).toPlainString()
 }
 
-/** „1234.5“ → „1.234,50 €“ */
+/** „1234.5“ → „1.234,50 €“, auf Englisch (britisch) „€1,234.50“. */
 fun formatMoney(amount: String?): String {
     val value = amount?.toBigDecimalOrNull() ?: return ""
+    if (english) {
+        val symbols = java.text.DecimalFormatSymbols(java.util.Locale.UK)
+        val digits = java.text.DecimalFormat("#,##0.00", symbols).format(value.abs())
+        return (if (value.signum() < 0) "-" else "") + "€" + digits
+    }
     val symbols = java.text.DecimalFormatSymbols(java.util.Locale.GERMANY)
     return java.text.DecimalFormat("#,##0.00", symbols).format(value) + " €"
 }
 
 // --- B5: Beiträge ---
 
-/** „60.00“ → „60,00“ (Vorgabe im Eingabefeld). */
-fun amountInput(amount: String): String = amount.toBigDecimalOrNull()?.setScale(2)?.toPlainString()?.replace('.', ',') ?: ""
+/** „60.00“ → „60,00“, auf Englisch „60.00“ (Vorgabe im Eingabefeld). */
+fun amountInput(amount: String): String {
+    val plain = amount.toBigDecimalOrNull()?.setScale(2)?.toPlainString() ?: return ""
+    return if (english) plain else plain.replace('.', ',')
+}
 
 /** Prüft den bar kassierten Betrag gegen den offenen Rest; null = in Ordnung. */
 fun cashAmountError(input: String, outstanding: String): String? {

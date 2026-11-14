@@ -90,7 +90,7 @@ class AdminErrors(val onLocked: () -> Unit) {
 }
 
 private fun today(): LocalDate = LocalDate.now()
-private val INPUT_DATE: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+private val INPUT_DATE: DateTimeFormatter get() = DAY_INPUT_FORMAT
 private fun todayText(): String = today().format(INPUT_DATE)
 
 @Composable
