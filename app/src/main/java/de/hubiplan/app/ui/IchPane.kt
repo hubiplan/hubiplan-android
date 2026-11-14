@@ -587,8 +587,9 @@ private fun MeetingCard(
                 if (agendaOpen) {
                     Text(tr("Tagesordnung"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                     m.agenda.sortedBy { it.position }.forEach { item ->
-                        Column(Modifier.semantics(mergeDescendants = true) {}) {
-                            Text("${item.position}. ${item.title}", style = MaterialTheme.typography.bodyMedium)
+                        // Unterpunkte (TOP 8.1) eingerückt unter ihrem Punkt
+                        Column(Modifier.padding(start = if (item.level > 0) 16.dp else 0.dp).semantics(mergeDescendants = true) {}) {
+                            Text("${item.shownNumber}. ${item.title}", style = MaterialTheme.typography.bodyMedium)
                             if (item.description.isNotBlank()) Text(item.description, style = MaterialTheme.typography.bodySmall)
                         }
                     }

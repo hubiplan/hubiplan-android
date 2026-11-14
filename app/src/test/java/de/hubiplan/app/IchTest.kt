@@ -84,7 +84,9 @@ class IchTest {
             "starts_at": "2026-12-06T18:00:00+01:00", "location": "Vereinsheim", "address": "",
             "motion_until": ${until?.let { "\"$it\"" } ?: "null"},
             "motions": [{"id": 2, "title": "Neue Fahne", "text": "…", "status": "submitted", "reply": "", "created_at": "2026-11-01T10:00:00+01:00"}],
-            "agenda": [{"position": 1, "title": "Begrüßung", "description": ""}]}],
+            "agenda": [{"position": 1, "title": "Begrüßung", "description": ""},
+                       {"position": 2, "level": 0, "number": "2", "title": "Wahlen", "description": ""},
+                       {"position": 3, "level": 1, "number": "2.1", "title": "Wahl des Vorsitzenden", "description": ""}]}],
            "minutes": [{"id": 1, "title": "Mitgliederversammlung 2025", "kind_name": "MV", "unit": "", "starts_at": "2025-12-07T18:00:00+01:00"}]}""",
     )
 
@@ -96,6 +98,9 @@ class IchTest {
         assertFalse(m.motionsOpen(Instant.parse("2026-11-23T12:00:00Z")))
         assertFalse(meetings(null).upcoming.single().motionsOpen(Instant.parse("2026-11-09T12:00:00Z")))
         assertTrue(m.motions.single().withdrawable)
+        // Unterpunkte: Nummer vom Server, ältere Server ohne Nummer zählen nach Position
+        assertEquals(listOf("1", "2", "2.1"), m.agenda.map { it.shownNumber })
+        assertEquals(1, m.agenda.last().level)
         assertEquals("eingereicht", motionStatus("submitted"))
         assertTrue(meetingSummary(list).startsWith("Jahreshauptversammlung 2026 "))
         assertEquals("1 Protokoll", meetingSummary(list.copy(upcoming = emptyList())))

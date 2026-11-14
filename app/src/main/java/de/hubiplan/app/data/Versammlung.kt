@@ -52,6 +52,7 @@ data class PollVote(val attendance: Int, val name: String = "", val how: String 
 data class Poll(
     val id: Int,
     @SerialName("agenda_position") val agendaPosition: Int = 0,
+    @SerialName("agenda_number") val agendaNumber: String = "",
     @SerialName("agenda_title") val agendaTitle: String = "",
     val kind: String = "resolution",
     val question: String = "",
