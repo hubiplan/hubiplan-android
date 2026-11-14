@@ -16,6 +16,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import de.hubiplan.app.ui.masterDataChanges
 import de.hubiplan.app.ui.parseGermanDate
 import de.hubiplan.app.ui.amountInput
+import de.hubiplan.app.ui.germanDate
 import de.hubiplan.app.ui.cashAmountError
 import de.hubiplan.app.ui.receiptFileName
 import de.hubiplan.app.data.CashResult
@@ -43,6 +44,8 @@ class AdminFormatTest {
         assertEquals("2026-02-01", parseGermanDate("2026-02-01"))
         assertNull(parseGermanDate("30.02.2026"))
         assertNull(parseGermanDate(""))
+        assertEquals("2026-02-01", parseGermanDate("1/2/2026"))
+        assertNull(parseGermanDate("1/2.2026"))
     }
 
     @Test
@@ -190,6 +193,28 @@ class AdminFormatTest {
         assertNull(parseAmount("zehn"))
         assertEquals("1.234,50 €", formatMoney("1234.5"))
         assertEquals("", formatMoney(null))
+    }
+
+    @Test
+    fun betraegeUndDatenAufEnglisch() {
+        val katalog = Texte.parse(java.io.File("src/main/assets/texte/en.json").readText())
+        try {
+            Texte.setzeFuerTest("en", katalog)
+            assertEquals("€1,234.50", formatMoney("1234.5"))
+            assertEquals("-€0.50", formatMoney("-0.50"))
+            assertEquals("1234.50", parseAmount("€1,234.50"))
+            assertEquals("1234.00", parseAmount("1,234"))
+            assertEquals("23.40", parseAmount("23,40"))
+            assertEquals("12.00", parseAmount("12 €"))
+            assertNull(parseAmount("1.234,50"))
+            assertEquals("60.00", amountInput("60"))
+            assertEquals("05/03/2027", germanDate(2027, 3, 5))
+            assertEquals("2027-03-05", parseGermanDate("05/03/2027"))
+        } finally {
+            Texte.setzeFuerTest("de", katalog)
+        }
+        assertEquals("1.234,50 €", formatMoney("1234.5"))
+        assertEquals("05.03.2027", germanDate(2027, 3, 5))
     }
 
     @Test

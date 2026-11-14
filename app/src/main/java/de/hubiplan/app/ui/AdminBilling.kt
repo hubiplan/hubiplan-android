@@ -59,7 +59,7 @@ import de.hubiplan.app.trn
 // Verwaltung in der App, Schritt B5: offene Rechnungen suchen, bar kassieren, Quittung teilen
 
 
-private val DAY_INPUT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+private val DAY_INPUT: DateTimeFormatter get() = DAY_INPUT_FORMAT
 
 
 /** Rechnungen der Einheit: zuerst die offenen, Suche nach Name, Betreff oder Nummer. */
