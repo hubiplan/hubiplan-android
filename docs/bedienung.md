@@ -61,6 +61,12 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
   ab (für jede Vollmacht eine eigene Stimme, nicht änderbar), sieht danach das Ergebnis und meldet
   sich mit „Ich gehe“ ab. Die Ansicht fragt alle vier Sekunden nach (HUBIplan ab Versammlungen V7).
 - **Meine Ergebnisse**: Plätze, Werte, Titel und Ranglisten.
+- **Umfragen**: Umfragen und Meinungsbilder des Vereins, offene zuerst, mit der Zahl der Umfragen,
+  die noch auf deine Antwort warten. Antworten (Auswahl, Ja/Nein/Enthaltung, Terminfindung,
+  Mengen wie die Essenswahl, Freitext), ändern oder zurückziehen bis zum Ende, Ergebnis je nach
+  Einstellung, bei anonymen Umfragen erst ab drei Antworten. Ist aus einer Terminfindung ein
+  Termin entstanden, übernimmt „Zusage übernehmen“ die Zusage. Neue Umfragen und Erinnerungen
+  kommen als Hinweis (HUBIplan ab Umfragen U1).
 - **Helferdienste**: führt in den Reiter „Aufgaben“ zu den Helferdiensten.
 - **Dokumente**: freigegebene Dokumente des Vereins, nur lesen.
 

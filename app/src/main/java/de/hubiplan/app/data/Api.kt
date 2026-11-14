@@ -621,6 +621,18 @@ class Api(
 
     // --- Helferdienste im Mitgliederbereich (HUBIplan Schritt H2) ---
 
+    suspend fun memberSurveys(accessId: Int): SurveyList =
+        decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
+
+    suspend fun answerSurvey(accessId: Int, id: Int, payload: JsonObject): MemberSurvey =
+        decodeApi(expect("POST", "/api/portal/$accessId/surveys/$id/answer/", json.encodeToString(JsonObject.serializer(), payload)))
+
+    suspend fun withdrawSurvey(accessId: Int, id: Int): MemberSurvey =
+        decodeApi(expect("DELETE", "/api/portal/$accessId/surveys/$id/answer/"))
+
+    suspend fun followSurvey(accessId: Int, id: Int): MemberSurvey =
+        decodeApi(expect("POST", "/api/portal/$accessId/surveys/$id/follow/", "{}"))
+
     suspend fun memberHelpers(accessId: Int): HelperOverview =
         decodeApi(expect("GET", "/api/portal/$accessId/helpers/"))
 

@@ -73,6 +73,7 @@ internal enum class IchBereich(val label: String) {
     DATEN(tr("Meine Daten")),
     RECHNUNGEN(tr("Rechnungen")),
     VERSAMMLUNGEN(tr("Versammlungen")),
+    UMFRAGEN(tr("Umfragen")),
     ERGEBNISSE(tr("Meine Ergebnisse")),
     HELFERDIENSTE(tr("Helferdienste")),
     DOKUMENTE(tr("Dokumente")),
@@ -86,6 +87,7 @@ internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.en
         IchBereich.DATEN -> true
         IchBereich.RECHNUNGEN -> access.hasInvoices
         IchBereich.VERSAMMLUNGEN -> access.hasMeetings
+        IchBereich.UMFRAGEN -> access.hasSurveys
         IchBereich.ERGEBNISSE -> access.hasResults
         IchBereich.HELFERDIENSTE -> access.hasHelpers
         IchBereich.DOKUMENTE -> access.hasDocs
@@ -149,6 +151,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
                 IchBereich.DATEN -> ProfilePane(access, main, vm)
                 IchBereich.RECHNUNGEN -> InvoicesSection(access, vm)
                 IchBereich.VERSAMMLUNGEN -> MeetingsSection(access, vm)
+                IchBereich.UMFRAGEN -> SurveysSection(access, vm)
                 IchBereich.ERGEBNISSE -> ResultsSection(access, vm)
                 IchBereich.DOKUMENTE -> DocumentsSection(access, vm)
                 IchBereich.MITARBEITER -> CompanySection(access, vm)
@@ -172,12 +175,14 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
     var invoices by remember(access.id) { mutableStateOf<MyInvoices?>(null) }
     var meetings by remember(access.id) { mutableStateOf<MyMeetings?>(null) }
     var documents by remember(access.id) { mutableStateOf<MyDocuments?>(null) }
+    var surveys by remember(access.id) { mutableStateOf<de.hubiplan.app.data.SurveyList?>(null) }
     // Kurzstand nur nebenbei: Fehler zeigen erst die Unterseiten
     LaunchedEffect(access.id) {
         val api = vm.api() ?: return@LaunchedEffect
         if (IchBereich.RECHNUNGEN in bereiche) invoices = quietly(vm) { api.myInvoices(access.id) }
         if (IchBereich.VERSAMMLUNGEN in bereiche) meetings = quietly(vm) { api.myMeetings(access.id) }
         if (IchBereich.DOKUMENTE in bereiche) documents = quietly(vm) { api.myDocuments(access.id) }
+        if (IchBereich.UMFRAGEN in bereiche) surveys = quietly(vm) { api.memberSurveys(access.id) }
     }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
@@ -194,6 +199,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.DATEN -> (if (access.isContact) tr("Anschrift, Kontakt, Logo") else tr("Anschrift, Telefon, Foto")) to 0
                     IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
                     IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
+                    IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
                     IchBereich.ERGEBNISSE -> tr("Plätze, Werte und Titel") to 0
                     IchBereich.HELFERDIENSTE -> tr("unter „Aufgaben“") to 0
                     IchBereich.DOKUMENTE -> (documents?.let { trn("1 Dokument", "{n} Dokumente", it.count) } ?: "") to 0
