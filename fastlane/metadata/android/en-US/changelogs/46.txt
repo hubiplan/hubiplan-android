@@ -1,0 +1,5 @@
+• Surveys under "Me": answer, change, see results, push notice.
+• Meetings: check in by QR code, join and vote online; agenda sub-items.
+• Member record with household and company; qualifications and deadlines in administration.
+• Events: open documents from the archive under their file name.
+• After connecting via a link, the app shows the account.

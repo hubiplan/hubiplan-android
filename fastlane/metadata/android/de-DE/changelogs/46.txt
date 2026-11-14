@@ -1,0 +1,5 @@
+• Umfragen unter „Ich“: beantworten, ändern, Ergebnis ansehen, Hinweis per Push.
+• Versammlungen: mit QR-Code anmelden, online teilnehmen und abstimmen; Unterpunkte der Tagesordnung.
+• Akte mit Haushalt und Firma; Qualifikationen und Fristen in der Verwaltung.
+• Termine: Dokumente aus der Ablage unter ihrem Dateinamen öffnen.
+• Nach dem Verbinden über einen Link zeigt die App das Konto.
