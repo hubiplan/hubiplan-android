@@ -36,6 +36,9 @@ Hinweise zum Stil:
   `/api/portal/…`), nie mit Analyse-, Werbe- oder anderen Fremddiensten. Neue Endpunkte
   entstehen zuerst in [hubiplan](https://github.com/hubiplan/hubiplan).
 - Neue Funktionen allgemein halten: Die App soll für Vereine jeder Art passen.
+- Verhalten und Formate gelten auch für die iOS-App: Änderungen in
+  [hubiplan-ios](https://github.com/hubiplan/hubiplan-ios) nachziehen oder im Pull Request
+  darauf hinweisen; gleiche Fälle bekommen dort gleiche Tests.
 - Neue Abhängigkeiten müssen mit der AGPL-3.0 verträglich sein (z. B. MIT, BSD, Apache-2.0,
   LGPL, MPL-2.0). Nicht möglich: GPL-2.0-only, SSPL, „nur nicht-kommerziell“, proprietär.
   Jede neue Bibliothek braucht einen Eintrag in der Lizenzzuordnung, sonst bricht der Bau ab;

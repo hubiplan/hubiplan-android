@@ -13,7 +13,8 @@ nur mit der HUBIplan-Instanz des eigenen Vereins, nie mit einem fremden Dienst. 
 > English; the developer documentation is in German. Issues and security reports in English
 > are welcome.
 
-Paketname `de.hubiplan.app`, Version 1.4.0, ab Android 9, für Telefon und Tablet.
+Paketname `de.hubiplan.app`, Version 1.6.0, ab Android 9, für Telefon und Tablet. Für iPhone und
+iPad entsteht [hubiplan-ios](https://github.com/hubiplan/hubiplan-ios) mit demselben Umfang.
 
 ## Inhalt
 
@@ -46,7 +47,8 @@ die App.
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
 - Reiter „Ich“ wie „Mein Bereich“ im Browser: Mitgliedsausweis, Meine Daten, Rechnungen mit
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
-  und Online-Abstimmung, Meine Ergebnisse mit Ranglisten, Helferdienste, Dokumente und für
+  und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Meine Ergebnisse mit
+  Ranglisten, Helferdienste, Dokumente und für
   Ansprechpartner einer Firma „Mitarbeiter“ (für wen die Firma zahlt, neue Mitarbeiter melden)
 - Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
   zeigen“), auch ohne Netz (verschlüsselt gespeichert);
@@ -209,7 +211,9 @@ Textbaustein für die Datenschutzhinweise des Vereins:
 
 Fehlermeldungen, Ideen und Pull Requests sind willkommen: [CONTRIBUTING.md](CONTRIBUTING.md).
 Bitte nur erfundene Daten in Code, Tests und Bildschirmfotos, und keine proprietären
-Google-Dienste (Firebase, Play-Dienste) in der Variante `foss`.
+Google-Dienste (Firebase, Play-Dienste) in der Variante `foss`. Verhalten und Formate gelten
+auch für die [iOS-App](https://github.com/hubiplan/hubiplan-ios); Änderungen bitte dort nachziehen
+oder im Pull Request darauf hinweisen.
 
 ## Sicherheit
 
