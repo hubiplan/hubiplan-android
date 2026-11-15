@@ -139,6 +139,8 @@ abstract class LizenzlisteTask : DefaultTask() {
     private fun licenseOf(group: String, module: String): String? = when {
         // Proprietäre Bedingungen (Android-SDK-Lizenz), nur in der Variante play
         group == "com.google.android.gms" -> "Android-SDK"
+        // Sign in with Google (über credentials-play-services-auth), ebenfalls nur in play
+        group == "com.google.android.libraries.identity.googleid" -> "Android-SDK"
         group == "com.google.firebase" &&
             module in setOf("firebase-iid-interop", "firebase-measurement-connector") -> "Android-SDK"
         group.startsWith("androidx.") -> "Apache-2.0"
