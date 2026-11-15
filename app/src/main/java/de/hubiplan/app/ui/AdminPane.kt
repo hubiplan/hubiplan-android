@@ -260,30 +260,35 @@ internal enum class Section(val label: String, val hint: String) {
 
 /**
  * Bereiche je nach Rechten; Untereinheiten (Zugführung) haben Aufgaben, Mitglieder und Termine,
- * aber keine gemeinsame Liste offener Punkte.
+ * aber keine gemeinsame Liste offener Punkte. Die Reihenfolge folgt den Gruppen des Hauptmenüs im
+ * Browser (Planen, Verein, Vereinsleben, Verwaltung), damit sich beide gleich lesen.
  */
 internal fun sectionsFor(unit: AdminUnit): List<Section> {
     val p = unit.permissions
     if (unit.isDepartment) {
         return listOfNotNull(
+            Section.EVENTS.takeIf { showsEvents(unit) },
             Section.TODOS.takeIf { showsTodos(unit) },
             Section.MEMBERS.takeIf { showsMembers(unit) },
-            Section.EVENTS.takeIf { showsEvents(unit) },
         )
     }
     val members = showsMembers(unit)
     return listOfNotNull(
         Section.TASKS,
-        Section.TODOS.takeIf { showsTodos(unit) },
-        Section.MEMBERS.takeIf { members },
+        // Planen
         Section.EVENTS.takeIf { showsEvents(unit) },
+        Section.TODOS.takeIf { showsTodos(unit) },
+        Section.OBLIGATIONS.takeIf { showsObligations(unit) },
+        // Verein
+        Section.MEMBERS.takeIf { members },
+        Section.OCCASIONS.takeIf { members },
+        Section.QUALIFICATIONS.takeIf { showsQualifications(unit) },
+        // Vereinsleben
+        Section.COMPETITIONS.takeIf { showsCompetitions(unit) },
+        // Verwaltung: Geschäftspartner gleich nach Kasse und Rechnungen
         Section.FINANCE.takeIf { FINANCE_VIEW in p || FINANCE_EDIT in p },
         Section.BILLING.takeIf { BILLING_VIEW in p || BILLING_EDIT in p },
-        Section.OCCASIONS.takeIf { members },
-        Section.COMPETITIONS.takeIf { showsCompetitions(unit) },
         Section.PARTNERS.takeIf { showsPartners(unit) },
-        Section.QUALIFICATIONS.takeIf { showsQualifications(unit) },
-        Section.OBLIGATIONS.takeIf { showsObligations(unit) },
     )
 }
 
