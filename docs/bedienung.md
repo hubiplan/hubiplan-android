@@ -48,7 +48,10 @@ Bereich“). Ganz oben der **Mitgliedsausweis**; Tippen zeigt ihn groß, ohne Ne
 gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, das ihn direkt groß
 öffnet. Darunter eine Liste mit Kurzstand rechts und der Zahl offener Punkte:
 
-- **Meine Daten**: Anschrift, Telefon, Foto, „Änderung melden“.
+- **Meine Daten**: Anschrift, Telefon, Foto, „Änderung melden“. Erlaubt der Verein das Kündigen im
+  Mitgliederbereich, steht darunter „Mitgliedschaft kündigen“: frühestes Datum nach der Regel des
+  Vereins, ein späteres ist wählbar, dazu eine Nachricht an den Vorstand. Eine offene Kündigung
+  lässt sich zurücknehmen, bis der Vorstand entschieden hat.
 - **Rechnungen**: offene zuerst mit Betrag und Fälligkeit, „PDF ansehen“, darunter Beiträge über
   eine Sammelrechnung und das Lastschriftmandat (nur ansehen; erteilen, ändern und widerrufen im
   Browser). PDFs öffnet die App nur online; sie liegen nur kurz im Cache und werden beim nächsten
@@ -60,7 +63,14 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
   „Online teilnehmen“. In der Versammlungsansicht stimmt das Mitglied bei laufenden Abstimmungen
   ab (für jede Vollmacht eine eigene Stimme, nicht änderbar), sieht danach das Ergebnis und meldet
   sich mit „Ich gehe“ ab. Die Ansicht fragt alle vier Sekunden nach (HUBIplan ab Versammlungen V7).
-- **Meine Ergebnisse**: Plätze, Werte, Titel und Ranglisten.
+- **Wettbewerbe**: oben „Gemeldet“ (wofür der Verein das Mitglied gemeldet hat, mit Mannschaft
+  oder Liste, Position, Ersatz und Bestätigung des Veranstalters), darunter Plätze, Werte, Titel
+  und Ranglisten.
+- **Abwesenheiten** (für Musiker): Zeiträume eintragen, ändern oder entfernen, in denen man nicht
+  mitspielen kann, ohne Begründung. Bestehende Einteilungen bleiben; dort zusätzlich absagen.
+- **Belegung** (wenn der Verein Objekte zum Anfragen freigibt): belegte Zeiten je Woche, eine
+  Anfrage für Schützenhaus, Stand oder Material stellen (Zweck, Zeit oder ganztägig, Notiz) und
+  eigene Anfragen oder Buchungen stornieren. Die Verwaltung bestätigt oder lehnt per Mail ab.
 - **Umfragen**: Umfragen und Meinungsbilder des Vereins, offene zuerst, mit der Zahl der Umfragen,
   die noch auf deine Antwort warten. Antworten (Auswahl, Ja/Nein/Enthaltung, Terminfindung,
   Mengen wie die Essenswahl, Freitext), ändern oder zurückziehen bis zum Ende, Ergebnis je nach
@@ -208,7 +218,7 @@ Hat das Telefon keine Bildschirmsperre, führt in der Verwaltung der Knopf „Bi
 einrichten“ direkt in die Systemeinstellung. Danach prüft die App beim Zurückkehren von selbst
 erneut. In „Zu erledigen“ heißen gemeldete Änderungen der Mitglieder „Datenänderungen“; das
 Verteilen von Aufgaben heißt „Aufgaben verteilen“, damit es sich vom Reiter „Aufgaben“ (deine
-eigenen) unterscheidet. Unter „Meine Ergebnisse“ steht bei jedem Wert die Einheit („27 Ringe“),
+eigenen) unterscheidet. Unter „Wettbewerbe“ steht bei jedem Wert die Einheit („27 Ringe“),
 Telefonnummer und E-Mail-Adresse unter „Meine Daten“ lassen sich antippen.
 
 **English:** Pull a list down to reload events, messages, tasks, helper duties and the admin
@@ -324,7 +334,7 @@ nicht abgeschlossenen Wettbewerbe, heute zuerst.
   (auch „Ausweis prüfen“ erkennt ihn) öffnet einen solchen Code im Standmodus der App.
 - „Standzugang beenden“ beendet alle aktiven Standzugänge des Wettbewerbs.
 
-Unter „Ich › Meine Ergebnisse“ zeigt „Ranglisten“ die Wettbewerbe so, wie die Webseite des Vereins sie zeigt
+Unter „Ich › Wettbewerbe“ zeigt „Ranglisten“ die Wettbewerbe so, wie die Webseite des Vereins sie zeigt
 (nur veröffentlichte, Preisplätze oder ganze Rangliste). Laufende Wettbewerbe fragen alle 15
 Sekunden nach einem neuen Stand.
 

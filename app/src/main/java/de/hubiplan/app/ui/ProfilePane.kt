@@ -241,6 +241,8 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                 },
             )
         }
+        // Kündigung im Mitgliederbereich (wenn der Verein sie erlaubt)
+        p.cancellation?.let { CancellationBlock(access, vm, it, onChanged = { reload++ }) }
     }
 
     draft?.let { bitmap ->

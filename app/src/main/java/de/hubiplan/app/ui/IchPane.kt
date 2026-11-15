@@ -74,8 +74,13 @@ internal enum class IchBereich(val label: String) {
     RECHNUNGEN(tr("Rechnungen")),
     VERSAMMLUNGEN(tr("Versammlungen")),
     UMFRAGEN(tr("Umfragen")),
-    ERGEBNISSE(tr("Meine Ergebnisse")),
+    // Meldungen und Ergebnisse auf einer Seite wie im Browser
+    ERGEBNISSE(tr("Wettbewerbe")),
+    // Musik: Abwesenheiten melden
+    ABWESENHEITEN(tr("Abwesenheiten")),
     HELFERDIENSTE(tr("Helferdienste")),
+    // Schützenhaus, Stand oder Material anfragen
+    BELEGUNG(tr("Belegung")),
     DOKUMENTE(tr("Dokumente")),
     // Ansprechpartner einer Firma, die für Mitarbeiter zahlt (wie Mein Bereich › Mitarbeiter)
     MITARBEITER(tr("Mitarbeiter")),
@@ -88,8 +93,10 @@ internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.en
         IchBereich.RECHNUNGEN -> access.hasInvoices
         IchBereich.VERSAMMLUNGEN -> access.hasMeetings
         IchBereich.UMFRAGEN -> access.hasSurveys
-        IchBereich.ERGEBNISSE -> access.hasResults
+        IchBereich.ERGEBNISSE -> access.hasResults || access.hasEntries
+        IchBereich.ABWESENHEITEN -> access.hasAbsences
         IchBereich.HELFERDIENSTE -> access.hasHelpers
+        IchBereich.BELEGUNG -> access.hasBookings
         IchBereich.DOKUMENTE -> access.hasDocs
         IchBereich.MITARBEITER -> access.company
     }
@@ -153,6 +160,8 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
                 IchBereich.VERSAMMLUNGEN -> MeetingsSection(access, vm)
                 IchBereich.UMFRAGEN -> SurveysSection(access, vm)
                 IchBereich.ERGEBNISSE -> ResultsSection(access, vm)
+                IchBereich.ABWESENHEITEN -> AbsencesSection(access, vm)
+                IchBereich.BELEGUNG -> BookingsSection(access, vm)
                 IchBereich.DOKUMENTE -> DocumentsSection(access, vm)
                 IchBereich.MITARBEITER -> CompanySection(access, vm)
                 IchBereich.HELFERDIENSTE -> Unit
@@ -200,7 +209,9 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
                     IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
                     IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
-                    IchBereich.ERGEBNISSE -> tr("Plätze, Werte und Titel") to 0
+                    IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
+                    IchBereich.ABWESENHEITEN -> tr("Wann du nicht mitspielen kannst") to 0
+                    IchBereich.BELEGUNG -> tr("Schützenhaus, Stand oder Material anfragen") to 0
                     IchBereich.HELFERDIENSTE -> tr("unter „Aufgaben“") to 0
                     IchBereich.DOKUMENTE -> (documents?.let { trn("1 Dokument", "{n} Dokumente", it.count) } ?: "") to 0
                     IchBereich.MITARBEITER -> tr("Für wen die Firma zahlt") to 0
@@ -305,9 +316,12 @@ internal fun SectionColumn(content: @Composable androidx.compose.foundation.layo
 @Composable
 private fun ResultsSection(access: PortalAccess, vm: AppViewModel) {
     SectionColumn {
-        MyResultsSection(access, vm)
-        // Ranglisten wie auf der Webseite (Abschnitt fehlt, wenn der Verein keine zeigt)
-        RankingsSection(access, vm)
+        if (access.hasEntries) EntriesBlock(access, vm)
+        if (access.hasResults) {
+            MyResultsSection(access, vm)
+            // Ranglisten wie auf der Webseite (Abschnitt fehlt, wenn der Verein keine zeigt)
+            RankingsSection(access, vm)
+        }
     }
 }
 
