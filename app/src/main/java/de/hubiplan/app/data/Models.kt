@@ -143,6 +143,10 @@ data class PortalAccess(
     @SerialName("imprint_key") val imprintKey: String? = null,
     /** Modul Wettbewerbe an: „Meine Ergebnisse“ im Profil (ältere HUBIplan-Stände: aus) */
     @SerialName("competitions_enabled") val competitionsEnabled: Boolean = false,
+    /** Modul Meldungen an: „Gemeldet“ unter „Wettbewerbe“ (ältere Stände: aus) */
+    @SerialName("entries_enabled") val entriesEnabled: Boolean = false,
+    /** Es gibt Objekte, die Mitglieder anfragen dürfen (Mein Bereich › Belegung; ältere Stände: aus) */
+    @SerialName("bookings_enabled") val bookingsEnabled: Boolean = false,
     /** Modul Helferdienste an: Umschalter „Helferdienste“ im Reiter Aufgaben (ältere Stände: aus) */
     @SerialName("helpers_enabled") val helpersEnabled: Boolean = false,
     /** "organization": Zugang als Ansprechpartner einer Organisation (ältere Stände: fehlt) */
@@ -173,6 +177,15 @@ data class PortalAccess(
 
     /** „Meine Ergebnisse“ im Profil */
     val hasResults: Boolean get() = moduleOn("competitions", competitionsEnabled)
+
+    /** Meldungen zu Wettbewerben und Anlässen (Mein Bereich › Wettbewerbe) */
+    val hasEntries: Boolean get() = moduleOn("entries", entriesEnabled)
+
+    /** „Belegung“ unter „Ich“: nur, wenn der Server anfragbare Objekte meldet */
+    val hasBookings: Boolean get() = bookingsEnabled
+
+    /** „Abwesenheiten“ unter „Ich“: aktives Musikerprofil */
+    val hasAbsences: Boolean get() = musician && moduleOn("music", true)
 
     /** Umschalter „Helferdienste“ im Reiter Aufgaben */
     val hasHelpers: Boolean get() = moduleOn("helpers", helpersEnabled)
@@ -401,6 +414,8 @@ data class Profile(
     val status: String = "",
     @SerialName("contact_changes_need_approval") val changesNeedApproval: Boolean = false,
     @SerialName("change_requests") val changeRequests: List<ChangeRequestItem> = emptyList(),
+    /** Kündigung im Mitgliederbereich (HUBIplan #402; ältere Stände: fehlt) */
+    val cancellation: CancellationInfo? = null,
 ) {
     val isOrganization: Boolean get() = kind == ORGANIZATION
 

@@ -47,8 +47,9 @@ die App.
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
 - Reiter „Ich“ wie „Mein Bereich“ im Browser: Mitgliedsausweis, Meine Daten, Rechnungen mit
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
-  und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Meine Ergebnisse mit
-  Ranglisten, Helferdienste, Dokumente und für
+  und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Wettbewerbe mit
+  Meldungen, Ergebnissen und Ranglisten, Abwesenheiten für Musiker, Belegung anfragen, Kündigung,
+  Helferdienste, Dokumente und für
   Ansprechpartner einer Firma „Mitarbeiter“ (für wen die Firma zahlt, neue Mitarbeiter melden)
 - Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
   zeigen“), auch ohne Netz (verschlüsselt gespeichert);

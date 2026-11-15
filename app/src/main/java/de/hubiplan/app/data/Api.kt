@@ -626,6 +626,85 @@ class Api(
             json.encodeToString(JsonObject.serializer(), jsonObjectOf("first_name" to firstName, "last_name" to lastName, "email" to email)))
     }
 
+    // --- Belegung, Kündigung, Meldungen, Abwesenheiten (wie Mein Bereich im Browser) ---
+
+    /** Woche ab [monday] (JJJJ-MM-TT): anfragbare Objekte, belegte Zeiten, eigene Anfragen. */
+    suspend fun bookings(accessId: Int, monday: String): BookingWeek =
+        decodeApi(expect("GET", "/api/portal/$accessId/bookings/?start=$monday"))
+
+    /** Anfrage stellen; die Verwaltung bestätigt oder lehnt ab (Mail an das Mitglied). */
+    suspend fun requestBooking(
+        accessId: Int,
+        item: Int,
+        title: String,
+        note: String,
+        startsAt: String,
+        endsAt: String,
+        allDay: Boolean,
+    ): OwnBooking {
+        val body = JsonObject(
+            mapOf(
+                "item" to JsonPrimitive(item),
+                "title" to JsonPrimitive(title),
+                "note" to JsonPrimitive(note),
+                "starts_at" to JsonPrimitive(startsAt),
+                "ends_at" to JsonPrimitive(endsAt),
+                "all_day" to JsonPrimitive(allDay),
+            ),
+        )
+        return decodeApi(expect("POST", "/api/portal/$accessId/bookings/", json.encodeToString(JsonObject.serializer(), body)))
+    }
+
+    /** Eigene Anfrage oder Buchung stornieren (mit Versionsstand gegen gleichzeitige Änderungen). */
+    suspend fun cancelBooking(accessId: Int, booking: OwnBooking): OwnBooking =
+        decodeApi(expect("POST", "/api/portal/$accessId/bookings/${booking.id}/cancel/",
+            json.encodeToString(JsonObject.serializer(), JsonObject(mapOf("version" to JsonPrimitive(booking.version))))))
+
+    /** Mitgliedschaft kündigen; ohne [exitDate] zum frühesten Termin. */
+    suspend fun cancelMembership(accessId: Int, exitDate: String?, message: String): CancellationItem {
+        val body = JsonObject(
+            buildMap {
+                exitDate?.let { put("exit_date", JsonPrimitive(it)) }
+                put("message", JsonPrimitive(message))
+                put("confirm", JsonPrimitive(true))
+            },
+        )
+        return decodeApi(expect("POST", "/api/portal/$accessId/cancellation/", json.encodeToString(JsonObject.serializer(), body)))
+    }
+
+    suspend fun withdrawCancellation(accessId: Int, id: Int): CancellationItem =
+        decodeApi(expect("DELETE", "/api/portal/$accessId/cancellation/$id/"))
+
+    /** Wofür das Mitglied gemeldet ist (leer, wenn das Modul Meldungen aus ist). */
+    suspend fun myEntries(accessId: Int): List<MyEntry> =
+        decodeApi(expect("GET", "/api/portal/$accessId/entries/"))
+
+    suspend fun myAbsences(accessId: Int): OwnAbsences =
+        decodeApi(expect("GET", "/api/portal/$accessId/music/absences/"))
+
+    /**
+     * Abwesenheit eintragen oder ändern ([id]). [key] ist der `Idempotency-Key`; derselbe Schlüssel
+     * beim Wiederholen verhindert doppelte Einträge.
+     */
+    suspend fun saveAbsence(accessId: Int, id: Int?, startsAt: String, endsAt: String, key: String): MusicAbsence {
+        val body = JsonObject(
+            buildMap {
+                put("action", JsonPrimitive("save"))
+                id?.let { put("id", JsonPrimitive(it)) }
+                put("starts_at", JsonPrimitive(startsAt))
+                put("ends_at", JsonPrimitive(endsAt))
+            },
+        )
+        return decodeApi(expect("POST", "/api/portal/$accessId/music/absences/",
+            json.encodeToString(JsonObject.serializer(), body), mapOf(SignedFormat.IDEMPOTENCY_HEADER to key)))
+    }
+
+    suspend fun deleteAbsence(accessId: Int, id: Int, key: String) {
+        val body = JsonObject(mapOf("action" to JsonPrimitive("delete"), "id" to JsonPrimitive(id)))
+        expect("POST", "/api/portal/$accessId/music/absences/",
+            json.encodeToString(JsonObject.serializer(), body), mapOf(SignedFormat.IDEMPOTENCY_HEADER to key))
+    }
+
     /** Rechnung als PDF (nur zum Ansehen, die App speichert sie nicht). */
     suspend fun invoicePdf(accessId: Int, invoiceId: Int, cancellation: Boolean = false): ByteArray =
         file("/api/portal/$accessId/invoices/$invoiceId/pdf/" + if (cancellation) "?storno=1" else "")
@@ -850,6 +929,8 @@ fun validationFieldLabel(key: String): String = when (key.substringAfterLast('.'
     "starts_at" -> tr("Beginn (HH:MM)")
     "ends_at" -> tr("Ende (optional)")
     "description" -> tr("Beschreibung")
+    "exit_date" -> tr("Austritt zum")
+    "item" -> tr("Objekt")
     "due_date" -> tr("Frist (TT.MM.JJJJ, optional)")
     "due_time" -> tr("Uhrzeit (optional)")
     "rsvp_deadline" -> tr("Anmeldeschluss (optional, TT.MM.JJJJ)")
