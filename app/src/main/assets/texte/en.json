@@ -157,7 +157,6 @@
  "Verwaltung öffnen": "Open administration",
  "Entsperren": "Unlock",
  "Verwaltung freischalten": "Unlock administration",
- "Für Mitglieder, Termine und Kasse in der App bitte mit Passwort und Zwei-Faktor-Code bestätigen. Die Freischaltung gilt 30 Tage auf diesem Telefon; geöffnet wird jedes Mal mit Fingerabdruck oder PIN.": "For members, events and cash in the app, please confirm with your password and two-factor code. The unlock is valid for 30 days on this phone; each time you open it, use your fingerprint or PIN.",
  "Passwort": "Password",
  "Code aus der Authenticator-App": "Code from the authenticator app",
  "Freischalten": "Unlock",
@@ -1106,5 +1105,15 @@
  "{n} Teilnahme": "{n} participant",
  "{n} Teilnahmen": "{n} participants",
  "{text} (freiwillig)": "{text} (optional)",
- "Änderung speichern": "Save change"
+ "Änderung speichern": "Save change",
+ "Mit Passkey anmelden": "Sign in with passkey",
+ "Mit Fingerabdruck, Gesicht oder PIN, wenn du im Browser schon einen Passkey eingerichtet hast.": "With your fingerprint, face or PIN, if you have already set up a passkey in the browser.",
+ "Passkey wählen": "Choose passkey",
+ "Mit Passkey freischalten": "Unlock with passkey",
+ "Für Mitglieder, Termine und Kasse in der App bitte mit Passwort und Zwei-Faktor-Code oder mit einem Passkey bestätigen. Die Freischaltung gilt 30 Tage auf diesem Telefon; geöffnet wird jedes Mal mit Fingerabdruck oder PIN.": "For members, events and cash in the app, please confirm with your password and two-factor code or with a passkey. The unlock is valid for 30 days on this phone; each time you open it, use your fingerprint or PIN.",
+ "Diese HUBIplan-Adresse hat die App noch nicht für Passkeys freigegeben. Bitte mit QR-Code oder Passwort verbinden.": "This HUBIplan address has not yet enabled the app for passkeys. Please connect with a QR code or password.",
+ "Der Passkey ließ sich nicht abrufen. Bitte erneut versuchen.": "The passkey could not be retrieved. Please try again.",
+ "Auf diesem Telefon ist kein Passkey für diese Adresse gespeichert. Richte ihn zuerst im Browser unter „Mein Konto › Anmeldung & Sicherheit“ ein.": "No passkey for this address is stored on this phone. Set one up first in the browser under “My account › Sign-in & security”.",
+ "Passkeys gehen in dieser App-Version erst ab Android 14. Bitte mit QR-Code oder Passwort verbinden.": "In this version of the app, passkeys require Android 14 or later. Please connect with a QR code or password.",
+ "Dieses Telefon unterstützt keine Passkeys. Bitte mit QR-Code oder Passwort verbinden.": "This phone does not support passkeys. Please connect with a QR code or password."
 }

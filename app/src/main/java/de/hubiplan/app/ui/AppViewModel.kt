@@ -1,6 +1,7 @@
 package de.hubiplan.app.ui
 
 import android.app.Application
+import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import android.os.SystemClock
@@ -13,6 +14,7 @@ import de.hubiplan.app.data.Account
 import de.hubiplan.app.data.AdminClient
 import de.hubiplan.app.data.AccountStore
 import de.hubiplan.app.data.AdminOverview
+import de.hubiplan.app.data.AdminUnlock
 import de.hubiplan.app.data.AdminVault
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
@@ -20,6 +22,7 @@ import de.hubiplan.app.data.apiOrigin
 import de.hubiplan.app.data.ClubLogo
 import de.hubiplan.app.data.AppSettings
 import de.hubiplan.app.data.DeviceKeys
+import de.hubiplan.app.data.Passkeys
 import de.hubiplan.app.data.DraftStore
 import de.hubiplan.app.data.KeyMaintenance
 import de.hubiplan.app.data.LocalAccountData
@@ -307,7 +310,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Freischalten mit Passwort und Code (direkt nach Fingerabdruck/PIN aufrufen). */
-    fun unlockAdmin(password: String, code: String) {
+    fun unlockAdmin(password: String, code: String) =
+        unlockAdminWith { api, adminKey -> api.unlockAdmin(password, code.trim(), adminKey) }
+
+    /**
+     * Freischalten mit Passkey statt Passwort und Code (direkt nach Fingerabdruck/PIN aufrufen,
+     * [activity] für die Auswahl des Passkeys). Bricht die Person ab, passiert nichts.
+     */
+    fun unlockAdminWithPasskey(activity: Context) = unlockAdminWith { api, adminKey ->
+        val start = api.passkeyBegin()
+        val answer = try {
+            Passkeys.get(activity, start.options)
+        } catch (e: Passkeys.Cancelled) {
+            return@unlockAdminWith null
+        }
+        api.unlockAdminWithPasskey(start, answer, adminKey)
+    }
+
+    private fun unlockAdminWith(call: suspend (Api, String) -> AdminUnlock?) {
         val target = adminTarget() ?: return
         val account = target.account
         _admin.value = _admin.value.copy(busy = true, error = null)
@@ -322,7 +342,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                         }.getOrNull()
                     }
                 } ?: ""
-                val result = Api(account.server, account.token).unlockAdmin(password, code.trim(), adminKey)
+                val result = call(Api(account.server, account.token), adminKey)
+                if (result == null) {
+                    if (target.current()) _admin.value = _admin.value.copy(busy = false)
+                    return@launch
+                }
                 if (!target.current()) {
                     // Inzwischen anderes Konto: den neuen Schlüssel nicht aufbewahren, sondern
                     // bei seiner eigenen Instanz gleich wieder sperren (WA-S02)
@@ -919,6 +943,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     null
                 }
             }
+        }
+    }
+
+    /** Mit einem Passkey dieser Adresse verbinden ([activity] für die Auswahl des Passkeys). */
+    fun loginWithPasskey(serverInput: String, activity: Context) {
+        val server = normalizeServer(serverInput)
+        if (server == null) {
+            _connect.value = _connect.value.copy(error = tr("Bitte die Adresse von HUBIplan angeben, z. B. verein.example.de."))
+            return
+        }
+        _connect.value = _connect.value.copy(server = server)
+        run(server) passkey@{ api, key ->
+            if ("android" !in api.instance().passkey) {
+                throw ApiException(0, tr("Diese HUBIplan-Adresse hat die App noch nicht für Passkeys freigegeben. Bitte mit QR-Code oder Passwort verbinden."))
+            }
+            val start = api.passkeyBegin()
+            val answer = try {
+                Passkeys.get(activity, start.options)
+            } catch (e: Passkeys.Cancelled) {
+                return@passkey null
+            }
+            api.passkeyLogin(start, answer, deviceName, appVersion, key())
         }
     }
 

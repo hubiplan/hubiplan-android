@@ -3,6 +3,7 @@ package de.hubiplan.app.ui
 import android.content.ActivityNotFoundException
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.platform.LocalAutofillManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import de.hubiplan.app.data.passwordResetUrl
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -54,6 +55,8 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
     var licenses by rememberSaveable { mutableStateOf(false) }
     // Nach einem Fehler mit bekannter Adresse gleich das Anmeldeformular zeigen
     var withPassword by rememberSaveable { mutableStateOf(state.server.isNotBlank()) }
+    var withPasskey by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
     if (licenses) {
         LicensesPage(onClose = { licenses = false })
         return
@@ -125,8 +128,15 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     hint = tr("Mit der Adresse deines Vereins und deinen Zugangsdaten aus HUBIplan."),
                     selected = withPassword,
                     enabled = !state.busy,
-                ) { withPassword = !withPassword }
+                ) { withPassword = !withPassword; withPasskey = false }
                 if (withPassword) PasswordLogin(state, vm::login)
+                ConnectChoice(
+                    title = tr("Mit Passkey anmelden"),
+                    hint = tr("Mit Fingerabdruck, Gesicht oder PIN, wenn du im Browser schon einen Passkey eingerichtet hast."),
+                    selected = withPasskey,
+                    enabled = !state.busy,
+                ) { withPasskey = !withPasskey; withPassword = false }
+                if (withPasskey) PasskeyLogin(state) { server -> vm.loginWithPasskey(server, context) }
                 Text(
                     tr("Nur ein Telefon? Öffne HUBIplan im Browser des Telefons, dann „Mein Konto › App & andere Instanzen“ und tippe auf „In der HUBIplan-App öffnen“."),
                     style = MaterialTheme.typography.bodySmall,
@@ -154,6 +164,41 @@ private fun ConnectChoice(title: String, hint: String, selected: Boolean, enable
             Text(hint, style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+/** Anmelden mit Passkey: nur die Adresse, den Rest erledigt das Telefon. */
+@Composable
+internal fun PasskeyLogin(state: ConnectState, onLogin: (String) -> Unit) {
+    var server by rememberSaveable { mutableStateOf(state.server.removePrefix("https://")) }
+    var missing by rememberSaveable { mutableStateOf(false) }
+    val serverFocus = remember { FocusRequester() }
+    OutlinedTextField(
+        value = server,
+        onValueChange = { server = it; missing = false },
+        label = { Text(tr("Adresse von HUBIplan")) },
+        placeholder = { Text("verein.example.de") },
+        singleLine = true,
+        isError = missing,
+        supportingText = if (missing) {
+            { Text(tr("Bitte die Adresse deines Vereins eingeben."), modifier = Modifier.announce(urgent = true)) }
+        } else {
+            null
+        },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        modifier = Modifier.fillMaxWidth().focusRequester(serverFocus),
+    )
+    OutlinedButton(
+        onClick = {
+            if (server.isBlank()) {
+                missing = true
+                serverFocus.requestFocus()
+            } else {
+                onLogin(server)
+            }
+        },
+        enabled = !state.busy,
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(tr("Passkey wählen")) }
 }
 
 /** Welche Anmeldefelder fehlen (Reihenfolge wie auf dem Bildschirm). */
