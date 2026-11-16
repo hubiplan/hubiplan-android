@@ -341,6 +341,11 @@ private fun SecondFactor(state: ConnectState, vm: AppViewModel) {
     var code by rememberSaveable { mutableStateOf("") }
     Text(tr("Zwei-Faktor-Anmeldung"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     Text(tr("Bitte den Code aus deiner Authenticator-App oder einen Wiederherstellungscode eingeben."))
+    // Konten, deren einziger zweiter Faktor ein Passkey ist, haben keinen Code aus einer App
+    Text(
+        tr("Hast du nur einen Passkey eingerichtet? Dann tippe auf „Abbrechen“ und wähle „Mit Passkey anmelden“."),
+        style = MaterialTheme.typography.bodySmall,
+    )
     OutlinedTextField(
         value = code,
         onValueChange = { code = it },
