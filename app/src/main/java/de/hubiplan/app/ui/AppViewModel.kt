@@ -29,7 +29,10 @@ import de.hubiplan.app.data.LocalAccountData
 import de.hubiplan.app.data.LoginStep
 import de.hubiplan.app.data.Me
 import de.hubiplan.app.data.Paired
+import de.hubiplan.app.data.BrowserLogin
+import de.hubiplan.app.data.BrowserLoginStore
 import de.hubiplan.app.data.PairingLink
+import de.hubiplan.app.data.PendingBrowserLogin
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.ReceiptStore
 import de.hubiplan.app.data.Theme
@@ -68,6 +71,8 @@ data class ConnectState(
     val adding: Boolean = false,
     // Gescannter QR-Code, wartet auf „Ja, verbinden“ (Adresse sichtbar, Härtung H3)
     val pendingPairing: PairingLink? = null,
+    // Link hubiplan://anmelden einer noch unbekannten Adresse: erst nachfragen (APP-01)
+    val pendingBrowserStart: String? = null,
 )
 
 /** Verwaltung in der App (Schritt A8). [token] ist der entsperrte Vorstandsschlüssel im Speicher. */
@@ -907,6 +912,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun showPairingLink(text: String, adding: Boolean) {
+        BrowserLogin.parseStart(text)?.let { server ->
+            ++refreshGeneration
+            _connect.value = ConnectState(adding = adding, server = server, pendingBrowserStart = server)
+            _screen.value = Screen.Connect
+            return
+        }
         val link = PairingLink.parse(text)
         // Laufende Aktualisierung darf den Verbinden-Bildschirm nicht mehr überschreiben
         ++refreshGeneration
@@ -921,7 +932,37 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun confirmPairing() {
         val link = _connect.value.pendingPairing ?: return
         _connect.value = _connect.value.copy(pendingPairing = null)
-        run(link.server, viaLink = true) { api, key -> api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion, deviceKey = key()) }
+        // Hat die App den Code selbst im Browser angefordert, gehört das Geheimnis dazu (APP-01)
+        val loginStore = BrowserLoginStore(getApplication())
+        val verifier = BrowserLogin.verifierFor(loginStore.load(), link.server, System.currentTimeMillis()).orEmpty()
+        loginStore.clear()
+        run(link.server, viaLink = true) { api, key ->
+            api.pair(code = link.code, deviceName = deviceName, appVersion = appVersion, deviceKey = key(), verifier = verifier)
+        }
+    }
+
+    /**
+     * Im Browser anmelden (auch mit Passkey): Geheimnis erzeugen, merken und
+     * /app/anmelden?challenge=… öffnen. Nach „Verbinden“ kommt hubiplan://verbinden zurück.
+     * Liefert die zu öffnende Adresse, null bei ungültiger Adresse (Fehler steht im Zustand).
+     */
+    fun browserLoginUrl(serverInput: String): String? {
+        val server = normalizeServer(serverInput)
+        if (server == null) {
+            _connect.value = _connect.value.copy(error = tr("Bitte die Adresse von HUBIplan angeben, z. B. verein.example.de."))
+            return null
+        }
+        val verifier = BrowserLogin.newVerifier()
+        BrowserLoginStore(getApplication()).save(PendingBrowserLogin(server, verifier, System.currentTimeMillis()))
+        _connect.value = _connect.value.copy(server = server, error = null, pendingBrowserStart = null)
+        return BrowserLogin.url(server, BrowserLogin.challenge(verifier))
+    }
+
+    /** Adresse aus hubiplan://anmelden: schon mit einem Konto verbunden? Dann ohne Rückfrage. */
+    fun isKnownServer(server: String): Boolean = _accountList.value.any { it.second.server == server }
+
+    fun cancelBrowserStart() {
+        _connect.value = _connect.value.copy(pendingBrowserStart = null)
     }
 
     fun cancelPairing() {

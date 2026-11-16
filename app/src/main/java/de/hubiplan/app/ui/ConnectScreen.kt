@@ -32,6 +32,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,7 +57,25 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
     // Nach einem Fehler mit bekannter Adresse gleich das Anmeldeformular zeigen
     var withPassword by rememberSaveable { mutableStateOf(state.server.isNotBlank()) }
     var withPasskey by rememberSaveable { mutableStateOf(false) }
+    var withBrowser by rememberSaveable { mutableStateOf(false) }
+    var browserError by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    // Anmeldung im Browser mit Prüfwert (Gesamtaudit 15.11., APP-01)
+    val openBrowserLogin: (String) -> Unit = { server ->
+        vm.browserLoginUrl(server)?.let { url ->
+            browserError = try {
+                uriHandler.openUri(url)
+                false
+            } catch (_: IllegalArgumentException) {
+                true
+            } catch (_: ActivityNotFoundException) {
+                true
+            } catch (_: SecurityException) {
+                true
+            }
+        }
+    }
     if (licenses) {
         LicensesPage(onClose = { licenses = false })
         return
@@ -79,6 +98,25 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
             confirmButton = { Button(onClick = vm::confirmPairing) { Text(tr("Ja, verbinden")) } },
             dismissButton = { TextButton(onClick = vm::cancelPairing) { Text(tr("Abbrechen")) } },
         )
+    }
+    state.pendingBrowserStart?.let { server ->
+        if (vm.isKnownServer(server)) {
+            // Schon mit dieser Adresse verbunden: keine Rückfrage nötig
+            LaunchedEffect(server) { openBrowserLogin(server) }
+        } else {
+            AlertDialog(
+                onDismissRequest = vm::cancelBrowserStart,
+                title = { Text(tr("Bei dieser Adresse anmelden?")) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                        Text(server.removePrefix("https://"), style = MaterialTheme.typography.titleMedium)
+                        Text(tr("Melde dich nur an, wenn das die Adresse deines Vereins ist und du den Link selbst gerade im Browser geöffnet hast."))
+                    }
+                },
+                confirmButton = { Button(onClick = { openBrowserLogin(server) }) { Text(tr("Ja, im Browser anmelden")) } },
+                dismissButton = { TextButton(onClick = vm::cancelBrowserStart) { Text(tr("Abbrechen")) } },
+            )
+        }
     }
     Surface(Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.TopCenter) {
@@ -137,6 +175,22 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     enabled = !state.busy,
                 ) { withPasskey = !withPasskey; withPassword = false }
                 if (withPasskey) PasskeyLogin(state) { server -> vm.loginWithPasskey(server, context) }
+                ConnectChoice(
+                    title = tr("Im Browser anmelden"),
+                    hint = tr("Anmeldung auf der Seite deines Vereins, auch mit Passkey; danach kommst du automatisch in die App zurück."),
+                    selected = withBrowser,
+                    enabled = !state.busy,
+                ) { withBrowser = !withBrowser; withPassword = false; withPasskey = false }
+                if (withBrowser) {
+                    PasskeyLogin(state, buttonLabel = tr("Anmeldeseite öffnen"), onLogin = openBrowserLogin)
+                    if (browserError) {
+                        Text(
+                            tr("Der Browser ließ sich nicht öffnen."),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.announce(urgent = true),
+                        )
+                    }
+                }
                 Text(
                     tr("Nur ein Telefon? Öffne HUBIplan im Browser des Telefons, dann „Mein Konto › App & andere Instanzen“ und tippe auf „In der HUBIplan-App öffnen“."),
                     style = MaterialTheme.typography.bodySmall,
@@ -168,7 +222,7 @@ private fun ConnectChoice(title: String, hint: String, selected: Boolean, enable
 
 /** Anmelden mit Passkey: nur die Adresse, den Rest erledigt das Telefon. */
 @Composable
-internal fun PasskeyLogin(state: ConnectState, onLogin: (String) -> Unit) {
+internal fun PasskeyLogin(state: ConnectState, buttonLabel: String = tr("Passkey wählen"), onLogin: (String) -> Unit) {
     var server by rememberSaveable { mutableStateOf(state.server.removePrefix("https://")) }
     var missing by rememberSaveable { mutableStateOf(false) }
     val serverFocus = remember { FocusRequester() }
@@ -198,7 +252,7 @@ internal fun PasskeyLogin(state: ConnectState, onLogin: (String) -> Unit) {
         },
         enabled = !state.busy,
         modifier = Modifier.fillMaxWidth(),
-    ) { Text(tr("Passkey wählen")) }
+    ) { Text(buttonLabel) }
 }
 
 /** Welche Anmeldefelder fehlen (Reihenfolge wie auf dem Bildschirm). */

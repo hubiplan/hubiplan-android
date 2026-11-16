@@ -251,7 +251,8 @@ class Api(
 
     suspend fun instance(): Instance = decodeApi(expect("GET", "/api/app/v1/instance/"))
 
-    suspend fun pair(code: String = "", loginLink: String = "", deviceName: String, appVersion: String, deviceKey: String = ""): Paired =
+    /** [verifier]: Geheimnis zum Prüfwert, mit dem die App den Code im Browser angefordert hat (APP-01). */
+    suspend fun pair(code: String = "", loginLink: String = "", deviceName: String, appVersion: String, deviceKey: String = "", verifier: String = ""): Paired =
         decodeApi(
             expect(
                 "POST",
@@ -265,6 +266,7 @@ class Api(
                         "platform" to "android",
                         "app_version" to appVersion,
                         "device_key" to deviceKey,
+                        "verifier" to verifier,
                     ),
                 ),
             ),
