@@ -77,6 +77,12 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
   Einstellung, bei anonymen Umfragen erst ab drei Antworten. Ist aus einer Terminfindung ein
   Termin entstanden, übernimmt „Zusage übernehmen“ die Zusage. Neue Umfragen und Erinnerungen
   kommen als Hinweis (HUBIplan ab Umfragen U1).
+- **Auslagen** (wenn der Verein das Modul Auslagen erstatten nutzt, nur mit Amt oder Rolle im
+  Verein): selbst bezahlte Ausgaben melden, mit Foto des Belegs aus der Kamera oder der Galerie
+  (verkleinert, ohne Standortdaten), Betrag, Zweck und Bankverbindung; Fahrtkosten mit Strecke und
+  Kilometern. Einreichen oder als Entwurf speichern, Rückfragen der Kasse beantworten, Beleg
+  ergänzen, zurückziehen. Ohne Verbindung bleiben die Angaben stehen; erneutes Senden legt keine
+  doppelte Auslage an. Prüfen und auszahlen macht die Kasse im Browser (HUBIplan ab Auslagen A1).
 - **Helferdienste**: führt in den Reiter „Aufgaben“ zu den Helferdiensten.
 - **Dokumente**: freigegebene Dokumente des Vereins, nur lesen.
 

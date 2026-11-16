@@ -74,6 +74,8 @@ internal enum class IchBereich(val label: String) {
     RECHNUNGEN(tr("Rechnungen")),
     VERSAMMLUNGEN(tr("Versammlungen")),
     UMFRAGEN(tr("Umfragen")),
+    // Selbst bezahlte Ausgaben mit Foto des Belegs melden
+    AUSLAGEN(tr("Auslagen")),
     // Meldungen und Ergebnisse auf einer Seite wie im Browser
     ERGEBNISSE(tr("Wettbewerbe")),
     // Musik: Abwesenheiten melden
@@ -93,6 +95,7 @@ internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.en
         IchBereich.RECHNUNGEN -> access.hasInvoices
         IchBereich.VERSAMMLUNGEN -> access.hasMeetings
         IchBereich.UMFRAGEN -> access.hasSurveys
+        IchBereich.AUSLAGEN -> access.hasExpenses
         IchBereich.ERGEBNISSE -> access.hasResults || access.hasEntries
         IchBereich.ABWESENHEITEN -> access.hasAbsences
         IchBereich.HELFERDIENSTE -> access.hasHelpers
@@ -159,6 +162,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
                 IchBereich.RECHNUNGEN -> InvoicesSection(access, vm)
                 IchBereich.VERSAMMLUNGEN -> MeetingsSection(access, vm)
                 IchBereich.UMFRAGEN -> SurveysSection(access, vm)
+                IchBereich.AUSLAGEN -> ExpensesSection(access, vm)
                 IchBereich.ERGEBNISSE -> ResultsSection(access, vm)
                 IchBereich.ABWESENHEITEN -> AbsencesSection(access, vm)
                 IchBereich.BELEGUNG -> BookingsSection(access, vm)
@@ -185,6 +189,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
     var meetings by remember(access.id) { mutableStateOf<MyMeetings?>(null) }
     var documents by remember(access.id) { mutableStateOf<MyDocuments?>(null) }
     var surveys by remember(access.id) { mutableStateOf<de.hubiplan.app.data.SurveyList?>(null) }
+    var expenses by remember(access.id) { mutableStateOf<de.hubiplan.app.data.ExpenseOverview?>(null) }
     // Kurzstand nur nebenbei: Fehler zeigen erst die Unterseiten
     LaunchedEffect(access.id) {
         val api = vm.api() ?: return@LaunchedEffect
@@ -192,6 +197,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
         if (IchBereich.VERSAMMLUNGEN in bereiche) meetings = quietly(vm) { api.myMeetings(access.id) }
         if (IchBereich.DOKUMENTE in bereiche) documents = quietly(vm) { api.myDocuments(access.id) }
         if (IchBereich.UMFRAGEN in bereiche) surveys = quietly(vm) { api.memberSurveys(access.id) }
+        if (IchBereich.AUSLAGEN in bereiche) expenses = quietly(vm) { api.memberExpenses(access.id) }
     }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
@@ -209,6 +215,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
                     IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
                     IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
+                    IchBereich.AUSLAGEN -> (expenses?.let(::expenseSummary) ?: tr("Ausgaben für den Verein erstattet bekommen")) to (expenses?.claims?.count { it.asksMe } ?: access.expensesQuestions)
                     IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
                     IchBereich.ABWESENHEITEN -> tr("Wann du nicht mitspielen kannst") to 0
                     IchBereich.BELEGUNG -> tr("Vereinsheim, Räume oder Material anfragen") to 0
