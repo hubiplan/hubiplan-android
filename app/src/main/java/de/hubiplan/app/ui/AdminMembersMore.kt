@@ -126,7 +126,7 @@ fun AwardsSection(client: AdminClient, id: Int, canEdit: Boolean, errors: AdminE
     list?.forEach { award ->
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
-                Text(award.titleName)
+                Text(award.label)
                 Text(
                     "seit ${formatPlainDate(award.validFrom)}" + (award.validUntil?.let { " bis ${formatPlainDate(it)}" } ?: ""),
                     style = MaterialTheme.typography.bodySmall,
