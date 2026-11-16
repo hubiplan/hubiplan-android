@@ -16,7 +16,7 @@ import java.time.format.DateTimeFormatter
 
 // --- Belegung (portal/<Zugang>/bookings/) ---
 
-/** Objekt, das Mitglieder anfragen dürfen (Schützenhaus, Stand, Material). */
+/** Objekt, das Mitglieder anfragen dürfen (Vereinsheim, Räume, Material). */
 @Serializable
 data class BookableItem(
     val id: Int,
