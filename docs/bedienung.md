@@ -69,7 +69,7 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
 - **Abwesenheiten** (für Musiker): Zeiträume eintragen, ändern oder entfernen, in denen man nicht
   mitspielen kann, ohne Begründung. Bestehende Einteilungen bleiben; dort zusätzlich absagen.
 - **Belegung** (wenn der Verein Objekte zum Anfragen freigibt): belegte Zeiten je Woche, eine
-  Anfrage für Schützenhaus, Stand oder Material stellen (Zweck, Zeit oder ganztägig, Notiz) und
+  Anfrage für Vereinsheim, Räume oder Material stellen (Zweck, Zeit oder ganztägig, Notiz) und
   eigene Anfragen oder Buchungen stornieren. Die Verwaltung bestätigt oder lehnt per Mail ab.
 - **Umfragen**: Umfragen und Meinungsbilder des Vereins, offene zuerst, mit der Zahl der Umfragen,
   die noch auf deine Antwort warten. Antworten (Auswahl, Ja/Nein/Enthaltung, Terminfindung,

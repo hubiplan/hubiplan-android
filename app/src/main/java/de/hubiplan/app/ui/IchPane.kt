@@ -79,7 +79,7 @@ internal enum class IchBereich(val label: String) {
     // Musik: Abwesenheiten melden
     ABWESENHEITEN(tr("Abwesenheiten")),
     HELFERDIENSTE(tr("Helferdienste")),
-    // Schützenhaus, Stand oder Material anfragen
+    // Vereinsheim, Räume oder Material anfragen
     BELEGUNG(tr("Belegung")),
     DOKUMENTE(tr("Dokumente")),
     // Ansprechpartner einer Firma, die für Mitarbeiter zahlt (wie Mein Bereich › Mitarbeiter)
@@ -211,7 +211,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
                     IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
                     IchBereich.ABWESENHEITEN -> tr("Wann du nicht mitspielen kannst") to 0
-                    IchBereich.BELEGUNG -> tr("Schützenhaus, Stand oder Material anfragen") to 0
+                    IchBereich.BELEGUNG -> tr("Vereinsheim, Räume oder Material anfragen") to 0
                     IchBereich.HELFERDIENSTE -> tr("unter „Aufgaben“") to 0
                     IchBereich.DOKUMENTE -> (documents?.let { trn("1 Dokument", "{n} Dokumente", it.count) } ?: "") to 0
                     IchBereich.MITARBEITER -> tr("Für wen die Firma zahlt") to 0
