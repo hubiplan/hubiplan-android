@@ -161,6 +161,9 @@ data class PortalAccess(
     /** Modul Umfragen an und Zahl unbeantworteter Umfragen (ältere Stände: fehlt) */
     @SerialName("surveys_enabled") val surveysEnabled: Boolean = false,
     @SerialName("surveys_open") val surveysOpen: Int = 0,
+    /** Modul Auslagen erstatten an und offene Rückfragen der Kasse (ältere Stände: fehlt) */
+    @SerialName("expenses_enabled") val expensesEnabled: Boolean = false,
+    @SerialName("expenses_questions") val expensesQuestions: Int = 0,
     /** Ansprechpartner einer Firma, die für Mitarbeiter zahlt (Mein Bereich › Mitarbeiter; ältere Stände: fehlt) */
     val company: Boolean = false,
 ) {
@@ -204,6 +207,9 @@ data class PortalAccess(
 
     /** „Umfragen“ unter „Ich“ */
     val hasSurveys: Boolean get() = moduleOn("surveys", surveysEnabled)
+
+    /** „Auslagen“ unter „Ich“ (Modul Auslagen erstatten; Ansprechpartner von Firmen nicht) */
+    val hasExpenses: Boolean get() = expensesEnabled && !isContact
 
     /** „Dokumente“ unter „Ich“ (nur lesen) */
     val hasDocs: Boolean get() = moduleOn("docs", docsEnabled)

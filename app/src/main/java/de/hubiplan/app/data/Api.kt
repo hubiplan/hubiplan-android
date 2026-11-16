@@ -747,6 +747,52 @@ class Api(
 
     // --- Helferdienste im Mitgliederbereich (HUBIplan Schritt H2) ---
 
+    // --- Auslagen erstatten (HUBIplan docs/auslagen.md) ---
+
+    suspend fun memberExpenses(accessId: Int): ExpenseOverview =
+        decodeApi(expect("GET", "/api/portal/$accessId/expenses/"))
+
+    suspend fun memberExpense(accessId: Int, id: Int): ExpenseClaim =
+        decodeApi(expect("GET", "/api/portal/$accessId/expenses/$id/"))
+
+    /**
+     * Auslage mit Belegen in einem Schritt anlegen (auf Wunsch gleich einreichen). [key] ist der
+     * `Idempotency-Key`: Wird derselbe Antrag nach einem Abbruch erneut gesendet, entsteht er nur
+     * einmal.
+     */
+    suspend fun createExpense(accessId: Int, fields: Map<String, String>, photos: List<ByteArray>, key: String): ExpenseClaim {
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM).apply {
+            fields.forEach { (k, v) -> addFormDataPart(k, v) }
+            photos.forEachIndexed { i, jpeg ->
+                addFormDataPart("file", "beleg-${i + 1}.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            }
+        }.build()
+        val resp = send("POST", "/api/portal/$accessId/expenses/", form, mapOf(SignedFormat.IDEMPOTENCY_HEADER to key))
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return decodeApi(ExpenseClaim.serializer(), resp.text)
+    }
+
+    suspend fun addExpensePhoto(accessId: Int, id: Int, jpeg: ByteArray): ExpenseClaim {
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("file", "beleg.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            .build()
+        val resp = send("POST", "/api/portal/$accessId/expenses/$id/files/", form)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return decodeApi(ExpenseClaim.serializer(), resp.text)
+    }
+
+    /** submit, withdraw oder answer (mit [text]) */
+    suspend fun expenseAction(accessId: Int, id: Int, action: String, text: String? = null): String =
+        expect(
+            "POST",
+            "/api/portal/$accessId/expenses/$id/$action/",
+            json.encodeToString(JsonObject.serializer(), JsonObject(text?.let { mapOf("text" to JsonPrimitive(it)) } ?: emptyMap())),
+        )
+
+    suspend fun deleteExpense(accessId: Int, id: Int) {
+        expect("DELETE", "/api/portal/$accessId/expenses/$id/")
+    }
+
     suspend fun memberSurveys(accessId: Int): SurveyList =
         decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
 
