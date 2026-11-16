@@ -324,6 +324,7 @@
  "Anmelden": "Sign in",
  "Zwei-Faktor-Anmeldung": "Two-factor authentication",
  "Bitte den Code aus deiner Authenticator-App oder einen Wiederherstellungscode eingeben.": "Please enter the code from your authenticator app or a recovery code.",
+ "Hast du nur einen Passkey eingerichtet? Dann tippe auf „Abbrechen“ und wähle „Mit Passkey anmelden“.": "Have you only set up a passkey? Then tap “Cancel” and choose “Sign in with passkey”.",
  "Code": "Code",
  "Entsperren ist hier nicht möglich.": "Unlocking is not possible here.",
  "Mit Fingerabdruck, Gesicht oder Geräte-PIN": "With fingerprint, face or device PIN",
