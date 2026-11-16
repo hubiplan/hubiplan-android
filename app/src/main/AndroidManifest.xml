@@ -49,6 +49,8 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="hubiplan" android:host="verbinden" />
+                <!-- Ohne Code: App fordert ihn selbst mit Prüfwert an (Gesamtaudit 15.11., APP-01) -->
+                <data android:scheme="hubiplan" android:host="anmelden" />
             </intent-filter>
         </activity>
 
