@@ -222,7 +222,12 @@ data class AwardItem(
     @SerialName("valid_from") val validFrom: String = "",
     @SerialName("valid_until") val validUntil: String? = null,
     val note: String = "",
-)
+    /** Eigener Titel des Trägers, z. B. „Ehrenhauptmann“ (hubiplan #518) */
+    @SerialName("display_title") val displayTitle: String = "",
+) {
+    /** Ehrung, mit eigenem Titel in Klammern: „Ehrenmitglied (Ehrenhauptmann)“ */
+    val label: String get() = if (displayTitle.isBlank()) titleName else "$titleName ($displayTitle)"
+}
 
 @Serializable
 data class TitleItem(val id: Int, val name: String, @SerialName("is_archived") val isArchived: Boolean = false)
