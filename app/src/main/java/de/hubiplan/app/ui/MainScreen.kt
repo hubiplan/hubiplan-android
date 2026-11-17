@@ -125,6 +125,8 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLeaveGuard) {
+    // Einmal nach dem Verbinden: Erlaubnis für Benachrichtigungen mit Begründung (AND-01)
+    NotificationPermissionAsk()
     var tab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
     // Reiter vor „Mein Konto“, damit Zurück dorthin führt
     var previousTab by rememberSaveable { mutableStateOf(Tab.TERMINE) }

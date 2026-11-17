@@ -49,6 +49,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
+import de.hubiplan.app.trk
 
 // Verwaltung in der App, Schritt B3: Termine der Einheit und Rückmeldungen
 
@@ -205,7 +206,7 @@ fun EventScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 if (!cancelled) {
                     OutlinedButton(onClick = { dialog = EventDialog.Cancel }, enabled = !busy) {
-                        Text(if (single != null) tr("Diesen Termin absagen") else tr("Absagen"))
+                        Text(if (single != null) tr("Diesen Termin absagen") else trk("event", "Absagen"))
                     }
                 } else {
                     OutlinedButton(enabled = !busy, onClick = {
@@ -370,7 +371,7 @@ private fun CancelDialog(series: Boolean, saving: Boolean, saveError: String?, o
                 }
             }
         },
-        confirmButton = { Button(enabled = !saving, onClick = { onConfirm(note.trim(), notify && !series) }) { Text(tr("Absagen")) } },
+        confirmButton = { Button(enabled = !saving, onClick = { onConfirm(note.trim(), notify && !series) }) { Text(trk("event", "Absagen")) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Abbrechen")) } },
     )
 }

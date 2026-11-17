@@ -7,6 +7,8 @@ import de.hubiplan.app.data.cleanIban
 import de.hubiplan.app.data.fields
 import de.hubiplan.app.data.json
 import de.hubiplan.app.data.parseKm
+import androidx.compose.runtime.saveable.SaverScope
+import de.hubiplan.app.ui.ExpenseDraftSaver
 import de.hubiplan.app.ui.IchBereich
 import de.hubiplan.app.ui.parseAmount
 import de.hubiplan.app.ui.expenseSummary
@@ -94,5 +96,19 @@ class AuslagenTest {
         assertEquals("42", f["km"])
         assertEquals("Musterstadt – Beispielhausen", f["route"])
         assertNull(f["lines"])
+    }
+
+    @Test
+    fun entwurf_uebersteht_gespeicherten_zustand() {
+        // AND-03: Angaben bleiben bei Drehung und Prozessende erhalten
+        val d = ExpenseDraft(
+            kind = "mileage", purpose = "Fahrt zum Kreistag", date = "2099-01-02", amounts = listOf("12,50", "3,00"),
+            route = "Musterstadt – Beispielhausen", km = "42,0", payout = "cash", holder = "Erika Muster", iban = "",
+        )
+        val saved = with(ExpenseDraftSaver) { SaverScope { true }.save(d) }!!
+        assertEquals(d, ExpenseDraftSaver.restore(saved))
+        // Leerer Entwurf behält seine eine leere Position
+        val leer = with(ExpenseDraftSaver) { SaverScope { true }.save(ExpenseDraft()) }!!
+        assertEquals(ExpenseDraft(), ExpenseDraftSaver.restore(leer))
     }
 }

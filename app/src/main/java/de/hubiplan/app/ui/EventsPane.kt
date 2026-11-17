@@ -41,6 +41,7 @@ import de.hubiplan.app.data.PortalAccess
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
+import de.hubiplan.app.trk
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -275,8 +276,8 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int,
     }
     val sentNote = if (rsvp.noteAllowed) note else ""
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
-        Button(onClick = { onRespond("yes", guests, sentNote) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Zusagen")) }
-        OutlinedButton(onClick = { onRespond("no", 0, sentNote) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(tr("Absagen")) }
+        Button(onClick = { onRespond("yes", guests, sentNote) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(trk("action", "Zusagen")) }
+        OutlinedButton(onClick = { onRespond("no", 0, sentNote) }, enabled = !busy, modifier = Modifier.weight(1f)) { Text(trk("action", "Absagen")) }
     }
     if (rsvp.maybeAllowed) {
         OutlinedButton(onClick = { onRespond("maybe", 0, sentNote) }, enabled = !busy, modifier = Modifier.fillMaxWidth()) { Text(tr("Vielleicht")) }

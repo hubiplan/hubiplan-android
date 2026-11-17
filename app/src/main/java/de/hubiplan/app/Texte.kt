@@ -80,6 +80,19 @@ fun tr(de: String, vararg args: Pair<String, Any?>): String {
     return s
 }
 
+/**
+ * Text mit Zusammenhang für Wörter, die im Deutschen gleich, im Englischen verschieden sind:
+ * „Absagen“ ist als Knopf der Rückmeldung „Decline“, am Termin „Cancel event“ und als Reiter
+ * „Declined“. Im Katalog steht der Eintrag als `zusammenhang|Text`.
+ */
+fun trk(zusammenhang: String, de: String, vararg args: Pair<String, Any?>): String {
+    val key = "$zusammenhang|$de"
+    val found = Texte.text(key)
+    var s = if (found == key) Texte.text(de) else found
+    for ((k, value) in args) s = s.replace("{$k}", value?.toString() ?: "")
+    return s
+}
+
 /** Mehrzahl: `trn("{n} Mitglied", "{n} Mitglieder", n)`. */
 fun trn(one: String, other: String, n: Int, vararg args: Pair<String, Any?>): String =
     tr(if (n == 1) one else other, "n" to n, *args)

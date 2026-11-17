@@ -44,12 +44,14 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     var pendingWarning by remember { mutableIntStateOf(0) }
     var sendingPending by remember { mutableStateOf(false) }
     var pendingError by remember { mutableStateOf<String?>(null) }
+    var confirmLogout by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     fun askLogout() {
         scope.launch {
             val pending = vm.pendingLocalItems()
             pendingError = null
-            if (pending > 0) pendingWarning = pending else vm.logout()
+            // Abmelden löscht alle Daten des Kontos in der App: nie ohne Rückfrage (AND-06)
+            if (pending > 0) pendingWarning = pending else confirmLogout = true
         }
     }
     Column(
@@ -92,6 +94,23 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
         TextButton(onClick = { open(SOURCE_URL) }) { Text(tr("Quellcode")) }
     }
 
+
+    if (confirmLogout) {
+        AlertDialog(
+            onDismissRequest = { confirmLogout = false },
+            title = { Text(tr("Dieses Konto vom Gerät abmelden?")) },
+            text = {
+                Text(tr("Die App vergisst das Konto und löscht seine Daten auf diesem Telefon, auch die eingetragenen Kalendertermine. Für eine neue Anmeldung brauchst du wieder dein Passwort oder den QR-Code aus HUBIplan."))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmLogout = false
+                    vm.logout()
+                }) { Text(tr("Abmelden")) }
+            },
+            dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text(tr("Abbrechen")) } },
+        )
+    }
 
     if (deleteInfo) {
         val key = main.access?.imprintKey?.let { "/$it" } ?: ""

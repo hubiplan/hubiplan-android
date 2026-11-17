@@ -271,6 +271,9 @@
  "Abgesagt": "Cancelled",
  "Diesen Termin absagen": "Cancel this event",
  "Absagen": "Declined",
+ "action|Zusagen": "Accept",
+ "action|Absagen": "Decline",
+ "event|Absagen": "Cancel event",
  "Absage zurückgenommen": "Cancellation withdrawn",
  "Absage zurücknehmen": "Withdraw cancellation",
  "Zu- und Absagen": "Responses",
@@ -1282,5 +1285,12 @@
  "Nachweis einreichen": "Submit proof",
  "Für einen ermäßigten Beitrag braucht der Verein jedes Jahr einen aktuellen Nachweis, zum Beispiel eine Immatrikulationsbescheinigung. Ohne Nachweis gilt der normale Beitrag.": "For a reduced fee the club needs a current proof every year, for example a certificate of enrolment. Without a proof, the regular fee applies.",
  "Gerade ist kein Nachweis nötig.": "No proof is needed right now.",
- "Eingereichte Nachweise": "Submitted proofs"
+ "Eingereichte Nachweise": "Submitted proofs",
+ "Dieses Konto vom Gerät abmelden?": "Sign this account out of the device?",
+ "Die App vergisst das Konto und löscht seine Daten auf diesem Telefon, auch die eingetragenen Kalendertermine. Für eine neue Anmeldung brauchst du wieder dein Passwort oder den QR-Code aus HUBIplan.": "The app forgets the account and deletes its data on this phone, including the calendar events it added. To sign in again you need your password or the QR code from HUBIplan.",
+ "Abmelden": "Sign out",
+ "Benachrichtigungen erlauben?": "Allow notifications?",
+ "Dann erinnert dich die App, wenn eine Rückmeldung zu einem Termin fehlt, und zeigt neue Mitteilungen und Aufgaben. Ohne Erlaubnis bleibt sie stumm. Du kannst das später unter „Mein Konto“ ändern.": "The app then reminds you when a response to an event is missing and shows new messages and tasks. Without permission it stays silent. You can change this later under “My account”.",
+ "Erlauben": "Allow",
+ "Später": "Later"
 }
