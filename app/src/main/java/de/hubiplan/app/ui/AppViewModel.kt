@@ -11,6 +11,7 @@ import de.hubiplan.app.BuildConfig
 import de.hubiplan.app.HubiplanApp
 import de.hubiplan.app.calendar.DeviceCalendar
 import de.hubiplan.app.data.Account
+import de.hubiplan.app.data.minAndroidVersion
 import de.hubiplan.app.data.AdminClient
 import de.hubiplan.app.data.AccountStore
 import de.hubiplan.app.data.AdminOverview
@@ -1042,7 +1043,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 val api = Api(server)
                 val instance = api.instance()
                 if (instance.product != "HUBIplan") throw ApiException(0, tr("Unter dieser Adresse läuft kein HUBIplan."))
-                if (instance.minAppVersion > BuildConfig.VERSION_CODE) {
+                if (instance.minAndroidVersion > BuildConfig.VERSION_CODE) {
                     throw ApiException(0, tr("Bitte die App aktualisieren, diese Version wird von HUBIplan nicht mehr unterstützt."))
                 }
                 val paired = action(api, key)
