@@ -43,12 +43,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import de.hubiplan.app.tr
+import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
@@ -294,6 +294,16 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
         serverHint && recoveryUrl == null -> tr("Gib zuerst die gültige HTTPS-Adresse deines Vereins ein, z. B. verein.example.de.")
         else -> null
     }
+    val submit: () -> Unit = {
+        missing = missingLoginFields(server, email, password)
+        if (missing.isEmpty()) {
+            // Passwortmanager bietet an, die Anmeldung zu speichern (A-05)
+            autofillManager?.commit()
+            onLogin(server, email, password)
+        } else {
+            focus(missing.first())
+        }
+    }
     OutlinedTextField(
         value = server,
         onValueChange = { server = it; browserError = false; missing = missing - LoginField.SERVER },
@@ -302,7 +312,7 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
         singleLine = true,
         isError = serverError != null,
         supportingText = serverError?.let { { Text(it, modifier = Modifier.announce(urgent = true)) } },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth().focusRequester(serverFocus),
     )
     val emailError = LoginField.EMAIL in missing
@@ -317,36 +327,27 @@ internal fun PasswordLogin(state: ConnectState, onLogin: (String, String, String
         } else {
             null
         },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth().focusRequester(emailFocus).autofill(ContentType.Username),
     )
     val passwordError = LoginField.PASSWORD in missing
-    OutlinedTextField(
+    // Eingabetaste am letzten Feld meldet an; Passwort lässt sich anzeigen (AND-09)
+    PasswordField(
         value = password,
         onValueChange = { password = it; missing = missing - LoginField.PASSWORD },
-        label = { Text(tr("Passwort")) },
-        singleLine = true,
+        label = tr("Passwort"),
         isError = passwordError,
         supportingText = if (passwordError) {
             { Text(tr("Bitte dein Passwort eingeben."), modifier = Modifier.announce(urgent = true)) }
         } else {
             null
         },
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        imeAction = ImeAction.Go,
+        onImeAction = submit,
         modifier = Modifier.fillMaxWidth().focusRequester(passwordFocus).autofill(ContentType.Password),
     )
     OutlinedButton(
-        onClick = {
-            missing = missingLoginFields(server, email, password)
-            if (missing.isEmpty()) {
-                // Passwortmanager bietet an, die Anmeldung zu speichern (A-05)
-                autofillManager?.commit()
-                onLogin(server, email, password)
-            } else {
-                focus(missing.first())
-            }
-        },
+        onClick = submit,
         enabled = !state.busy,
         modifier = Modifier.fillMaxWidth(),
     ) { Text(tr("Anmelden")) }

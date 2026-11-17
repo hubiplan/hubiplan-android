@@ -26,6 +26,7 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     val surfaces = listOf(base.surface, base.background, base.surfaceVariant,
         base.surfaceContainerLowest, base.surfaceContainerLow, base.surfaceContainer,
         base.surfaceContainerHigh, base.surfaceContainerHighest).map { it.toArgb().toLong() and 0xFFFFFFFFL }
+    fun argb(color: Color) = color.toArgb().toLong() and 0xFFFFFFFFL
     fun on(color: Long, preferred: Long) = if (contrast(color, preferred) >= 4.5) preferred else readableOn(color)
     return if (!dark) {
         // Primärfarbe dient in Material als Text- und Rahmenfarbe (Textknöpfe, aktive Felder,
@@ -44,6 +45,8 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
             onSecondaryContainer = Color(readableOn(mix(accent, WHITE, 0.8f))),
             tertiary = Color(uiAccent),
             onTertiary = Color(on(uiAccent, onAccent)),
+            // Aktion in der Snackbar: Vereinsfarbe, lesbar auf der dunklen Snackbar (AND-19)
+            inversePrimary = Color(withContrast(mix(primary, WHITE, 0.45f), listOf(argb(base.inverseSurface)), WHITE)),
         )
     } else {
         // Im Dunkeln hellere Töne derselben Farben, damit Text lesbar bleibt
@@ -60,6 +63,7 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
             onSecondaryContainer = Color(readableOn(mix(accent, BLACK, 0.5f))),
             tertiary = Color(lightAccent),
             onTertiary = Color(readableOn(lightAccent)),
+            inversePrimary = Color(withContrast(primary, listOf(argb(base.inverseSurface)), BLACK)),
         )
     }
 }
@@ -69,14 +73,17 @@ data class BrandColors(val brand: Color, val onBrand: Color)
 
 val LocalBrand = staticCompositionLocalOf { BrandColors(Color(DEFAULT_PRIMARY), Color(WHITE)) }
 
-fun brandFor(theme: Theme?, dark: Boolean = false): BrandColors {
-    val raw = parseHexColor(theme?.primary) ?: DEFAULT_PRIMARY
+fun brandFor(theme: Theme?, dark: Boolean = false): BrandColors = brandFor(theme?.primary, theme?.onPrimary, dark)
+
+/** Wie [brandFor], aus den beiden Farbwerten (Mitgliedsausweis: nur Primärfarbe und Schrift, AND-23). */
+fun brandFor(primaryHex: String?, onPrimaryHex: String?, dark: Boolean = false): BrandColors {
+    val raw = parseHexColor(primaryHex) ?: DEFAULT_PRIMARY
     // Im Dunkelmodus kein heller Balken über dunklem Inhalt (UX-Audit 08.11. A-06): helle
     // Vereinsfarben so weit abdunkeln, bis weiße Schrift lesbar ist. Dunkle bleiben, wie sie sind.
     val primary = if (dark) withContrast(raw, listOf(WHITE), BLACK) else raw
     // Abgedunkelt trägt der Balken immer weiße Schrift (und helle Statussymbole)
     val onPrimary = if (dark && primary != raw) WHITE
-    else parseHexColor(theme?.onPrimary)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
+    else parseHexColor(onPrimaryHex)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
     return BrandColors(Color(primary), Color(onPrimary))
 }
 

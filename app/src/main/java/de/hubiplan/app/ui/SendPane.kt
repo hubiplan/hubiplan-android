@@ -124,12 +124,14 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
             ServerTextField(field = "subject", errors = fields, enabled = !busy, value = subject,
                 onValueChange = { subject = it.take(200) },
                 label = { Text(tr("Betreff")) },
+                keyboardOptions = TITELZEILE,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             ServerTextField(field = "body", errors = fields, enabled = !busy, value = body,
                 onValueChange = { body = it.take(maxBody) },
                 label = { Text(tr("Text")) },
+                keyboardOptions = FREITEXT,
                 supportingText = { Text(tr("{length} von {maxBody} Zeichen", "length" to body.length, "maxBody" to maxBody)) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
             )

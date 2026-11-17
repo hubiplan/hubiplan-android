@@ -64,6 +64,7 @@ import de.hubiplan.app.tr
 import de.hubiplan.app.trn
 import java.io.File
 import kotlinx.coroutines.launch
+import androidx.compose.ui.window.DialogProperties
 
 /**
  * Bereiche unter „Ich“ in der Reihenfolge der Liste (Konzept app-ich, S-06/X-03). Begriffe wie
@@ -660,8 +661,14 @@ private fun MotionDialog(
 ) {
     var title by rememberSaveable(meeting.id) { mutableStateOf("") }
     var text by rememberSaveable(meeting.id) { mutableStateOf("") }
+    // Ein Tipp neben den Dialog oder „Zurück“ verwirft keinen angefangenen Antrag (AND-05)
+    val leave = LocalFormLeaveGuard.current
+    rememberFormDraft(title, text, busy = sending, retainOnDispose = false)
+    val empty = title.isBlank() && text.isBlank()
+    val cancel: () -> Unit = { if (leave == null || empty) onCancel() else leave.request { onCancel() } }
     AlertDialog(
-        onDismissRequest = { if (!sending) onCancel() },
+        onDismissRequest = { if (!sending) cancel() },
+        properties = DialogProperties(dismissOnClickOutside = empty),
         title = { Text(tr("Antrag stellen")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
@@ -672,12 +679,14 @@ private fun MotionDialog(
                     onValueChange = { title = it.take(300) },
                     label = { Text(tr("Titel")) },
                     singleLine = true,
+                    keyboardOptions = TITELZEILE,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it.take(10000) },
                     label = { Text(tr("Begründung")) },
+                    keyboardOptions = FREITEXT,
                     minLines = 4,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -688,7 +697,7 @@ private fun MotionDialog(
                 Text(if (sending) tr("Wird gesendet …") else tr("Einreichen"))
             }
         },
-        dismissButton = { TextButton(onClick = onCancel, enabled = !sending) { Text(tr("Abbrechen")) } },
+        dismissButton = { TextButton(onClick = cancel, enabled = !sending) { Text(tr("Abbrechen")) } },
     )
 }
 

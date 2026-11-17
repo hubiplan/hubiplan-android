@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -111,8 +110,9 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
 @Composable
 internal fun CircularRow(c: CircularItem, isSelected: Boolean, onClick: () -> Unit) {
     ListItem(
-        modifier = Modifier.semantics { selected = isSelected }.clickable(role = Role.Button, onClick = onClick),
-        colors = if (isSelected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer) else ListItemDefaults.colors(),
+        modifier = Modifier.semantics { selected = isSelected }.clickable(role = Role.Button, onClick = onClick)
+            .selectedRowMark(isSelected, MaterialTheme.colorScheme.onPrimaryContainer),
+        colors = selectedRowColors(isSelected),
         overlineContent = { Text(listOf(c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · ")) },
         headlineContent = { Text(c.subject.ifBlank { tr("(ohne Betreff)") }) },
         supportingContent = { if (c.sender.isNotBlank()) Text(c.sender) },

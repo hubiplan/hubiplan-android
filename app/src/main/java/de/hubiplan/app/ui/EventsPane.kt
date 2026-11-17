@@ -14,7 +14,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -99,12 +98,9 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
 private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) {
     ListItem(
         // Gewählter Termin (Tablet) nicht nur farbig: TalkBack sagt „ausgewählt“ (A-06)
-        modifier = Modifier.openRow(onClick = onClick).semantics { if (isSelected) selected = true },
-        colors = if (isSelected) {
-            ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        } else {
-            ListItemDefaults.colors()
-        },
+        modifier = Modifier.openRow(onClick = onClick).semantics { if (isSelected) selected = true }
+            .selectedRowMark(isSelected, MaterialTheme.colorScheme.onPrimaryContainer),
+        colors = selectedRowColors(isSelected),
         leadingContent = { DatumKaestchen(occ.startsAt, gedaempft = occ.isCancelled) },
         headlineContent = {
             Text(
@@ -223,8 +219,9 @@ private fun EventDetailView(
 private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int, String) -> Unit) {
     val rsvp = e.rsvp
     val mine = rsvp.mine
-    var guests by remember(e.id, mine?.guests) { mutableIntStateOf(mine?.guests ?: 0) }
-    var note by remember(e.id, mine?.note) { mutableStateOf(mine?.note.orEmpty()) }
+    // Begleitpersonen und Bemerkung überstehen Drehen (AND-03)
+    var guests by rememberSaveable(e.id, mine?.guests) { mutableIntStateOf(mine?.guests ?: 0) }
+    var note by rememberSaveable(e.id, mine?.note) { mutableStateOf(mine?.note.orEmpty()) }
     Text(tr("Rückmeldung"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     rsvp.deadline?.let { Text(tr("Anmeldeschluss: {date}", "date" to formatDate(it))) }
     rsvp.free?.let { Text(tr("Noch {it} Plätze frei", "it" to it)) }

@@ -46,6 +46,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.saveable.rememberSaveable
 
 /*
  * Mein Bereich wie im Browser: Belegung anfragen, Meldungen zu Wettbewerben, Abwesenheiten in
@@ -529,9 +530,11 @@ private fun AbsenceForm(access: PortalAccess, vm: AppViewModel, row: MusicAbsenc
 internal fun CancellationBlock(access: PortalAccess, vm: AppViewModel, info: CancellationInfo, onChanged: () -> Unit) {
     if (!info.shown) return
     val scope = rememberCoroutineScope()
-    var open by remember { mutableStateOf(false) }
-    var exitDate by remember(info.earliestDate) { mutableStateOf(info.earliestDate?.let { formatPlainDate(it) } ?: "") }
-    var message by remember { mutableStateOf("") }
+    // Angaben überstehen Drehen (AND-03); Zurück und Reiterwechsel fragen nach (AND-05)
+    var open by rememberSaveable { mutableStateOf(false) }
+    var exitDate by rememberSaveable(info.earliestDate) { mutableStateOf(info.earliestDate?.let { formatPlainDate(it) } ?: "") }
+    var message by rememberSaveable { mutableStateOf("") }
+    if (open) rememberFormDraft(exitDate, message, retainOnDispose = false)
     var busy by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }

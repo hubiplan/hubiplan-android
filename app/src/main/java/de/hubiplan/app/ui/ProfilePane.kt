@@ -69,7 +69,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     var error by remember(access.id) { mutableStateOf<String?>(null) }
     var notice by remember(access.id) { mutableStateOf<String?>(null) }
     var reload by remember { mutableIntStateOf(0) }
-    var editing by remember { mutableStateOf(false) }
+    var editing by rememberSaveable { mutableStateOf(false) }
     // Ausgewähltes Foto vor dem Hochladen (Vorschau, drehen, Einwilligung)
     var draft by remember { mutableStateOf<Bitmap?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -400,6 +400,8 @@ private fun ChangeForm(
                 onValueChange = { values = values + (key to it) },
                 label = { Text(label) },
                 singleLine = true,
+                // passende Tastatur je Feld wie in der Verwaltung (AND-09)
+                keyboardOptions = keyboardFor(key),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
@@ -407,14 +409,18 @@ private fun ChangeForm(
             value = message,
             onValueChange = { message = it.take(500) },
             label = { Text(tr("Nachricht an den Vorstand (freiwillig)")) },
+            keyboardOptions = FREITEXT,
             modifier = Modifier.fillMaxWidth(),
         )
         val changed = changedFields(start, values)
+        // Zurück, Reiterwechsel und „Abbrechen“ fragen bei geänderten Angaben nach (AND-05)
+        val leave = LocalFormLeaveGuard.current
+        rememberFormDraft(values.toString(), message, busy = sending, retainOnDispose = false)
         Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Button(onClick = { onSend(changed, message) }, enabled = changed.isNotEmpty() && !sending) {
                 Text(if (sending) tr("Wird gesendet …") else tr("Senden"))
             }
-            TextButton(onClick = onCancel) { Text(tr("Abbrechen")) }
+            TextButton(onClick = { if (leave == null) onCancel() else leave.request { onCancel() } }) { Text(tr("Abbrechen")) }
         }
     }
 }

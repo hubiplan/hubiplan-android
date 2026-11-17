@@ -67,6 +67,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import de.hubiplan.app.tr
+import androidx.compose.runtime.saveable.rememberSaveable
 
 /** Ab diesem Alter weist die App darauf hin, dass der Ausweis ohne Netz angezeigt wird. */
 private const val STALE_MS = 24L * 60 * 60 * 1000
@@ -80,7 +81,7 @@ private const val STALE_MS = 24L * 60 * 60 * 1000
 fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?, bigRequest: Int = 0) {
     var stored by remember(accessId) { mutableStateOf(store.load(accessId)) }
     var offline by remember(accessId) { mutableStateOf(false) }
-    var big by remember { mutableStateOf(false) }
+    var big by rememberSaveable { mutableStateOf(false) }
     // App-Verknüpfung „Ausweis zeigen“: gleich groß (Konzept app-ich)
     LaunchedEffect(bigRequest) { if (bigRequest > 0) big = true }
 
@@ -239,8 +240,10 @@ private fun openPass(context: Context, file: File): String? {
 @Composable
 private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
     val display = stored.card.display ?: return
-    val primary = Color(parseHexColor(display.theme?.primary) ?: DEFAULT_PRIMARY)
-    val onPrimary = Color(parseHexColor(display.theme?.onPrimary) ?: WHITE)
+    // Schrift im Kartenkopf gegen die Vereinsfarbe geprüft, wie in der Kopfleiste (AND-23)
+    val brand = brandFor(display.theme?.primary, display.theme?.onPrimary)
+    val primary = brand.brand
+    val onPrimary = brand.onBrand
     val photo = remember(stored.savedAt) { decodeBitmap(stored.photoBytes()) }
     val logo = remember(stored.savedAt) { decodeBitmap(stored.logoBytes()) }
     val qr = rememberQr(stored.card.url.orEmpty(), 360)

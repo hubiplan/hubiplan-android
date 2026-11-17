@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -295,8 +294,9 @@ private fun SectionHead(text: String) {
 private fun MappeRow(m: Mappe, isSelected: Boolean, onClick: () -> Unit) {
     val count = m.pieces.size
     ListItem(
-        modifier = Modifier.semantics { selected = isSelected }.clickable(role = Role.Button, onClick = onClick),
-        colors = if (isSelected) ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.primaryContainer) else ListItemDefaults.colors(),
+        modifier = Modifier.semantics { selected = isSelected }.clickable(role = Role.Button, onClick = onClick)
+            .selectedRowMark(isSelected, MaterialTheme.colorScheme.onPrimaryContainer),
+        colors = selectedRowColors(isSelected),
         overlineContent = {
             val head = when (m.kind) {
                 "marchbook" -> tr("Marschbuch")
