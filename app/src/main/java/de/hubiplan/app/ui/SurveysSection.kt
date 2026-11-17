@@ -64,7 +64,7 @@ internal fun surveyValueLabel(value: String): String = when (value) {
 internal fun surveyOptionLabel(label: String, startsAt: String?, endsAt: String?, allDay: Boolean): String = when {
     label.isNotBlank() -> label
     startsAt == null -> ""
-    allDay -> formatDate(startsAt)
+    allDay -> formatDate(startsAt, CALENDAR_ZONE)
     endsAt != null -> runCatching { formatWhen(startsAt, endsAt, false) }.getOrDefault(formatDayTime(startsAt))
     else -> formatDayTime(startsAt)
 }

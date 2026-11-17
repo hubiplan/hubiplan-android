@@ -45,4 +45,31 @@ class BegriffeTest {
             Texte.setzeFuerTest("de", katalog)
         }
     }
+
+    /** AND-27: ganztägige Termine stehen in jeder Gerätezeitzone am selben Kalendertag. */
+    @Test
+    fun ganztaegigOhneZeitzone() {
+        val fest = { zone: String ->
+            de.hubiplan.app.ui.formatWhen("2027-07-11T00:00:00+02:00", "2027-07-14T00:00:00+02:00", true, java.time.ZoneId.of(zone))
+        }
+        assertEquals("So., 11.7. – Mi., 14. Juli 2027", fest("Europe/Berlin"))
+        assertEquals(fest("Europe/Berlin"), fest("UTC"))
+        assertEquals(fest("Europe/Berlin"), fest("America/Los_Angeles"))
+        // auch wenn der Server in UTC liefert
+        assertEquals(
+            fest("Europe/Berlin"),
+            de.hubiplan.app.ui.formatWhen("2027-07-10T22:00:00Z", "2027-07-13T22:00:00Z", true, java.time.ZoneId.of("UTC")),
+        )
+    }
+
+    /** AND-27: Uhrzeiten bleiben Gerätezeit, mit Zusatz, sobald das Gerät woanders steht. */
+    @Test
+    fun uhrzeitMitZusatzInAndererZeitzone() {
+        val abend = { zone: String ->
+            de.hubiplan.app.ui.formatWhen("2026-11-13T19:00:00+01:00", "2026-11-13T22:00:00+01:00", false, java.time.ZoneId.of(zone))
+        }
+        assertTrue("Zeit an deinem Gerät" !in abend("Europe/Berlin"))
+        assertTrue("Europe/Vienna hat denselben Abstand", "Zeit an deinem Gerät" !in abend("Europe/Vienna"))
+        assertTrue(abend("UTC"), abend("UTC").endsWith("18:00 – 21:00 Uhr (Zeit an deinem Gerät)"))
+    }
 }

@@ -24,18 +24,33 @@ private val UHR: String get() = if (english) "" else " Uhr"
 private fun local(iso: String, zone: ZoneId): java.time.ZonedDateTime =
     OffsetDateTime.parse(iso).atZoneSameInstant(zone)
 
+/**
+ * Zeitzone, in der HUBIplan Kalendertage führt. Ganztägige Termine sind Kalendertage ohne
+ * Zeitzone: Sie stehen überall am selben Datum wie in der Verwaltung (UX-Audit 16.11. AND-27).
+ */
+internal val CALENDAR_ZONE: ZoneId = ZoneId.of("Europe/Berlin")
+
+/** Zusatz hinter Uhrzeiten, wenn das Gerät in einer anderen Zeitzone steht als der Kalender. */
+internal fun deviceTimeNote(iso: String, zone: ZoneId): String {
+    val at = OffsetDateTime.parse(iso).toInstant()
+    return if (zone.rules.getOffset(at) == CALENDAR_ZONE.rules.getOffset(at)) "" else " " + tr("(Zeit an deinem Gerät)")
+}
+
 /** „Fr, 14. November 2026, 19:00 – 22:00 Uhr“ bzw. ganztägig nur Datum. */
 fun formatWhen(start: String, end: String, allDay: Boolean, zone: ZoneId = ZoneId.systemDefault()): String {
-    val s = local(start, zone)
-    val e = local(end, zone)
     if (allDay) {
-        // Ganztägig: Ende ist der letzte Tag 0:00
+        // Ganztägig: Ende ist der letzte Tag 0:00; der Tag gilt unabhängig vom Gerät
+        val s = local(start, CALENDAR_ZONE)
+        val e = local(end, CALENDAR_ZONE)
         return if (s.toLocalDate() == e.toLocalDate()) s.format(DAY) else "${s.format(SHORT_DAY)} – ${e.format(DAY)}"
     }
+    val s = local(start, zone)
+    val e = local(end, zone)
+    val note = deviceTimeNote(start, zone)
     return if (s.toLocalDate() == e.toLocalDate()) {
-        "${s.format(DAY)}, ${s.format(TIME)} – ${e.format(TIME)}$UHR"
+        "${s.format(DAY)}, ${s.format(TIME)} – ${e.format(TIME)}$UHR$note"
     } else {
-        "${s.format(SHORT_DAY)} ${s.format(TIME)} – ${e.format(SHORT_DAY)} ${e.format(TIME)}$UHR"
+        "${s.format(SHORT_DAY)} ${s.format(TIME)} – ${e.format(SHORT_DAY)} ${e.format(TIME)}$UHR$note"
     }
 }
 
