@@ -63,22 +63,56 @@ object LocalAccountData {
         var kept = false
         for (folder in listOf("entwuerfe", "quittungen")) {
             val source = dir(context, folder, accountKey)
-            val files = source.listFiles().orEmpty().filter { !it.name.endsWith(".tmp") }
-            if (files.isEmpty()) {
-                source.deleteRecursively()
-                continue
-            }
-            val target = File(File(context.filesDir, QUARANTINE), "$folder-k-${id(accountKey)}").apply { mkdirs() }
-            for (file in files) {
-                val dest = File(target, file.name)
-                if (!dest.exists()) file.renameTo(dest)
-            }
-            kept = true
-            // Wem die Belege gehören, damit sie nach erneuter Anmeldung zurückkommen (Fachfrage 16)
-            File(target, OWNER).writeText(listOf(server, email.lowercase(), alias(accountKey), System.currentTimeMillis()).joinToString("\n"))
-            if (source.listFiles().orEmpty().none { !it.name.endsWith(".tmp") }) source.deleteRecursively()
+            val target = File(File(context.filesDir, QUARANTINE), "$folder-k-${id(accountKey)}")
+            if (quarantine(source, target, server, email.lowercase(), alias(accountKey), System.currentTimeMillis())) kept = true
         }
         if (!kept) DraftCrypto.deleteKey(alias(accountKey))
+    }
+
+    /**
+     * Vorgänge aus [source] nach [target] in die Quarantäne legen. `.konto` wird zuerst
+     * geschrieben: Endet die App mitten im Verschieben, liegt nie eine Quarantäne ohne
+     * Eigentümer da. Liegen dort schon Vorgänge desselben Kontos, bleibt deren älteres `since`,
+     * damit sie nicht über [FINAL_DAYS] hinaus verlängert werden. Rückgabe: ob noch etwas mit
+     * [alias] verschlüsselt ist (in der Quarantäne oder nicht verschiebbar in [source]).
+     */
+    internal fun quarantine(
+        source: File,
+        target: File,
+        server: String,
+        email: String,
+        alias: String,
+        now: Long,
+        move: (File, File) -> Boolean = { from, to -> from.renameTo(to) },
+    ): Boolean {
+        val files = entries(source)
+        if (files.isEmpty()) {
+            source.deleteRecursively()
+            return entries(target).isNotEmpty()
+        }
+        target.mkdirs()
+        val earlier = owner(target)
+        val since = when {
+            earlier != null && earlier.server.equals(server, ignoreCase = true) &&
+                earlier.email.equals(email, ignoreCase = true) -> minOf(now, earlier.since)
+            // Schon Vorgänge ohne lesbaren Eigentümer da: deren Alter nicht zurücksetzen
+            earlier == null && entries(target).isNotEmpty() -> minOf(now, lastChange(target) ?: now)
+            else -> now
+        }
+        // Wem die Belege gehören, damit sie nach erneuter Anmeldung zurückkommen (Fachfrage 16)
+        File(target, OWNER).writeText(listOf(server, email, alias, since).joinToString("\n"))
+        for (file in files) {
+            val dest = File(target, file.name)
+            if (!dest.exists()) move(file, dest)
+        }
+        val kept = entries(target).isNotEmpty()
+        if (!kept) {
+            File(target, OWNER).delete()
+            target.delete()
+        }
+        val left = entries(source).isNotEmpty()
+        if (!left) source.deleteRecursively()
+        return kept || left
     }
 
     private const val OWNER = ".konto"
@@ -137,12 +171,29 @@ object LocalAccountData {
             }
         }
         // Alten Schlüssel nur löschen, wenn nichts mehr mit ihm verschlüsselt ist
-        val inUse = quarantine.listFiles().orEmpty().mapNotNull { owner(it)?.alias }.toSet()
+        val inUse = quarantine.listFiles().orEmpty().mapNotNull { keyAlias(it, owner(it)) }.toSet()
         (freed - inUse).forEach { DraftCrypto.deleteKey(it) }
         return moved
     }
 
-    private fun since(box: File) = owner(box)?.since ?: box.lastModified()
+    /** Letzte Änderung des Ordners; null, wenn sie sich nicht bestimmen lässt. */
+    private fun lastChange(box: File): Long? = box.lastModified().takeIf { it > 0L }
+
+    /**
+     * Seit wann die Quarantäne besteht: aus `.konto`, sonst (fehlt oder unlesbar, z. B. nach
+     * einem Absturz) die letzte Änderung des Ordners. null: unbekannt, dann gilt sie nie als alt.
+     */
+    private fun since(box: File): Long? = owner(box)?.since ?: lastChange(box)
+
+    private fun olderThan(box: File, days: Long, now: Long): Boolean =
+        since(box)?.let { it < now - days * DAY_MS } ?: false
+
+    /**
+     * Schlüssel der Quarantäne: aus `.konto`, sonst aus dem Ordnernamen (`<art>-k-<id>`, wie
+     * [alias]); null für Altbestände ohne Kontokennung.
+     */
+    private fun keyAlias(box: File, who: Owner?): String? =
+        who?.alias ?: box.name.substringAfter("-k-", "").takeIf { it.isNotEmpty() }?.let { "hubiplan-daten-$it" }
 
     private fun entries(box: File) = box.listFiles().orEmpty().filter { it.name != OWNER && !it.name.endsWith(".tmp") }
 
@@ -172,15 +223,16 @@ object LocalAccountData {
         for (box in quarantine.listFiles().orEmpty()) {
             val who = owner(box)
             val count = entries(box).size
-            val old = since(box) < now - FINAL_DAYS * DAY_MS
-            val lost = !old && unreadableBox(box, who?.alias ?: DraftCrypto.LEGACY_ALIAS, hasKey, open)
+            val old = olderThan(box, FINAL_DAYS, now)
+            // Ohne lesbares `.konto` nie sofort löschen, nur nach FINAL_DAYS ab der letzten Änderung
+            val lost = !old && who != null && unreadableBox(box, who.alias, hasKey, open)
             if (!old && !lost) continue
             if (box.deleteRecursively()) {
                 if (old) expired += count else unreadable += count
-                who?.alias?.let { freed += it }
+                keyAlias(box, who)?.let { freed += it }
             }
         }
-        val inUse = quarantine.listFiles().orEmpty().mapNotNull { owner(it)?.alias }.toSet()
+        val inUse = quarantine.listFiles().orEmpty().mapNotNull { keyAlias(it, owner(it)) }.toSet()
         (freed - inUse).forEach(deleteKey)
         File(cacheDir, EXPORT).deleteRecursively()
         return Sweep(expired, unreadable)
@@ -208,10 +260,12 @@ object LocalAccountData {
     }
 
     /** Wann die ältesten Vorgänge der Rückfrage endgültig gelöscht werden (null: keine alten). */
-    fun finalDeletion(context: Context, now: Long = System.currentTimeMillis()): Long? =
-        File(context.filesDir, QUARANTINE).listFiles().orEmpty()
-            .map(::since)
-            .filter { it < now - STALE_DAYS * DAY_MS }
+    fun finalDeletion(context: Context, now: Long = System.currentTimeMillis()): Long? = finalDeletion(context.filesDir, now)
+
+    internal fun finalDeletion(filesDir: File, now: Long): Long? =
+        File(filesDir, QUARANTINE).listFiles().orEmpty()
+            .filter { olderThan(it, STALE_DAYS, now) }
+            .mapNotNull(::since)
             .minOrNull()
             ?.let { it + FINAL_DAYS * DAY_MS }
 
@@ -226,9 +280,9 @@ object LocalAccountData {
     fun exportStale(context: Context, now: Long = System.currentTimeMillis()): Pair<File, Int>? {
         val items = mutableListOf<JsonElement>()
         for (box in File(context.filesDir, QUARANTINE).listFiles().orEmpty()) {
-            if (since(box) >= now - STALE_DAYS * DAY_MS) continue
+            if (!olderThan(box, STALE_DAYS, now)) continue
             val who = owner(box)
-            val alias = who?.alias ?: DraftCrypto.LEGACY_ALIAS
+            val alias = keyAlias(box, who) ?: DraftCrypto.LEGACY_ALIAS
             for (file in entries(box)) {
                 val plain = runCatching { String(DraftCrypto.open(alias, file.readBytes())) }.getOrNull() ?: continue
                 val content = runCatching { Json.parseToJsonElement(plain) }.getOrElse { JsonPrimitive(plain) }
@@ -254,25 +308,24 @@ object LocalAccountData {
     }
 
     /** Vorgänge in der Quarantäne, die älter als [STALE_DAYS] Tage sind. */
-    fun staleCount(context: Context): Int {
-        val limit = System.currentTimeMillis() - STALE_DAYS * 24 * 60 * 60 * 1000
-        return File(context.filesDir, QUARANTINE).listFiles().orEmpty()
-            .filter { (owner(it)?.since ?: it.lastModified()) < limit }
-            .sumOf { box -> box.listFiles().orEmpty().count { it.name != OWNER && !it.name.endsWith(".tmp") } }
-    }
+    fun staleCount(context: Context, now: Long = System.currentTimeMillis()): Int = staleCount(context.filesDir, now)
+
+    internal fun staleCount(filesDir: File, now: Long): Int =
+        File(filesDir, QUARANTINE).listFiles().orEmpty()
+            .filter { olderThan(it, STALE_DAYS, now) }
+            .sumOf { entries(it).size }
 
     /** Nach ausdrücklicher Zustimmung: alte Vorgänge aus der Quarantäne löschen. */
-    fun discardStale(context: Context) {
-        val limit = System.currentTimeMillis() - STALE_DAYS * 24 * 60 * 60 * 1000
+    fun discardStale(context: Context, now: Long = System.currentTimeMillis()) {
         val quarantine = File(context.filesDir, QUARANTINE)
         val freed = mutableSetOf<String>()
         for (box in quarantine.listFiles().orEmpty()) {
+            if (!olderThan(box, STALE_DAYS, now)) continue
             val who = owner(box)
-            if ((who?.since ?: box.lastModified()) >= limit) continue
-            if (box.deleteRecursively()) who?.alias?.let { freed += it }
+            if (box.deleteRecursively()) keyAlias(box, who)?.let { freed += it }
         }
         // Schlüssel gelöschter Konten freigeben (den Altschlüssel räumt migrate() auf)
-        val inUse = quarantine.listFiles().orEmpty().mapNotNull { owner(it)?.alias }.toSet()
+        val inUse = quarantine.listFiles().orEmpty().mapNotNull { keyAlias(it, owner(it)) }.toSet()
         (freed - inUse).forEach { DraftCrypto.deleteKey(it) }
     }
 

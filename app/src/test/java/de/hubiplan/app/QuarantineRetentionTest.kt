@@ -113,4 +113,110 @@ class QuarantineRetentionTest {
         assertTrue(current.exists())
         assertTrue(deletedKeys.isEmpty())
     }
+
+    private fun source(vararg names: String): File =
+        File(filesDir, "entwuerfe/k-erfunden").apply {
+            mkdirs()
+            names.forEach { File(this, it).writeBytes(seal("Erfundener Entwurf $it")) }
+        }
+
+    private fun target(): File = File(filesDir, "${LocalAccountData.QUARANTINE}/entwuerfe-k-erfunden")
+
+    private fun quarantine(source: File, target: File, move: (File, File) -> Boolean = { from, to -> from.renameTo(to) }) =
+        LocalAccountData.quarantine(source, target, "https://verein.example", "fiktiv@example.org", alias, now, move)
+
+    private fun since(box: File) = File(box, ".konto").readLines()[3].toLong()
+
+    @Test
+    fun eigentuemerWirdVorDemVerschiebenGeschrieben() {
+        val source = source("eins.bin", "zwei.bin")
+        val target = target()
+        var seen = 0
+        assertTrue(quarantine(source, target) { from, to ->
+            val owner = File(to.parentFile, ".konto")
+            assertTrue(owner.exists())
+            assertEquals(listOf("https://verein.example", "fiktiv@example.org", alias, "$now"), owner.readLines())
+            seen++
+            from.renameTo(to)
+        })
+        assertEquals(2, seen)
+        assertEquals(now, since(target))
+        assertFalse(source.exists())
+    }
+
+    @Test
+    fun abbruchBeimVerschiebenHinterlaesstQuarantaeneMitEigentuemer() {
+        val source = source("eins.bin")
+        val target = target()
+        assertThrows(IllegalStateException::class.java) {
+            quarantine(source, target) { _, _ -> throw IllegalStateException("App beendet") }
+        }
+        assertEquals(now, since(target))
+        assertTrue(File(source, "eins.bin").exists())
+    }
+
+    @Test
+    fun nichtsVerschobenHinterlaesstKeineLeereQuarantaene() {
+        val source = source("eins.bin")
+        val target = target()
+        // Verschieben scheitert: Entwurf bleibt in der Quelle, Schlüssel muss bleiben
+        assertTrue(quarantine(source, target) { _, _ -> false })
+        assertFalse(File(target, ".konto").exists())
+        assertFalse(target.exists())
+        assertTrue(File(source, "eins.bin").exists())
+
+        // Nichts zu verschieben: keine Quarantäne, Schlüssel darf weg
+        val empty = File(filesDir, "quittungen/k-leer").apply { mkdirs() }
+        val none = File(filesDir, "${LocalAccountData.QUARANTINE}/quittungen-k-leer")
+        assertFalse(LocalAccountData.quarantine(empty, none, "https://verein.example", "fiktiv@example.org", alias, now))
+        assertFalse(none.exists())
+        assertFalse(empty.exists())
+    }
+
+    @Test
+    fun quarantaeneOhneLesbarenEigentuemerWirdErstNach120TagenGeloescht() {
+        val missing = File(filesDir, "${LocalAccountData.QUARANTINE}/entwuerfe-k-ohne").apply { mkdirs() }
+        File(missing, "eins.bin").writeBytes(seal("Erfundener Beleg"))
+        val broken = File(filesDir, "${LocalAccountData.QUARANTINE}/quittungen-k-kaputt").apply { mkdirs() }
+        File(broken, ".konto").writeText("unlesbar")
+        File(broken, "zwei.bin").writeBytes(seal("Erfundene Quittung"))
+        listOf(missing, broken).forEach { assertTrue(it.setLastModified(now - 10 * day)) }
+
+        // Auch ohne nachweisbaren Schlüssel nicht sofort löschen
+        assertEquals(LocalAccountData.Sweep(0, 0), sweep(hasKey = { false }))
+        assertTrue(missing.exists())
+        assertTrue(broken.exists())
+        assertEquals(0, LocalAccountData.staleCount(filesDir, now))
+        assertNull(LocalAccountData.finalDeletion(filesDir, now))
+
+        listOf(missing, broken).forEach { assertTrue(it.setLastModified(now - 100 * day)) }
+        assertEquals(2, LocalAccountData.staleCount(filesDir, now))
+        assertEquals(now + 20 * day, LocalAccountData.finalDeletion(filesDir, now))
+        assertEquals(LocalAccountData.Sweep(0, 0), sweep(hasKey = { false }))
+
+        listOf(missing, broken).forEach { assertTrue(it.setLastModified(now - 121 * day)) }
+        assertEquals(LocalAccountData.Sweep(2, 0), sweep(hasKey = { false }))
+        assertFalse(missing.exists())
+        assertFalse(broken.exists())
+    }
+
+    @Test
+    fun zweitesAbmeldenBehaeltAelteresDatum() {
+        val target = target().apply { mkdirs() }
+        File(target, "alt.bin").writeBytes(seal("Erfundener alter Entwurf"))
+        File(target, ".konto").writeText("https://Verein.example\nFiktiv@Example.org\n$alias\n${now - 50 * day}")
+        assertTrue(quarantine(source("neu.bin"), target))
+        assertEquals(now - 50 * day, since(target))
+        assertTrue(File(target, "alt.bin").exists())
+        assertTrue(File(target, "neu.bin").exists())
+    }
+
+    @Test
+    fun zweitesAbmeldenOhneEigentuemerNimmtOrdnerdatum() {
+        val target = target().apply { mkdirs() }
+        File(target, "alt.bin").writeBytes(seal("Erfundener alter Entwurf"))
+        assertTrue(target.setLastModified(now - 30 * day))
+        assertTrue(quarantine(source("neu.bin"), target))
+        assertEquals(now - 30 * day, since(target))
+    }
 }
