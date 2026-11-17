@@ -57,7 +57,7 @@ fun TodoListScreen(client: AdminClient, errors: AdminErrors, reloadKey: Int, onN
             TextButton(onClick = onNew) { Text(tr("Neue Aufgabe")) }
             TextButton(onClick = { reload++ }) { Text(tr("Aktualisieren")) }
         }
-        TextButton(onClick = onLock, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("Verwaltung auf diesem Telefon sperren")) }
+        TextButton(onClick = onLock, modifier = Modifier.padding(horizontal = Abstand.klein)) { Text(tr("Verwaltung auf diesem Gerät sperren")) }
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true).padding(Abstand.rand)) }
         val list = rows
         if (list == null && error == null) Loading()

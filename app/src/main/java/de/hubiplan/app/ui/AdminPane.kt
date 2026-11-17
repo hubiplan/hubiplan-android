@@ -137,7 +137,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
                 tr("Mein Konto öffnen"),
             ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${main.account.server}/mein-konto/anmeldung"))) }
             !screenLock -> Notice(
-                tr("Für die Verwaltung braucht das Telefon eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
+                tr("Für die Verwaltung braucht das Gerät eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
                 tr("Bildschirmsperre einrichten"),
             ) { DeviceUnlock.openSetup(context) }
             !state.sealed -> UnlockForm(state, vm, withCode = overview.twoFactor, withPasskey = overview.passkey)
@@ -181,7 +181,7 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel, withCode: Boolean, w
     ) {
         Text(tr("Verwaltung freischalten"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(
-            tr("Für Mitglieder, Termine und Kasse in der App bitte mit Passwort und Zwei-Faktor-Code oder mit einem Passkey bestätigen. Die Freischaltung gilt 30 Tage auf diesem Telefon; geöffnet wird jedes Mal mit Fingerabdruck oder PIN."),
+            tr("Für Mitglieder, Termine und Kasse in der App bitte mit Passwort und Zwei-Faktor-Code oder mit einem Passkey bestätigen. Die Freischaltung gilt 30 Tage auf diesem Gerät; geöffnet wird jedes Mal mit Fingerabdruck oder PIN."),
             style = MaterialTheme.typography.bodySmall,
         )
         if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -752,7 +752,7 @@ private fun Footer(until: String?, vm: AppViewModel, onReload: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
         TextButton(onClick = onReload) { Text(tr("Aktualisieren")) }
         until?.let { Text(tr("Freigeschaltet bis {x1}", "x1" to formatDate(it)), style = MaterialTheme.typography.bodySmall) }
-        TextButton(onClick = vm::lockAdmin) { Text(tr("Verwaltung auf diesem Telefon sperren")) }
+        TextButton(onClick = vm::lockAdmin) { Text(tr("Verwaltung auf diesem Gerät sperren")) }
     }
 }
 

@@ -540,7 +540,7 @@ fun PendingLocalCard(main: Screen.Main) {
                 modifier = Modifier.asHeading(),
             )
             Text(
-                tr("Sie liegen verschlüsselt auf diesem Telefon und werden gesendet, sobald Verbindung besteht und du die Verwaltung öffnest. Einzelheiten stehen dort."),
+                tr("Sie liegen verschlüsselt auf diesem Gerät und werden gesendet, sobald Verbindung besteht und du die Verwaltung öffnest. Einzelheiten stehen dort."),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

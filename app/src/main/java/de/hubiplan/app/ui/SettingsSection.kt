@@ -97,7 +97,7 @@ fun SettingsSection(vm: AppViewModel) {
         }
         Text(tr("Gerätekalender"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
         SwitchRow(
-            label = tr("Termine in den Kalender des Telefons übernehmen"),
+            label = tr("Termine in den Kalender des Geräts übernehmen"),
             checked = settings.calendarOn,
         ) { on ->
             if (!on) {
@@ -149,16 +149,16 @@ fun SettingsSection(vm: AppViewModel) {
             lockedContent = on
         }
         Text(
-            tr("Aus: Auf dem gesperrten Telefon steht nur „Neue Mitteilung“, Absender und Text erst nach dem Entsperren."),
+            tr("Aus: Auf dem gesperrten Gerät steht nur „Neue Mitteilung“, Absender und Text erst nach dem Entsperren."),
             style = MaterialTheme.typography.bodySmall,
         )
         settings.lastSync?.let {
             Text(
-                tr("Zuletzt abgeglichen: ") + formatStamp(it),
+                tr("Stand: ") + formatStamp(it),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        OutlinedButton(onClick = vm::syncSoon) { Text(tr("Jetzt abgleichen")) }
+        OutlinedButton(onClick = vm::syncSoon) { Text(tr("Aktualisieren")) }
     }
 }
 
@@ -284,7 +284,7 @@ private fun ignoresBatteryOptimization(context: Context): Boolean =
 @Composable
 private fun BatteryHint(context: Context) {
     Text(
-        tr("Kommen Mitteilungen erst beim Öffnen der App an, stoppt das Telefon den Abruf im Hintergrund. Stelle dann für HUBIplan den Akku auf „Nicht eingeschränkt“ (App-Info › Akku). Auf Samsung-Geräten zusätzlich unter Einstellungen › Akku › Hintergrundnutzungslimits HUBIplan nicht zu den ruhenden Apps zählen. „Beenden erzwingen“ stoppt den Abruf, bis du die App wieder öffnest."),
+        tr("Kommen Mitteilungen erst beim Öffnen der App an, stoppt das Gerät den Abruf im Hintergrund. Stelle dann für HUBIplan den Akku auf „Nicht eingeschränkt“ (App-Info › Akku). Auf Samsung-Geräten zusätzlich unter Einstellungen › Akku › Hintergrundnutzungslimits HUBIplan nicht zu den ruhenden Apps zählen. „Beenden erzwingen“ stoppt den Abruf, bis du die App wieder öffnest."),
         style = MaterialTheme.typography.bodySmall,
     )
     TextButton(onClick = {
