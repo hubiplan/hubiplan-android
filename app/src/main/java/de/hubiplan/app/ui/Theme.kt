@@ -73,14 +73,17 @@ data class BrandColors(val brand: Color, val onBrand: Color)
 
 val LocalBrand = staticCompositionLocalOf { BrandColors(Color(DEFAULT_PRIMARY), Color(WHITE)) }
 
-fun brandFor(theme: Theme?, dark: Boolean = false): BrandColors {
-    val raw = parseHexColor(theme?.primary) ?: DEFAULT_PRIMARY
+fun brandFor(theme: Theme?, dark: Boolean = false): BrandColors = brandFor(theme?.primary, theme?.onPrimary, dark)
+
+/** Wie [brandFor], aus den beiden Farbwerten (Mitgliedsausweis: nur Primärfarbe und Schrift, AND-23). */
+fun brandFor(primaryHex: String?, onPrimaryHex: String?, dark: Boolean = false): BrandColors {
+    val raw = parseHexColor(primaryHex) ?: DEFAULT_PRIMARY
     // Im Dunkelmodus kein heller Balken über dunklem Inhalt (UX-Audit 08.11. A-06): helle
     // Vereinsfarben so weit abdunkeln, bis weiße Schrift lesbar ist. Dunkle bleiben, wie sie sind.
     val primary = if (dark) withContrast(raw, listOf(WHITE), BLACK) else raw
     // Abgedunkelt trägt der Balken immer weiße Schrift (und helle Statussymbole)
     val onPrimary = if (dark && primary != raw) WHITE
-    else parseHexColor(theme?.onPrimary)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
+    else parseHexColor(onPrimaryHex)?.takeIf { contrast(it, primary) >= 4.5 } ?: readableOn(primary)
     return BrandColors(Color(primary), Color(onPrimary))
 }
 

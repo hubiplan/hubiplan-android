@@ -241,7 +241,7 @@ private fun openPass(context: Context, file: File): String? {
 private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
     val display = stored.card.display ?: return
     // Schrift im Kartenkopf gegen die Vereinsfarbe geprüft, wie in der Kopfleiste (AND-23)
-    val brand = brandFor(display.theme)
+    val brand = brandFor(display.theme?.primary, display.theme?.onPrimary)
     val primary = brand.brand
     val onPrimary = brand.onBrand
     val photo = remember(stored.savedAt) { decodeBitmap(stored.photoBytes()) }

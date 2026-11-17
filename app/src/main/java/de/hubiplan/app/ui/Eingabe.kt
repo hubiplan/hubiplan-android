@@ -18,6 +18,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import de.hubiplan.app.tr
 
 // Bildschirmtastatur je Feldart (UX-Audit 16.11., AND-09): Jedes Feld öffnet die passende
 // Tastatur, Freitext beginnt groß, die Eingabetaste führt zum nächsten Feld.
