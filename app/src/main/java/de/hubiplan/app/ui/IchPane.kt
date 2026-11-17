@@ -72,6 +72,8 @@ import kotlinx.coroutines.launch
 internal enum class IchBereich(val label: String) {
     DATEN(tr("Meine Daten")),
     RECHNUNGEN(tr("Rechnungen")),
+    // Nachweis für einen ermäßigten Beitrag (z. B. Studienbescheinigung)
+    NACHWEISE(tr("Beitragsnachweise")),
     VERSAMMLUNGEN(tr("Versammlungen")),
     UMFRAGEN(tr("Umfragen")),
     // Selbst bezahlte Ausgaben mit Foto des Belegs melden
@@ -93,6 +95,7 @@ internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.en
     when (it) {
         IchBereich.DATEN -> true
         IchBereich.RECHNUNGEN -> access.hasInvoices
+        IchBereich.NACHWEISE -> access.hasFeeProofs
         IchBereich.VERSAMMLUNGEN -> access.hasMeetings
         IchBereich.UMFRAGEN -> access.hasSurveys
         IchBereich.AUSLAGEN -> access.hasExpenses
@@ -160,6 +163,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
             when (open) {
                 IchBereich.DATEN -> ProfilePane(access, main, vm)
                 IchBereich.RECHNUNGEN -> InvoicesSection(access, vm)
+                IchBereich.NACHWEISE -> FeeProofsSection(access, vm)
                 IchBereich.VERSAMMLUNGEN -> MeetingsSection(access, vm)
                 IchBereich.UMFRAGEN -> SurveysSection(access, vm)
                 IchBereich.AUSLAGEN -> ExpensesSection(access, vm)
@@ -213,6 +217,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                 val (summary, count) = when (b) {
                     IchBereich.DATEN -> (if (access.isContact) tr("Anschrift, Kontakt, Logo") else tr("Anschrift, Telefon, Foto")) to 0
                     IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
+                    IchBereich.NACHWEISE -> feeProofSummary(access.feeProofsDue) to access.feeProofsDue
                     IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
                     IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
                     IchBereich.AUSLAGEN -> (expenses?.let(::expenseSummary) ?: tr("Ausgaben für den Verein erstattet bekommen")) to (expenses?.claims?.count { it.asksMe } ?: access.expensesQuestions)

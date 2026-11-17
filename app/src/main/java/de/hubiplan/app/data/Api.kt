@@ -793,6 +793,34 @@ class Api(
         expect("DELETE", "/api/portal/$accessId/expenses/$id/")
     }
 
+    // --- Beitragsnachweise (HUBIplan docs/beitragsnachweise.md) ---
+
+    suspend fun memberFeeProofs(accessId: Int): FeeProofOverview =
+        decodeApi(expect("GET", "/api/portal/$accessId/fee-proofs/"))
+
+    /** Nachweis (PDF oder Foto) für eine Ermäßigung und ein Beitragsjahr einreichen. */
+    suspend fun submitFeeProof(
+        accessId: Int,
+        discount: Int,
+        year: Int,
+        kind: String,
+        note: String,
+        fileName: String,
+        mime: String,
+        data: ByteArray,
+    ): FeeProofOverview {
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("discount", discount.toString())
+            .addFormDataPart("year", year.toString())
+            .addFormDataPart("kind", kind)
+            .addFormDataPart("note", note)
+            .addFormDataPart("file", fileName, data.toRequestBody(mime.toMediaType()))
+            .build()
+        val resp = send("POST", "/api/portal/$accessId/fee-proofs/", form)
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return decodeApi(FeeProofOverview.serializer(), resp.text)
+    }
+
     suspend fun memberSurveys(accessId: Int): SurveyList =
         decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
 
