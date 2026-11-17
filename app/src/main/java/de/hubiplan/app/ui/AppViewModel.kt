@@ -367,7 +367,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     if (target.current()) {
                         _admin.value = _admin.value.copy(
                             busy = false,
-                            error = tr("Für die Verwaltung braucht das Telefon eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
+                            error = tr("Für die Verwaltung braucht das Gerät eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
                         )
                     }
                     return@launch

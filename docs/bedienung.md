@@ -182,8 +182,8 @@ published plans show open shifts you can sign up for when self sign-up is allowe
 
 Der Eingang **Mitteilungen** (in der Leiste unten „Neues“) enthält dieselben empfangenen Schreiben wie **Mein Bereich ›
 Mitteilungen** im Web. Absätze, fett/kursiv, Listen und sichere Web-/E-Mail-Links werden nativ
-dargestellt. Die Dateinamen der Anhänge stehen beim Schreiben. **Dieses Schreiben mit Anhängen
-im Browser öffnen** führt zum ausgewählten Schreiben und Mitgliederzugang. Eine nötige
+dargestellt. Die Dateinamen der Anhänge stehen bei der Mitteilung. **Diese Mitteilung mit Anhängen
+im Browser öffnen** führt zur ausgewählten Mitteilung und zum Mitgliederzugang. Eine nötige
 Browseranmeldung bleibt unabhängig von der App und führt danach zum Ziel zurück. Fehlt ein
 Browser, lässt sich die angezeigte Zieladresse kopieren.
 

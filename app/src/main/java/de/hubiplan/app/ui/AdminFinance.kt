@@ -201,7 +201,7 @@ fun FinanceSection(
             title = { Text(tr("Unlesbare Vorgänge verwerfen?")) },
             text = {
                 Text(
-                    tr("Diese Vorgänge lassen sich auf diesem Telefon nicht mehr öffnen und wurden nie gesendet. Nach dem Verwerfen müssen sie neu erfasst werden."),
+                    tr("Diese Vorgänge lassen sich auf diesem Gerät nicht mehr öffnen und wurden nie gesendet. Nach dem Verwerfen müssen sie neu erfasst werden."),
                 )
             },
             confirmButton = {
@@ -283,7 +283,7 @@ fun FinanceSection(
                             modifier = Modifier.asHeading().announce(urgent = true),
                         )
                         Text(
-                            tr("Noch nicht gesendete Buchungen oder Quittungen lassen sich auf diesem Telefon nicht mehr öffnen, meist weil die Bildschirmsperre entfernt wurde. Sie bleiben gespeichert. Bitte prüfe in HUBIplan, was fehlt, und erfasse es dort neu."),
+                            tr("Noch nicht gesendete Buchungen oder Quittungen lassen sich auf diesem Gerät nicht mehr öffnen, meist weil die Bildschirmsperre entfernt wurde. Sie bleiben gespeichert. Bitte prüfe in HUBIplan, was fehlt, und erfasse es dort neu."),
                             style = MaterialTheme.typography.bodySmall,
                         )
                         if (canEdit) TextButton(onClick = { discardUnreadable = true }) { Text(tr("Unlesbare verwerfen …")) }
@@ -307,7 +307,7 @@ fun FinanceSection(
                 Card(Modifier.fillMaxWidth().padding(Abstand.rand)) {
                     Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Text(tr("Noch nicht gesendet ({size})", "size" to drafts.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
-                        Text(tr("Liegen verschlüsselt auf diesem Telefon, bis sie gebucht sind."), style = MaterialTheme.typography.bodySmall)
+                        Text(tr("Liegen verschlüsselt auf diesem Gerät, bis sie gebucht sind."), style = MaterialTheme.typography.bodySmall)
                         drafts.forEach { d ->
                             Text("${formatPlainDate(d.date)} · ${formatMoney(d.amount)} · ${d.text}")
                             d.error?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.announce(urgent = true)) }

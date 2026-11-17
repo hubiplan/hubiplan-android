@@ -282,7 +282,7 @@ internal fun SignatureFullscreen(title: String, text: String, accountKey: String
         restoreError?.let { Text(it, color = Color(0xFFB00020), modifier = Modifier.announce(urgent = true)) }
         Text(text, style = MaterialTheme.typography.titleMedium, color = Color(0xFF222222))
         if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            Text(tr("Tipp: Telefon quer halten, dann ist mehr Platz."), style = MaterialTheme.typography.bodySmall, color = Color(0xFF444444))
+            Text(tr("Tipp: Gerät quer halten, dann ist mehr Platz."), style = MaterialTheme.typography.bodySmall, color = Color(0xFF444444))
         }
         SignaturePad(strokes, title, Modifier.fillMaxWidth().weight(1f))
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Abstand.klein, Alignment.End), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
@@ -552,7 +552,7 @@ fun ReceiptScreen(
                 Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(tr("Ohne Netz gespeichert"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
                     Text(
-                        tr("Die Quittung liegt verschlüsselt auf diesem Telefon und bekommt ihre Belegnummer, sobald wieder Netz da ist (unter Kasse, spätestens nach 30 Tagen). Das Datum ist der Zeitpunkt der Unterschrift."),
+                        tr("Die Quittung liegt verschlüsselt auf diesem Gerät und bekommt ihre Belegnummer, sobald wieder Netz da ist (unter Kasse, spätestens nach 30 Tagen). Das Datum ist der Zeitpunkt der Unterschrift."),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     TextButton(onClick = onBack, enabled = !busy) { Text(tr("Fertig")) }
@@ -731,7 +731,7 @@ fun PendingReceipts(
     Card(Modifier.fillMaxWidth().padding(Abstand.rand)) {
         Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Text(tr("Quittungen ohne Belegnummer ({size})", "size" to drafts.size), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
-            Text(tr("Unterschrieben, liegen verschlüsselt auf diesem Telefon, bis sie abgeschlossen sind."), style = MaterialTheme.typography.bodySmall)
+            Text(tr("Unterschrieben, liegen verschlüsselt auf diesem Gerät, bis sie abgeschlossen sind."), style = MaterialTheme.typography.bodySmall)
             drafts.forEach { d ->
                 Text("${formatPlainDate(d.counterpartyAt.ifBlank { d.treasurerAt })} · ${formatMoney(d.amount)} · ${d.counterpartyName}")
                 d.error?.let {

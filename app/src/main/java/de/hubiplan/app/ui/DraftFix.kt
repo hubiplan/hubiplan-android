@@ -37,7 +37,7 @@ fun DiscardDraftDialog(what: String, signed: Boolean, onDismiss: () -> Unit, onC
                 if (signed) {
                     tr("Die Quittung ist schon unterschrieben. Verworfen ist sie endgültig weg; für den Vorgang braucht es dann eine neue Quittung mit neuen Unterschriften.")
                 } else {
-                    tr("Der Entwurf mit Belegfoto wird von diesem Telefon gelöscht und nicht gebucht.")
+                    tr("Der Entwurf mit Belegfoto wird von diesem Gerät gelöscht und nicht gebucht.")
                 },
             )
         },

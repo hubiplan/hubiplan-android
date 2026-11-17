@@ -120,8 +120,8 @@ internal fun CircularContent(item: CircularItem, server: String?, access: Int) {
     }
     val target = server?.let { circularWebUrl(it, access, item.id) }
     if (target != null) {
-        OutlinedButton(onClick = { open(target) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Dieses Schreiben mit Anhängen im Browser öffnen")) }
-        Text(tr("Falls du dich im Browser anmelden musst, öffnet sich danach dieses Schreiben. Die App bleibt hier geöffnet."), style = MaterialTheme.typography.bodySmall)
+        OutlinedButton(onClick = { open(target) }, modifier = Modifier.fillMaxWidth()) { Text(tr("Diese Mitteilung mit Anhängen im Browser öffnen")) }
+        Text(tr("Falls du dich im Browser anmelden musst, öffnet sich danach diese Mitteilung. Die App bleibt hier geöffnet."), style = MaterialTheme.typography.bodySmall)
     }
     failedUrl?.let { url ->
         Text(tr("Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser:"), color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true))

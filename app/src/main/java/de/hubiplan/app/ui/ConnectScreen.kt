@@ -192,7 +192,7 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
                     }
                 }
                 Text(
-                    tr("Nur ein Telefon? Öffne HUBIplan im Browser des Telefons, dann „Mein Konto › App & andere Instanzen“ und tippe auf „In der HUBIplan-App öffnen“."),
+                    tr("Nur ein Gerät? Öffne HUBIplan im Browser des Geräts, dann „Mein Konto › App & andere Instanzen“ und tippe auf „In der HUBIplan-App öffnen“."),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (state.adding) {

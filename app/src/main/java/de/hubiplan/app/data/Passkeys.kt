@@ -50,13 +50,13 @@ object Passkeys {
     }
 
     internal fun noPasskeyText(): String =
-        tr("Auf diesem Telefon ist kein Passkey für diese Adresse gespeichert. Richte ihn zuerst im Browser unter „Mein Konto › Anmeldung & Sicherheit“ ein.")
+        tr("Auf diesem Gerät ist kein Passkey für diese Adresse gespeichert. Richte ihn zuerst im Browser unter „Mein Konto › Anmeldung & Sicherheit“ ein.")
 
     /** Ohne Google Play gibt es Passkeys für Apps erst ab Android 14. */
     internal fun unsupportedText(foss: Boolean = BuildConfig.FLAVOR == "foss"): String =
         if (foss) {
             tr("Passkeys gehen in dieser App-Version erst ab Android 14. Bitte mit QR-Code oder Passwort verbinden.")
         } else {
-            tr("Dieses Telefon unterstützt keine Passkeys. Bitte mit QR-Code oder Passwort verbinden.")
+            tr("Dieses Gerät unterstützt keine Passkeys. Bitte mit QR-Code oder Passwort verbinden.")
         }
 }

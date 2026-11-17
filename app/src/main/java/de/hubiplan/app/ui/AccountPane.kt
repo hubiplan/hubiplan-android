@@ -82,7 +82,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
         androidx.compose.material3.HorizontalDivider()
         SettingsSection(vm)
         androidx.compose.material3.HorizontalDivider()
-        OutlinedButton(onClick = { askLogout() }) { Text(tr("Dieses Konto vom Gerät abmelden")) }
+        OutlinedButton(onClick = { askLogout() }) { Text(tr("Auf diesem Gerät abmelden")) }
         // Google Play verlangt einen Weg zum Löschen von Konto und Daten in der App
         TextButton(onClick = { deleteInfo = true }) { Text(tr("Konto und Daten löschen")) }
         Text(
@@ -98,9 +98,9 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     if (confirmLogout) {
         AlertDialog(
             onDismissRequest = { confirmLogout = false },
-            title = { Text(tr("Dieses Konto vom Gerät abmelden?")) },
+            title = { Text(tr("Auf diesem Gerät abmelden?")) },
             text = {
-                Text(tr("Die App vergisst das Konto und löscht seine Daten auf diesem Telefon, auch die eingetragenen Kalendertermine. Für eine neue Anmeldung brauchst du wieder dein Passwort oder den QR-Code aus HUBIplan."))
+                Text(tr("Die App vergisst das Konto und löscht seine Daten auf diesem Gerät, auch die eingetragenen Kalendertermine. Für eine neue Anmeldung brauchst du wieder dein Passwort oder den QR-Code aus HUBIplan."))
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -119,7 +119,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             title = { Text(tr("Konto und Daten löschen")) },
             text = {
                 Text(
-                    tr("Deine Mitgliedsdaten verwaltet dein Verein in seiner HUBIplan-Instanz ({x1}), nicht die App.\n\n• Abmelden löscht den Geräteschlüssel dieses Telefons beim Verein und alle Daten dieses Kontos in der App, auch die eingetragenen Kalendertermine und noch nicht gesendete Buchungen und Quittungen der Verwaltung.\n• Dein Foto kannst du unter „Ich › Meine Daten“ selbst löschen.\n• Die Löschung deines Zugangs und deiner Mitgliedsdaten beantragst du beim Verein. Wen du ansprichst, steht in seinen Datenschutzhinweisen.", "x1" to main.account.server.removePrefix("https://")),
+                    tr("Deine Mitgliedsdaten verwaltet dein Verein in seiner HUBIplan-Instanz ({x1}), nicht die App.\n\n• Abmelden löscht den Geräteschlüssel dieses Geräts beim Verein und alle Daten dieses Kontos in der App, auch die eingetragenen Kalendertermine und noch nicht gesendete Buchungen und Quittungen der Verwaltung.\n• Dein Foto kannst du unter „Ich › Meine Daten“ selbst löschen.\n• Die Löschung deines Zugangs und deiner Mitgliedsdaten beantragst du beim Verein. Wen du ansprichst, steht in seinen Datenschutzhinweisen.", "x1" to main.account.server.removePrefix("https://")),
                 )
             },
             confirmButton = {
@@ -151,7 +151,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Text(
-                        tr("Auf diesem Telefon liegen noch nicht gesendete Vorgänge der Kasse. Erst senden oder verwerfen? Beim Abmelden ohne Senden werden sie gelöscht und lassen sich nicht wiederherstellen."),
+                        tr("Auf diesem Gerät liegen noch nicht gesendete Vorgänge der Kasse. Erst senden oder verwerfen? Beim Abmelden ohne Senden werden sie gelöscht und lassen sich nicht wiederherstellen."),
                     )
                     pendingError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
                 }
@@ -198,7 +198,7 @@ private fun ShortcutSection(main: Screen.Main, vm: AppViewModel) {
     androidx.compose.material3.HorizontalDivider()
     Text(tr("Startbildschirm"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     Text(
-        tr("Lege „{title}“ mit Wappen als Verknüpfung auf den Startbildschirm. Ein Tipp darauf öffnet die App direkt bei diesem Konto. Name und Wappen passen sich an, wenn der Verein sie ändert.", "title" to access.title),
+        tr("Lege „{title}“ mit Logo als Verknüpfung auf den Startbildschirm. Ein Tipp darauf öffnet die App direkt bei diesem Konto. Name und Logo passen sich an, wenn der Verein sie ändert.", "title" to access.title),
         style = MaterialTheme.typography.bodySmall,
     )
     OutlinedButton(onClick = { unsupported = !vm.pinShortcut() }) { Text(tr("Auf den Startbildschirm legen")) }

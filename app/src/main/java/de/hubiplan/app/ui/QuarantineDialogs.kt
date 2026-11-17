@@ -128,7 +128,7 @@ fun QuarantineDialogs(vm: AppViewModel) {
                     TextButton(onClick = {
                         scope.launch {
                             val result = withContext(Dispatchers.IO) { runCatching { LocalAccountData.exportStale(context) }.getOrNull() }
-                            exportError = if (result == null) tr("Nichts ließ sich öffnen. Bitte das Telefon entsperren und erneut versuchen.") else shareExport(context, result.first)
+                            exportError = if (result == null) tr("Nichts ließ sich öffnen. Bitte das Gerät entsperren und erneut versuchen.") else shareExport(context, result.first)
                         }
                     }) { Text(tr("Exportieren")) }
                     TextButton(onClick = vm::discardStaleQuarantine) { Text(tr("Löschen")) }
