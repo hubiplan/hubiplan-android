@@ -1,0 +1,4 @@
+• Mit Passkey anmelden und die Verwaltung freischalten.
+• Unter „Ich“: Auslagen mit Belegfoto melden, Belegung anfragen, Kündigung, Meldungen und Abwesenheiten.
+• Sichereres Verbinden über den Browser.
+• Ehrungen zeigen den eigenen Titel des Trägers; Verwaltung in der Reihenfolge des Hauptmenüs; Hilfe direkt aus „Mein Konto“.

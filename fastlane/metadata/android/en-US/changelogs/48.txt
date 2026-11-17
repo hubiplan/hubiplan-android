@@ -1,0 +1,4 @@
+• Sign in and unlock administration with a passkey.
+• Under "Me": report expenses with a receipt photo, request bookings, cancellation, reports and absences.
+• Safer connecting via the browser.
+• Honours show the holder's own title; administration in main-menu order; help straight from "My account".
