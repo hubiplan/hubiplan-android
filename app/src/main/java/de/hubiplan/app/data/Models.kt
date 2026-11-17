@@ -12,11 +12,16 @@ data class Instance(
     val product: String,
     @SerialName("api_version") val apiVersion: Int,
     @SerialName("min_app_version") val minAppVersion: Int = 1,
+    /** Je Plattform (Gesamtaudit 15.11., APP-11); ältere Instanzen kennen nur [minAppVersion]. */
+    @SerialName("min_app_versions") val minAppVersions: Map<String, Int> = emptyMap(),
     val url: String = "",
     val push: List<PushWay> = emptyList(),
     /** Plattformen, deren App Passkeys dieser Adresse nutzen darf (`android`, `ios`). */
     val passkey: List<String> = emptyList(),
 )
+
+/** Älteste Android-Fassung (versionCode), die die Instanz noch bedient. */
+val Instance.minAndroidVersion: Int get() = minAppVersions["android"] ?: minAppVersion
 
 /** Aufgabe für die Anmeldung mit Passkey (`passkey/begin/`); [options] ist WebAuthn-JSON. */
 data class PasskeyStart(val challengeId: String, val options: String)
