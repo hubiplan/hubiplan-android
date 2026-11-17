@@ -3,3 +3,4 @@
 • Sichereres Verbinden über den Browser.
 • Bedienung: passende Tastatur je Feld, Rückfrage beim Abmelden und Verlassen von Eingaben, besser lesbare Farben.
 • Ehrungen mit eigenem Titel; Verwaltung in Menüreihenfolge; Hilfe aus „Mein Konto“.
+• Ganztägige Termine erscheinen am richtigen Tag.

@@ -3,3 +3,4 @@
 • Safer connecting via the browser.
 • Usability: matching keyboard per field, confirmation when signing out or leaving entries, more readable colours.
 • Honours with own title; administration in menu order; help from "My account".
+• All-day events appear on the correct day.
