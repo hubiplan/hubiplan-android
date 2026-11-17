@@ -62,7 +62,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.journeyapps.barcodescanner.ScanContract
@@ -188,13 +187,10 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel, withCode: Boolean, w
         if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         (error ?: state.error)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         if (withCode) {
-            OutlinedTextField(
+            PasswordField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text(tr("Passwort")) },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                label = tr("Passwort"),
                 modifier = Modifier.fillMaxWidth().autofill(ContentType.Password),
             )
             OutlinedTextField(

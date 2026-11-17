@@ -58,6 +58,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDate
 import java.util.UUID
+import androidx.compose.ui.text.input.ImeAction
 
 /** Kurzstand rechts neben „Auslagen“. */
 internal fun expenseSummary(overview: ExpenseOverview): String {
@@ -163,6 +164,9 @@ internal fun ExpensesSection(access: PortalAccess, vm: AppViewModel) {
 }
 
 /** Entwurf einer Auslage im gespeicherten Zustand der Ansicht (Drehen, Prozessende). */
+/** Datum des Formulars (Landesschreibweise) für die Schnittstelle als JJJJ-MM-TT; Unlesbares bleibt, der Server meldet es. */
+internal fun ExpenseDraft.withIsoDate(): ExpenseDraft = copy(date = parseGermanDate(date) ?: date)
+
 internal val ExpenseDraftSaver = listSaver<ExpenseDraft, String>(
     save = { listOf(it.kind, it.purpose, it.date, it.route, it.km, it.payout, it.holder, it.iban) + it.amounts },
     restore = {
@@ -223,7 +227,8 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
     var draft by rememberSaveable(access.id, stateSaver = ExpenseDraftSaver) {
         mutableStateOf(
             ExpenseDraft(
-                date = LocalDate.now().toString(),
+                // Datum in Landesschreibweise, übertragen wird weiter ISO (AND-10)
+                date = LocalDate.now().let { germanDate(it.year, it.monthValue, it.dayOfMonth) },
                 holder = options.payee?.holder.orEmpty(),
                 iban = options.payee?.iban.orEmpty(),
             ),
@@ -250,7 +255,7 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
         problem = null
         scope.launch {
             try {
-                val claim = api.createExpense(access.id, draft.fields(submit, ::parseAmount), photos.toList(), key)
+                val claim = api.createExpense(access.id, draft.withIsoDate().fields(submit, ::parseAmount), photos.toList(), key)
                 photos.clear()
                 saved()
                 onDone(claim)
@@ -284,13 +289,16 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
                 label = { Text(tr("Wofür, für wen?")) },
                 isError = "purpose" in fieldErrors,
                 supportingText = fieldErrors["purpose"]?.let { { Text(it) } },
+                keyboardOptions = FREITEXT,
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 draft.date, { draft = draft.copy(date = it.take(10)) },
-                label = { Text(if (draft.kind == "mileage") tr("Datum der Fahrt (JJJJ-MM-TT)") else tr("Datum des Kaufs (JJJJ-MM-TT)")) },
-                isError = "purchase_date" in fieldErrors,
-                supportingText = fieldErrors["purchase_date"]?.let { { Text(it) } },
+                label = { Text(if (draft.kind == "mileage") tr("Datum der Fahrt") else tr("Datum des Kaufs")) },
+                isError = "purchase_date" in fieldErrors || (draft.date.isNotBlank() && parseGermanDate(draft.date) == null),
+                supportingText = { Text(fieldErrors["purchase_date"] ?: tr("TT.MM.JJJJ")) },
+                trailingIcon = { DatePickButton(draft.date) { draft = draft.copy(date = it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -299,6 +307,7 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
                     draft.route, { draft = draft.copy(route = it.take(300)) },
                     label = { Text(tr("Start, Ziel und Anlass")) },
                     isError = "route" in fieldErrors,
+                    keyboardOptions = FREITEXT,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
@@ -343,14 +352,16 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
                 OutlinedTextField(
                     draft.holder, { draft = draft.copy(holder = it.take(70)) },
                     label = { Text(tr("Kontoinhaber")) },
+                    keyboardOptions = keyboardFor("holder"),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
-                    draft.iban, { draft = draft.copy(iban = it.take(42)) },
+                    draft.iban, { draft = draft.copy(iban = it.uppercase().take(42)) },
                     label = { Text(tr("IBAN")) },
                     isError = "payee" in fieldErrors,
                     supportingText = fieldErrors["payee"]?.let { { Text(it) } },
+                    keyboardOptions = IBAN_TASTATUR,
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )

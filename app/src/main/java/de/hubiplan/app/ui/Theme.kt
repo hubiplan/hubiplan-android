@@ -26,6 +26,7 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     val surfaces = listOf(base.surface, base.background, base.surfaceVariant,
         base.surfaceContainerLowest, base.surfaceContainerLow, base.surfaceContainer,
         base.surfaceContainerHigh, base.surfaceContainerHighest).map { it.toArgb().toLong() and 0xFFFFFFFFL }
+    fun argb(color: Color) = color.toArgb().toLong() and 0xFFFFFFFFL
     fun on(color: Long, preferred: Long) = if (contrast(color, preferred) >= 4.5) preferred else readableOn(color)
     return if (!dark) {
         // Primärfarbe dient in Material als Text- und Rahmenfarbe (Textknöpfe, aktive Felder,
@@ -44,6 +45,8 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
             onSecondaryContainer = Color(readableOn(mix(accent, WHITE, 0.8f))),
             tertiary = Color(uiAccent),
             onTertiary = Color(on(uiAccent, onAccent)),
+            // Aktion in der Snackbar: Vereinsfarbe, lesbar auf der dunklen Snackbar (AND-19)
+            inversePrimary = Color(withContrast(mix(primary, WHITE, 0.45f), listOf(argb(base.inverseSurface)), WHITE)),
         )
     } else {
         // Im Dunkeln hellere Töne derselben Farben, damit Text lesbar bleibt
@@ -60,6 +63,7 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
             onSecondaryContainer = Color(readableOn(mix(accent, BLACK, 0.5f))),
             tertiary = Color(lightAccent),
             onTertiary = Color(readableOn(lightAccent)),
+            inversePrimary = Color(withContrast(primary, listOf(argb(base.inverseSurface)), BLACK)),
         )
     }
 }

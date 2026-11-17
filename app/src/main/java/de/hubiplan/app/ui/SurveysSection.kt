@@ -50,6 +50,7 @@ import de.hubiplan.app.data.ready
 import de.hubiplan.app.tr
 import de.hubiplan.app.trn
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.key
 
 /** Ja/Nein/Vielleicht/Enthaltung wie im Browser. */
 internal fun surveyValueLabel(value: String): String = when (value) {
@@ -231,6 +232,8 @@ private fun SurveyForm(
     val draft = remember(s.id, s.mine) {
         mutableStateMapOf<Int, SurveyAnswerRow>().apply { s.questions.forEach { put(it.id, it.initialRow(s.mine)) } }
     }
+    // Angefangene Antworten: Zurück und Reiterwechsel fragen nach (AND-05)
+    key(s.id, s.mine) { rememberFormDraft(draft.toMap().toSortedMap().toString(), busy = busy, retainOnDispose = false) }
     Column(verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         s.questions.forEach { q ->
             QuestionInput(q, draft[q.id] ?: SurveyAnswerRow(q.id)) { draft[q.id] = it }
