@@ -21,12 +21,18 @@ class TexteTest {
         val lit = "\"((?:[^\"\\\\]|\\\\.)*)\""
         val tr = Regex("""\btr\(\s*$lit""")
         val trn = Regex("""\btrn\(\s*$lit\s*,\s*$lit""")
+        val trk = Regex("""\btrk\(\s*$lit\s*,\s*$lit""")
         val out = mutableSetOf<String>()
         File("src").walkTopDown().filter { it.extension == "kt" && it.name != "Texte.kt" && "/test/" !in it.invariantSeparatorsPath }
             .forEach { f ->
                 val s = f.readText()
                 tr.findAll(s).forEach { out += unescape(it.groupValues[1]) }
                 trn.findAll(s).forEach { out += unescape(it.groupValues[1]); out += unescape(it.groupValues[2]) }
+                // trk(…): der Eintrag mit Zusammenhang und der Text ohne (Rückfall) müssen da sein
+                trk.findAll(s).forEach {
+                    out += unescape(it.groupValues[2])
+                    out += unescape(it.groupValues[1]) + "|" + unescape(it.groupValues[2])
+                }
             }
         return out
     }
@@ -73,6 +79,19 @@ class TexteTest {
         assertEquals("3 receipts completed", trn("1 Quittung abgeschlossen", "{n} Quittungen abgeschlossen", 3))
         // Unbekanntes bleibt deutsch statt leer
         assertEquals("Gibt es nicht", tr("Gibt es nicht"))
+    }
+
+    @Test
+    fun zusammenhang_unterscheidet_knopf_und_zustand() {
+        // Deutsch: überall dasselbe Wort
+        assertEquals("Absagen", trk("action", "Absagen"))
+        Texte.setzeFuerTest("en", katalog)
+        assertEquals("Decline", trk("action", "Absagen"))
+        assertEquals("Accept", trk("action", "Zusagen"))
+        assertEquals("Cancel event", trk("event", "Absagen"))
+        assertEquals("Declined", tr("Absagen"))
+        // Ohne Eintrag für den Zusammenhang gilt der Text ohne
+        assertEquals("Declined", trk("unbekannt", "Absagen"))
     }
 
     @Test

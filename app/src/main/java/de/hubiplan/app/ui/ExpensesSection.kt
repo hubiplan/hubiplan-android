@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -100,13 +101,20 @@ internal fun ExpensesSection(access: PortalAccess, vm: AppViewModel) {
     }
     val o = overview
     val selected = open
+    val leave = LocalFormLeaveGuard.current
     if (selected != null) {
-        ExpenseDetail(access, vm, selected, onBack = {
+        val back: () -> Unit = {
             open = null
             attempt++
-        })
+        }
+        // Zurück führt eine Ebene hoch zur Liste der Auslagen, nicht aus dem Bereich (AND-04)
+        androidx.activity.compose.BackHandler { if (leave == null) back() else leave.request(back) }
+        ExpenseDetail(access, vm, selected, onBack = { if (leave == null) back() else leave.request(back) })
         return
     }
+    // Zurück im Formular schließt nur das Formular und fragt bei Eingaben nach (AND-04)
+    val closeForm: () -> Unit = { creating = false }
+    androidx.activity.compose.BackHandler(enabled = creating) { if (leave == null) closeForm() else leave.request(closeForm) }
     SectionColumn {
         error?.let { ProblemNotice(it, onRetry = { attempt++ }, inset = false) }
         notice?.let { StatusNotice(it) }
@@ -154,6 +162,17 @@ internal fun ExpensesSection(access: PortalAccess, vm: AppViewModel) {
     }
 }
 
+/** Entwurf einer Auslage im gespeicherten Zustand der Ansicht (Drehen, Prozessende). */
+internal val ExpenseDraftSaver = listSaver<ExpenseDraft, String>(
+    save = { listOf(it.kind, it.purpose, it.date, it.route, it.km, it.payout, it.holder, it.iban) + it.amounts },
+    restore = {
+        ExpenseDraft(
+            kind = it[0], purpose = it[1], date = it[2], route = it[3], km = it[4], payout = it[5],
+            holder = it[6], iban = it[7], amounts = it.drop(8).ifEmpty { listOf("") },
+        )
+    },
+)
+
 /** Fotos des Belegs: Kamera oder Galerie, verkleinert als JPEG im Speicher. */
 @Composable
 private fun rememberReceiptPhotos(onPhoto: (ByteArray) -> Unit, onFail: (String) -> Unit): Pair<() -> Unit, () -> Unit> {
@@ -200,7 +219,8 @@ private fun rememberReceiptPhotos(onPhoto: (ByteArray) -> Unit, onFail: (String)
 @Composable
 private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: ExpenseOverview, onDone: (ExpenseClaim?) -> Unit) {
     val options = overview.options
-    var draft by remember(access.id) {
+    // Die Angaben überstehen Drehen und Prozessende (AND-03); Fotos liegen nur im Speicher
+    var draft by rememberSaveable(access.id, stateSaver = ExpenseDraftSaver) {
         mutableStateOf(
             ExpenseDraft(
                 date = LocalDate.now().toString(),
@@ -216,6 +236,9 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
     var problem by remember { mutableStateOf<Problem?>(null) }
     var fieldErrors by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     val scope = rememberCoroutineScope()
+    // Eingaben und Belegfotos zählen als Entwurf: Zurück, Reiterwechsel und Abbrechen fragen nach
+    val saved = rememberFormDraft(draft.toString(), photos.size, busy = busy, retainOnDispose = false)
+    val leave = LocalFormLeaveGuard.current
     val (shoot, pick) = rememberReceiptPhotos(
         onPhoto = { if (photos.size < 10) photos.add(it) },
         onFail = { problem = Problem(it) },
@@ -229,6 +252,7 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
             try {
                 val claim = api.createExpense(access.id, draft.fields(submit, ::parseAmount), photos.toList(), key)
                 photos.clear()
+                saved()
                 onDone(claim)
             } catch (e: ApiException) {
                 if (e.status == 401) {
@@ -335,7 +359,7 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
             FlowRow(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Button(onClick = { send(true) }, enabled = !busy) { Text(tr("Einreichen")) }
                 OutlinedButton(onClick = { send(false) }, enabled = !busy) { Text(tr("Als Entwurf speichern")) }
-                TextButton(onClick = { onDone(null) }, enabled = !busy) { Text(tr("Abbrechen")) }
+                TextButton(onClick = { if (leave == null) onDone(null) else leave.request { onDone(null) } }, enabled = !busy) { Text(tr("Abbrechen")) }
             }
         }
     }
