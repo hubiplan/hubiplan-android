@@ -169,6 +169,9 @@ data class PortalAccess(
     /** Modul Auslagen erstatten an und offene Rückfragen der Kasse (ältere Stände: fehlt) */
     @SerialName("expenses_enabled") val expensesEnabled: Boolean = false,
     @SerialName("expenses_questions") val expensesQuestions: Int = 0,
+    /** Beitragsnachweise: Bereich zeigen und Jahre, für die noch ein Nachweis fehlt (ältere Stände: fehlt) */
+    @SerialName("fee_proofs_enabled") val feeProofsEnabled: Boolean = false,
+    @SerialName("fee_proofs_due") val feeProofsDue: Int = 0,
     /** Ansprechpartner einer Firma, die für Mitarbeiter zahlt (Mein Bereich › Mitarbeiter; ältere Stände: fehlt) */
     val company: Boolean = false,
 ) {
@@ -215,6 +218,9 @@ data class PortalAccess(
 
     /** „Auslagen“ unter „Ich“ (Modul Auslagen erstatten; Ansprechpartner von Firmen nicht) */
     val hasExpenses: Boolean get() = expensesEnabled && !isContact
+
+    /** „Beitragsnachweise“ unter „Ich“ (Ermäßigung mit Nachweis zugeordnet) */
+    val hasFeeProofs: Boolean get() = feeProofsEnabled && !isContact
 
     /** „Dokumente“ unter „Ich“ (nur lesen) */
     val hasDocs: Boolean get() = moduleOn("docs", docsEnabled)
