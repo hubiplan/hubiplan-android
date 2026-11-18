@@ -1,0 +1,4 @@
+• "My account" split into Account, Settings and About.
+• Usability: Enter moves to the next field, larger choice rows, messages at the bottom, better with large text and in dark mode.
+• Offline the app shows the saved state; circular and task attachments open in the app.
+• Language change without restart; hint when camera permission for the QR code is missing.
