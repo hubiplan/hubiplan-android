@@ -829,6 +829,15 @@ class Api(
         return decodeApi(FeeProofOverview.serializer(), resp.text)
     }
 
+    suspend fun memberRegistration(accessId: Int, eventId: Int): MemberRegistration =
+        decodeApi(expect("GET", "/api/portal/$accessId/events/$eventId/registration/"))
+
+    suspend fun register(accessId: Int, eventId: Int, payload: JsonObject): MemberRegistration =
+        decodeApi(expect("POST", "/api/portal/$accessId/events/$eventId/registration/", json.encodeToString(JsonObject.serializer(), payload)))
+
+    suspend fun cancelRegistration(accessId: Int, eventId: Int, registrationId: Int): MemberRegistration =
+        decodeApi(expect("POST", "/api/portal/$accessId/events/$eventId/registration/$registrationId/cancel/", "{}"))
+
     suspend fun memberSurveys(accessId: Int): SurveyList =
         decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
 

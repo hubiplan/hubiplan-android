@@ -216,6 +216,7 @@ private fun EventDetailView(
                 }
             }
         }
+        RegistrationSection(access, e, vm, onChanged)
     }
 }
 
