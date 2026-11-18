@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import de.hubiplan.app.data.Theme
 
 /**
@@ -22,11 +21,10 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
     val onPrimary = parseHexColor(theme?.onPrimary) ?: WHITE
     val accent = parseHexColor(theme?.accent) ?: DEFAULT_ACCENT
     val onAccent = parseHexColor(theme?.onAccent) ?: BLACK
-    val base = if (dark) darkColorScheme() else lightColorScheme()
-    val surfaces = listOf(base.surface, base.background, base.surfaceVariant,
-        base.surfaceContainerLowest, base.surfaceContainerLow, base.surfaceContainer,
-        base.surfaceContainerHigh, base.surfaceContainerHighest).map { it.toArgb().toLong() and 0xFFFFFFFFL }
-    fun argb(color: Color) = color.toArgb().toLong() and 0xFFFFFFFFL
+    // Neutrale Flächen wie in der Weboberfläche, nicht aus dem Grundschema von Material (AND-19)
+    val n = if (dark) NEUTRAL_DUNKEL else NEUTRAL_HELL
+    val base = neutralScheme(n, dark)
+    val surfaces = n.flaechen
     fun on(color: Long, preferred: Long) = if (contrast(color, preferred) >= 4.5) preferred else readableOn(color)
     return if (!dark) {
         // Primärfarbe dient in Material als Text- und Rahmenfarbe (Textknöpfe, aktive Felder,
@@ -34,7 +32,7 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
         // unveränderte Vereinsfarbe bleibt im hellen Modus für die Kopfleiste (LocalBrand).
         val uiPrimary = withContrast(primary, surfaces, BLACK)
         val uiAccent = withContrast(accent, surfaces, BLACK)
-        lightColorScheme(
+        base.copy(
             primary = Color(uiPrimary),
             onPrimary = Color(on(uiPrimary, onPrimary)),
             primaryContainer = Color(mix(primary, WHITE, 0.85f)),
@@ -45,14 +43,17 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
             onSecondaryContainer = Color(readableOn(mix(accent, WHITE, 0.8f))),
             tertiary = Color(uiAccent),
             onTertiary = Color(on(uiAccent, onAccent)),
-            // Aktion in der Snackbar: Vereinsfarbe, lesbar auf der dunklen Snackbar (AND-19)
-            inversePrimary = Color(withContrast(mix(primary, WHITE, 0.45f), listOf(argb(base.inverseSurface)), WHITE)),
+            tertiaryContainer = Color(mix(accent, WHITE, 0.8f)),
+            onTertiaryContainer = Color(readableOn(mix(accent, WHITE, 0.8f))),
+            surfaceTint = Color(uiPrimary),
+            // Aktion in der Snackbar: Vereinsfarbe, lesbar auf der dunklen Snackbar
+            inversePrimary = Color(withContrast(mix(primary, WHITE, 0.45f), listOf(n.inverseSurface), WHITE)),
         )
     } else {
         // Im Dunkeln hellere Töne derselben Farben, damit Text lesbar bleibt
         val lightPrimary = withContrast(mix(primary, WHITE, 0.45f), surfaces, WHITE)
         val lightAccent = withContrast(mix(accent, WHITE, 0.3f), surfaces, WHITE)
-        darkColorScheme(
+        base.copy(
             primary = Color(lightPrimary),
             onPrimary = Color(readableOn(lightPrimary)),
             primaryContainer = Color(mix(primary, BLACK, 0.35f)),
@@ -63,9 +64,37 @@ fun colorSchemeFor(theme: Theme?, dark: Boolean): ColorScheme {
             onSecondaryContainer = Color(readableOn(mix(accent, BLACK, 0.5f))),
             tertiary = Color(lightAccent),
             onTertiary = Color(readableOn(lightAccent)),
-            inversePrimary = Color(withContrast(primary, listOf(argb(base.inverseSurface)), BLACK)),
+            tertiaryContainer = Color(mix(accent, BLACK, 0.5f)),
+            onTertiaryContainer = Color(readableOn(mix(accent, BLACK, 0.5f))),
+            surfaceTint = Color(lightPrimary),
+            inversePrimary = Color(withContrast(primary, listOf(n.inverseSurface), BLACK)),
         )
     }
+}
+
+/** Grundschema mit den neutralen Werten aus [n]; Vereinsfarben setzt [colorSchemeFor] darüber. */
+private fun neutralScheme(n: Neutral, dark: Boolean): ColorScheme {
+    val start = if (dark) darkColorScheme() else lightColorScheme()
+    return start.copy(
+        background = Color(n.surface),
+        onBackground = Color(n.onSurface),
+        surface = Color(n.surface),
+        onSurface = Color(n.onSurface),
+        surfaceVariant = Color(n.containerHighest),
+        onSurfaceVariant = Color(n.onSurfaceVariant),
+        surfaceContainerLowest = Color(n.containerLowest),
+        surfaceContainerLow = Color(n.containerLow),
+        surfaceContainer = Color(n.container),
+        surfaceContainerHigh = Color(n.containerHigh),
+        surfaceContainerHighest = Color(n.containerHighest),
+        surfaceDim = Color(n.dim),
+        surfaceBright = Color(n.bright),
+        outline = Color(n.outline),
+        outlineVariant = Color(n.outlineVariant),
+        inverseSurface = Color(n.inverseSurface),
+        inverseOnSurface = Color(n.inverseOnSurface),
+        scrim = Color(BLACK),
+    )
 }
 
 /** Vereinsfarbe für farbige Flächen (Kopfleiste) samt lesbarer Schrift; im Dunkelmodus gedämpft. */

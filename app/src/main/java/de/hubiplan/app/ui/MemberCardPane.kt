@@ -118,7 +118,7 @@ fun MemberCardSection(store: CardStore, accessId: Int, vm: AppViewModel?, bigReq
             style = MaterialTheme.typography.bodyMedium,
         )
         card?.state == "revoked" -> Text(
-            tr("Dein Ausweis ist gesperrt. Bitte wende dich an den Vorstand."),
+            tr("Dein Ausweis ist gesperrt. Bitte wende dich an deinen Verein."),
             color = MaterialTheme.colorScheme.error,
         )
         display == null || card.url.isNullOrBlank() -> Text(

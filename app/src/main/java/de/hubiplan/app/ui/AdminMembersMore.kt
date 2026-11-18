@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.data.AdminClient
@@ -70,7 +71,7 @@ private fun DateInput(label: String, value: String, onChange: (String) -> Unit) 
         singleLine = true,
         isError = value.isNotBlank() && parseGermanDate(value) == null,
         trailingIcon = { DatePickButton(value, onChange) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -201,7 +202,7 @@ private fun AddAwardDialog(
                 if (saving) LinearProgressIndicator(Modifier.fillMaxWidth())
                 ChoicePicker(tr("Ehrung"), titles.map { it to it.name }, chosen, { it.name }) { chosen = it }
                 DateInput(tr("Seit"), from) { from = it }
-                OutlinedTextField(value = note, onValueChange = { note = it.take(200) }, label = { Text(tr("Notiz (optional)")) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = note, onValueChange = { note = it.take(200) }, label = { Text(tr("Notiz (optional)")) }, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {
@@ -473,9 +474,9 @@ private fun BankDialog(
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(tr("Neues SEPA-Mandat auf Papier (vom Mitglied unterschrieben)."), style = MaterialTheme.typography.bodySmall)
                 (error ?: saveError)?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-                OutlinedTextField(value = holder, onValueChange = { holder = it.take(70) }, label = { Text(tr("Kontoinhaber")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = iban, onValueChange = { iban = it.uppercase().take(42) }, label = { Text("IBAN") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = bic, onValueChange = { bic = it.uppercase().take(14) }, label = { Text("BIC (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = holder, onValueChange = { holder = it.take(70) }, label = { Text(tr("Kontoinhaber")) }, singleLine = true, keyboardOptions = keyboardFor("holder"), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = iban, onValueChange = { iban = it.uppercase().take(42) }, label = { Text("IBAN") }, singleLine = true, keyboardOptions = IBAN_TASTATUR, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = bic, onValueChange = { bic = it.uppercase().take(14) }, label = { Text("BIC (optional)") }, singleLine = true, keyboardOptions = IBAN_TASTATUR, modifier = Modifier.fillMaxWidth())
                 DateInput(tr("Unterschrieben am"), signed) { signed = it }
             }
         },

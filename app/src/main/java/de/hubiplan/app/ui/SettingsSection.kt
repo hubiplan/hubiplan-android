@@ -99,7 +99,7 @@ fun SettingsSection(vm: AppViewModel) {
             }
         }
         Text(
-            tr("Je Einheit ein eigener Kalender „HUBIplan“, nur auf diesem Gerät (nicht im Google-Konto). Er wird alle paar Stunden und nach jeder Rückmeldung aktualisiert."),
+            tr("Je Verein oder Gruppe ein eigener Kalender „HUBIplan“, nur auf diesem Gerät (nicht im Google-Konto). Er wird alle paar Stunden und nach jeder Rückmeldung aktualisiert."),
             style = MaterialTheme.typography.bodySmall,
         )
         if (denied) {

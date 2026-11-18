@@ -898,6 +898,7 @@ private fun Schnellwahl(
                     singleLine = true,
                     label = { Text(tr("Titel, Komponist oder Nummer")) },
                     leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                    keyboardOptions = SUCHE, keyboardActions = sucheFertig(),
                     modifier = Modifier.fillMaxWidth().padding(vertical = Abstand.klein),
                 )
             }

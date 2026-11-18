@@ -54,7 +54,7 @@ object ClubShortcut {
         val update = pinned.mapNotNull { byId[it] }.map { info(context, account, it) }
         if (update.isNotEmpty()) runCatching { ShortcutManagerCompat.updateShortcuts(context, update) }
         val gone = pinned.filter { it !in byId }
-        if (gone.isNotEmpty()) disable(context, gone, tr("Kein Zugang mehr zu dieser Einheit"))
+        if (gone.isNotEmpty()) disable(context, gone, tr("Kein Zugang mehr zu diesem Verein oder dieser Gruppe"))
     }
 
     /** Abgemeldet: Verknüpfungen dieses Kontos ausgrauen (entfernen kann nur der Nutzer). */

@@ -366,7 +366,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     tab == Tab.NOTEN && notesAccess != null -> NotenPane(notesAccess, main, vm)
                     main.me == null && !main.offline -> Loading()
                     access == null && main.me != null -> Message(
-                        tr("Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an den Vorstand."),
+                        tr("Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an deinen Verein."),
                     )
                     access != null && tab == Tab.TERMINE -> EventsPane(access, vm)
                     access != null && tab == Tab.MITTEILUNGEN -> CircularsPane(access, vm)
@@ -444,8 +444,8 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
         return
     }
     Box {
-        TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Einheit"), current?.label ?: tr("keine gewählt"), open)) {
-            DropdownText(current?.label ?: tr("Einheit wählen"), color = LocalBrand.current.onBrand)
+        TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Verein oder Gruppe"), current?.label ?: tr("keine gewählt"), open)) {
+            DropdownText(current?.label ?: tr("Verein oder Gruppe wählen"), color = LocalBrand.current.onBrand)
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             accesses.forEach { a ->

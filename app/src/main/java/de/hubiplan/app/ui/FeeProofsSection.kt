@@ -250,6 +250,7 @@ private fun FeeYearCard(access: PortalAccess, vm: AppViewModel, st: FeeYearState
                     value = note,
                     onValueChange = { note = it.take(500) },
                     label = { Text(tr("Bemerkung (freiwillig)")) },
+                    keyboardOptions = FREITEXT,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 message?.let { Text(it, color = MaterialTheme.colorScheme.error) }

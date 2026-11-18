@@ -277,6 +277,7 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int,
             label = { Text(rsvp.noteQuestion.ifBlank { tr("Bemerkung (optional)") }) },
             enabled = !busy,
             singleLine = true,
+            keyboardOptions = TITELZEILE,
             modifier = Modifier.fillMaxWidth(),
         )
     }

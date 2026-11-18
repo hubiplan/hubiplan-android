@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.data.AdminChangeRequest
@@ -169,6 +170,7 @@ fun MemberList(
             },
             label = { Text(tr("Suchen (Name, Nummer, E-Mail)")) },
             singleLine = true,
+            keyboardOptions = SUCHE, keyboardActions = sucheFertig(),
             modifier = Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein),
         )
         Row(
@@ -553,6 +555,7 @@ private fun EditDialog(d: MemberDetail, saving: Boolean, saveError: String?, onD
                         label = { Text(masterDataLabel(key, d.isOrganization)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Next,
                             keyboardType = when (key) {
                                 "email" -> KeyboardType.Email
                                 "phone" -> KeyboardType.Phone
@@ -620,7 +623,7 @@ private fun DateField(label: String, value: String, onChange: (String) -> Unit) 
         singleLine = true,
         isError = value.isNotBlank() && parseGermanDate(value) == null,
         trailingIcon = { DatePickButton(value, onChange) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
         modifier = Modifier.fillMaxWidth(),
     )
 }
@@ -730,7 +733,7 @@ private fun ExitDialog(d: MemberDetail, onDismiss: () -> Unit, onNext: (String, 
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 DateField(tr("Austritt zum"), date) { date = it }
                 Picker(tr("Grund"), d.exitReasons.map { it.value to it.label }, reason, { v -> d.exitReasons.first { it.value == v }.label }) { reason = it }
-                OutlinedTextField(value = note, onValueChange = { note = it.take(200) }, label = { Text(tr("Notiz (optional)")) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = note, onValueChange = { note = it.take(200) }, label = { Text(tr("Notiz (optional)")) }, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
             }
         },
         confirmButton = {

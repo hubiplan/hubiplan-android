@@ -19,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CompanyEntry
@@ -94,13 +95,13 @@ private fun ReportForm(access: PortalAccess, vm: AppViewModel, c: CompanyEntry) 
     var problem by remember(c.id) { mutableStateOf<String?>(null) }
     Text(tr("Neuen Mitarbeiter melden"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
     Text(tr("Die Person bekommt eine Mail mit dem Link zum Online-Antrag."), style = MaterialTheme.typography.bodySmall)
-    OutlinedTextField(first, { first = it }, label = { Text(tr("Vorname")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-    OutlinedTextField(last, { last = it }, label = { Text(tr("Nachname")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(first, { first = it }, label = { Text(tr("Vorname")) }, singleLine = true, keyboardOptions = keyboardFor("first_name"), modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(last, { last = it }, label = { Text(tr("Nachname")) }, singleLine = true, keyboardOptions = keyboardFor("last_name"), modifier = Modifier.fillMaxWidth())
     OutlinedTextField(
         email, { email = it },
         label = { Text(tr("E-Mail")) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Done),
         modifier = Modifier.fillMaxWidth(),
     )
     problem?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }

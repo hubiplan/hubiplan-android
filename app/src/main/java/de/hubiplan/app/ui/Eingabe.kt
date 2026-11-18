@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
@@ -34,7 +35,21 @@ val IBAN_TASTATUR = KeyboardOptions(
     capitalization = KeyboardCapitalization.Characters,
     autoCorrectEnabled = false,
     keyboardType = KeyboardType.Ascii,
+    imeAction = ImeAction.Next,
 )
+
+/** Einzeiliges Feld ohne eigene Tastatur: Eingabetaste führt zum nächsten Feld. */
+val WEITER = KeyboardOptions(imeAction = ImeAction.Next)
+
+/** Suchfeld: Eingabetaste „Suchen“ schließt die Tastatur, gefiltert wird schon beim Tippen. */
+val SUCHE = KeyboardOptions(imeAction = ImeAction.Search)
+
+/** Zu [SUCHE]: Die Taste „Suchen“ blendet die Tastatur aus und gibt den Blick auf die Treffer frei. */
+@Composable
+fun sucheFertig(): KeyboardActions {
+    val keyboard = LocalSoftwareKeyboardController.current
+    return KeyboardActions(onSearch = { keyboard?.hide() })
+}
 
 /** Tastatur zu einem Stammdatenfeld (Schlüssel wie in der Schnittstelle). */
 fun keyboardTypeFor(field: String): KeyboardType = when (field) {
