@@ -14,6 +14,9 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,16 +53,16 @@ import kotlinx.coroutines.launch
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun TaskSwitch(helpers: Boolean, onChange: (Boolean) -> Unit) {
-    androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.padding(horizontal = Abstand.rand).fillMaxWidth()) {
-        androidx.compose.material3.SegmentedButton(
+    SingleChoiceSegmentedButtonRow(Modifier.padding(horizontal = Abstand.rand).fillMaxWidth()) {
+        SegmentedButton(
             selected = !helpers,
             onClick = { onChange(false) },
-            shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
         ) { Text(tr("Aufgaben")) }
-        androidx.compose.material3.SegmentedButton(
+        SegmentedButton(
             selected = helpers,
             onClick = { onChange(true) },
-            shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
         ) { Text(tr("Helferdienste")) }
     }
 }
