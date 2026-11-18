@@ -1315,6 +1315,11 @@
  "Verbindlich eintragen?": "Sign up for good?",
  "Einstellungen öffnen": "Open settings",
  "Kamera nicht erlaubt": "Camera not allowed",
+ "Einstellungen": "Settings",
+ "Über und Rechtliches": "About and legal",
+ "Weitere Konten, Startbildschirm, Abmelden": "Other accounts, home screen, sign out",
+ "Sprache, Gerätekalender, Mitteilungen, Hinweise": "Language, device calendar, messages, notifications",
+ "Hilfe, Datenschutz, Impressum, Lizenzen, Version": "Help, privacy, legal notice, licences, version",
  "Ohne Kamera lässt sich der QR-Code nicht scannen. Erlaube die Kamera in den Android-Einstellungen.": "The QR code cannot be scanned without the camera. Allow the camera in Android settings.",
  "Für {dienst}, {zeit} eintragen? Absagen geht danach nur über die Verwaltung.": "Sign up for {dienst}, {zeit}? Cancelling afterwards is only possible via the club office."
 }

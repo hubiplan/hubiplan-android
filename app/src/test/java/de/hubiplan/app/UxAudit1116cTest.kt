@@ -58,6 +58,17 @@ class UxAudit1116cTest {
         assertTrue("404, 409, 410 ->" in quelle("MemberTodos.kt"))
     }
 
+    /** AND-25: „Mein Konto“ in drei Unterseiten, Einstellungen nur auf ihrer Unterseite. */
+    @Test
+    fun meinKontoInDreiUnterseiten() {
+        assertEquals(listOf("KONTO", "EINSTELLUNGEN", "UEBER"), de.hubiplan.app.ui.AccountPage.entries.map { it.name })
+        val src = quelle("AccountPane.kt")
+        assertEquals(1, Regex("SettingsSection\\(vm\\)").findAll(src).count())
+        assertTrue("AccountPage.EINSTELLUNGEN -> SettingsSection(vm)" in src)
+        assertTrue("BackHead(current.title)" in src)
+        assertTrue("rememberSaveable" in src)
+    }
+
     /** AND-26/AND-29: Bezüge für TalkBack, gleiche Größe der Reiterbeschriftungen. */
     @Test
     fun kleinigkeiten() {

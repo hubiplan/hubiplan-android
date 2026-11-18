@@ -7,7 +7,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -18,8 +26,10 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +44,9 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     fun open(url: String) { openInBrowser(context, url, messages) }
     var deleteInfo by remember { mutableStateOf(false) }
     var licenses by remember { mutableStateOf(false) }
+    // „Mein Konto“ in drei Unterseiten statt einer langen Spalte (UX-Audit 16.11., AND-25):
+    // jede Einstellung in höchstens zwei Tipps ab Kopfleiste
+    var page by rememberSaveable { mutableStateOf<AccountPage?>(null) }
     // Lizenzen als Seite an Stelle des Kontos, Pfeil zurück in der Kopfleiste (A-11)
     if (licenses) {
         LicensesPage(onClose = { licenses = false })
@@ -53,44 +66,68 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             if (pending > 0) pendingWarning = pending else confirmLogout = true
         }
     }
+    val current = page
+    if (current != null) BackHead(current.title) { page = null }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
-        Text(main.account.display.ifBlank { main.account.email }, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
-        Text(main.account.email)
-        Text(tr("Verbunden mit {x1}", "x1" to main.account.server.removePrefix("https://")), style = MaterialTheme.typography.bodySmall)
-        TextButton(onClick = { open("${main.account.server}/mein-konto") }) { Text(tr("Mein Konto im Browser öffnen")) }
-        TextButton(onClick = { open("${main.account.server}/hilfe") }) { Text(tr("Hilfe und Anleitungen im Browser")) }
-        main.access?.let { a ->
-            val key = a.imprintKey?.let { "/$it" } ?: ""
-            TextButton(onClick = { open("${main.account.server}/datenschutz$key") }) { Text(tr("Datenschutzhinweise")) }
-            TextButton(onClick = { open("${main.account.server}/impressum$key") }) { Text(tr("Impressum")) }
-            Text(
-                if (a.isContact) {
-                    tr("Angemeldet als Ansprechpartner von {member} in {title}", "member" to a.memberName, "title" to a.title)
-                } else {
-                    tr("Angemeldet als Mitglied von {title}", "title" to a.title)
-                },
-                style = MaterialTheme.typography.bodySmall,
-            )
+        when (current) {
+            null -> {
+                Text(main.account.display.ifBlank { main.account.email }, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+                Text(main.account.email)
+                Text(tr("Verbunden mit {x1}", "x1" to main.account.server.removePrefix("https://")), style = MaterialTheme.typography.bodySmall)
+                main.access?.let { a ->
+                    Text(
+                        if (a.isContact) {
+                            tr("Angemeldet als Ansprechpartner von {member} in {title}", "member" to a.memberName, "title" to a.title)
+                        } else {
+                            tr("Angemeldet als Mitglied von {title}", "title" to a.title)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                Column {
+                    HorizontalDivider()
+                    AccountPage.entries.forEach { p ->
+                        ListItem(
+                            leadingContent = { Icon(p.icon, contentDescription = null) },
+                            headlineContent = { Text(p.title) },
+                            supportingContent = { Text(p.hint) },
+                            trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+                            modifier = Modifier.openRow { page = p },
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
+            AccountPage.KONTO -> {
+                TextButton(onClick = { open("${main.account.server}/mein-konto") }) { Text(tr("Mein Konto im Browser öffnen")) }
+                AccountsSection(main, vm)
+                ShortcutSection(main, vm)
+                HorizontalDivider()
+                OutlinedButton(onClick = { askLogout() }) { Text(tr("Auf diesem Gerät abmelden")) }
+                // Google Play verlangt einen Weg zum Löschen von Konto und Daten in der App
+                TextButton(onClick = { deleteInfo = true }) { Text(tr("Konto und Daten löschen")) }
+            }
+            AccountPage.EINSTELLUNGEN -> SettingsSection(vm)
+            AccountPage.UEBER -> {
+                TextButton(onClick = { open("${main.account.server}/hilfe") }) { Text(tr("Hilfe und Anleitungen im Browser")) }
+                main.access?.let { a ->
+                    val key = a.imprintKey?.let { "/$it" } ?: ""
+                    TextButton(onClick = { open("${main.account.server}/datenschutz$key") }) { Text(tr("Datenschutzhinweise")) }
+                    TextButton(onClick = { open("${main.account.server}/impressum$key") }) { Text(tr("Impressum")) }
+                }
+                TextButton(onClick = { open(APP_PRIVACY_URL) }) { Text(tr("Datenschutzerklärung der App")) }
+                HorizontalDivider()
+                Text(
+                    tr("HUBIplan-App {VERSION_NAME} · freie Software unter der GNU AGPL 3.0 oder neuer", "VERSION_NAME" to BuildConfig.VERSION_NAME),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TextButton(onClick = { licenses = true }) { Text(tr("Lizenzen")) }
+                TextButton(onClick = { open(SOURCE_URL) }) { Text(tr("Quellcode")) }
+            }
         }
-        ShortcutSection(main, vm)
-        androidx.compose.material3.HorizontalDivider()
-        AccountsSection(main, vm)
-        androidx.compose.material3.HorizontalDivider()
-        SettingsSection(vm)
-        androidx.compose.material3.HorizontalDivider()
-        OutlinedButton(onClick = { askLogout() }) { Text(tr("Auf diesem Gerät abmelden")) }
-        // Google Play verlangt einen Weg zum Löschen von Konto und Daten in der App
-        TextButton(onClick = { deleteInfo = true }) { Text(tr("Konto und Daten löschen")) }
-        Text(
-            tr("HUBIplan-App {VERSION_NAME} · freie Software unter der GNU AGPL 3.0 oder neuer", "VERSION_NAME" to BuildConfig.VERSION_NAME),
-            style = MaterialTheme.typography.bodySmall,
-        )
-        TextButton(onClick = { licenses = true }) { Text(tr("Lizenzen")) }
-        TextButton(onClick = { open(APP_PRIVACY_URL) }) { Text(tr("Datenschutzerklärung der App")) }
-        TextButton(onClick = { open(SOURCE_URL) }) { Text(tr("Quellcode")) }
     }
 
 
@@ -187,6 +224,17 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     }
 }
 
+/** Unterseiten von „Mein Konto“ (AND-25, Strukturvorschlag S3). */
+enum class AccountPage(private val titleText: () -> String, private val hintText: () -> String, val icon: ImageVector) {
+    KONTO({ tr("Konto") }, { tr("Weitere Konten, Startbildschirm, Abmelden") }, Icons.Filled.AccountCircle),
+    EINSTELLUNGEN({ tr("Einstellungen") }, { tr("Sprache, Gerätekalender, Mitteilungen, Hinweise") }, Icons.Filled.Settings),
+    UEBER({ tr("Über und Rechtliches") }, { tr("Hilfe, Datenschutz, Impressum, Lizenzen, Version") }, Icons.Filled.Info),
+    ;
+
+    val title: String get() = titleText()
+    val hint: String get() = hintText()
+}
+
 /** Verknüpfung mit Wappen und Namen der gewählten Einheit auf dem Startbildschirm. */
 @Composable
 private fun ShortcutSection(main: Screen.Main, vm: AppViewModel) {
@@ -194,7 +242,7 @@ private fun ShortcutSection(main: Screen.Main, vm: AppViewModel) {
     val access = main.access ?: return
     if (!remember { de.hubiplan.app.shortcut.ClubShortcut.supported(context) }) return
     var unsupported by remember { mutableStateOf(false) }
-    androidx.compose.material3.HorizontalDivider()
+    HorizontalDivider()
     Text(tr("Startbildschirm"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     Text(
         tr("Lege „{title}“ mit Logo als Verknüpfung auf den Startbildschirm. Ein Tipp darauf öffnet die App direkt bei diesem Konto. Name und Logo passen sich an, wenn der Verein sie ändert.", "title" to access.title),
