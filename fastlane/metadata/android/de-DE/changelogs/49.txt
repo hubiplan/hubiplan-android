@@ -1,0 +1,4 @@
+• „Mein Konto“ übersichtlich in Konto, Einstellungen und Über.
+• Bedienung: Eingabetaste springt ins nächste Feld, größere Auswahlzeilen, Meldungen am unteren Rand, besser bei großer Schrift und im Dunkelmodus.
+• Ohne Netz zeigt die App den gespeicherten Stand; Anhänge von Rundschreiben und Aufgaben öffnen in der App.
+• Sprachwechsel ohne Neustart; Hinweis, wenn die Kamera-Erlaubnis für den QR-Code fehlt.
