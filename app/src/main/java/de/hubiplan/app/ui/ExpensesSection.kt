@@ -118,7 +118,7 @@ internal fun ExpensesSection(access: PortalAccess, vm: AppViewModel) {
     androidx.activity.compose.BackHandler(enabled = creating) { if (leave == null) closeForm() else leave.request(closeForm) }
     SectionColumn {
         error?.let { ProblemNotice(it, onRetry = { attempt++ }, inset = false) }
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         if (o == null) {
             if (error == null) Loading()
             return@SectionColumn
@@ -376,10 +376,12 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
     }
 }
 
+// Umbrechend statt einer festen Zeile: alle zehn Belege samt „Entfernen“ bleiben erreichbar (AND-13)
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PhotoStrip(photos: MutableList<ByteArray>) {
     if (photos.isEmpty()) return
-    Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Abstand.klein), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         photos.forEachIndexed { i, jpeg ->
             val bitmap = remember(jpeg) { android.graphics.BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size) }
             Column {
@@ -440,7 +442,7 @@ private fun ExpenseDetail(access: PortalAccess, vm: AppViewModel, id: Int, onBac
     SectionColumn {
         TextButton(onClick = onBack) { Text(tr("Zurück zu den Auslagen")) }
         error?.let { ProblemNotice(it, onRetry = { attempt++ }, inset = false) }
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         val c = claim
         if (c == null) {
             if (error == null) Loading()

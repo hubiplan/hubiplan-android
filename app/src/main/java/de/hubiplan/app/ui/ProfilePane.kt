@@ -128,7 +128,7 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
     ) {
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         val p = profile
         if (p == null) {
             if (error == null) Loading() else TextButton(onClick = { attempt++ }) { Text(tr("Erneut laden")) }

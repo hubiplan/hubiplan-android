@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -99,7 +100,8 @@ fun DatumKaestchen(iso: String, gedaempft: Boolean = false) {
     val schrift = if (gedaempft) scheme.onSurfaceVariant else scheme.onPrimaryContainer
     Column(
         Modifier
-            .width(48.dp)
+            // Mindestens 48 dp, bei großer Schrift breiter statt abgeschnitten (AND-13)
+            .widthIn(min = 48.dp)
             .background(flaeche, RoundedCornerShape(RADIUS.dp))
             .padding(vertical = Abstand.eng)
             .clearAndSetSemantics { },

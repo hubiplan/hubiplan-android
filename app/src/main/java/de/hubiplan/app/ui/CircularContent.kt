@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -103,7 +105,8 @@ internal fun CircularBody(text: String, onOpen: (String) -> Unit) {
 }
 
 @Composable
-internal fun CircularContent(item: CircularItem, server: String?, access: Int) {
+internal fun CircularContent(item: CircularItem, server: String?, access: Int, vm: AppViewModel) {
+    val viewer = rememberViewer(vm)
     val handler = LocalUriHandler.current
     var failedUrl by remember(item.id, server, access) { mutableStateOf<String?>(null) }
     fun open(url: String) {
@@ -116,7 +119,15 @@ internal fun CircularContent(item: CircularItem, server: String?, access: Int) {
     CircularBody(item.body.orEmpty(), ::open)
     if (item.attachments.isNotEmpty()) {
         Text(tr("Anhänge"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
-        item.attachments.forEach { attachment -> Text(attachment.name) }
+        // Anhänge öffnet die App selbst, ohne Anmeldung im Browser (UX-Audit 16.11. AND-15)
+        item.attachments.forEach { attachment ->
+            TextButton(
+                onClick = { viewer.open(attachment.name, mimeOf(attachment.name)) { it.circularAttachment(access, item.id, attachment.id) } },
+                enabled = !viewer.busy,
+            ) { Text(attachment.name) }
+        }
+        if (viewer.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+        viewer.message?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
     }
     val target = server?.let { circularWebUrl(it, access, item.id) }
     if (target != null) {

@@ -160,6 +160,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         }
     }
     var notice by remember(api, access, id) { mutableStateOf<String?>(null) }
+    val viewer = rememberViewer(vm)
     fun change(action: String) {
         val current = task ?: return
         if (busy) return
@@ -190,7 +191,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         BackHead(enabled = !busy, onBack = onBack)
         error?.let { ProblemNotice(it, onRetry = if (busy) null else ({ reload++ }), inset = false) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         task?.let { current ->
             Text(current.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
             Text(if (current.status == "done") tr("Erledigt") else tr("Offen"))
@@ -202,7 +203,19 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
             if (current.canComplete) Button(onClick = { change("status") }, enabled = !busy) { Text(if (current.status == "done") tr("Wieder öffnen") else tr("Erledigen")) }
             if (current.attachments.isNotEmpty()) {
                 Text(tr("Anhänge"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
-                current.attachments.forEach { Text(it.name) }
+                // In der App öffnen, wo der Server die Datei bereithält (AND-15)
+                current.attachments.forEach { file ->
+                    if (file.available) {
+                        TextButton(
+                            onClick = { viewer.open(file.name, mimeOf(file.name)) { it.todoAttachment(access, id, file.id) } },
+                            enabled = !viewer.busy,
+                        ) { Text(file.name) }
+                    } else {
+                        Text(file.name)
+                    }
+                }
+                if (viewer.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                viewer.message?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
                 TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$server/mein-bereich/aufgaben?zugang=$access&aufgabe=$id"))) }) {
                     Text(tr("Mit Anhängen im Browser öffnen"))
                 }

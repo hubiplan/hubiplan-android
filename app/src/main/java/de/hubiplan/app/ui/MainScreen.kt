@@ -59,6 +59,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.tr
+import de.hubiplan.app.trn
 
 /**
  * Hauptziele der App. [short] steht in der Navigationsleiste: einzeilig, ohne Umbruch im Wort
@@ -66,9 +67,13 @@ import de.hubiplan.app.tr
  * Kopf; so bleiben höchstens fünf Ziele (UX-Audit 05.11. A-01). „Ich“ statt „Ausweis“: oben der
  * Ausweis, darunter alles Persönliche wie „Mein Bereich“ im Browser (Konzept app-ich, S-06/X-03).
  */
-internal enum class Tab(val label: String, val short: String = label) {
-    TERMINE(tr("Termine")), NOTEN(tr("Noten")), AUFGABEN(tr("Aufgaben")), MITTEILUNGEN(tr("Mitteilungen"), tr("Neues")), ICH(tr("Ich")),
-    VERWALTUNG(tr("Verwaltung"), tr("Verwalten")), KONTO(tr("Mein Konto")),
+// Texte erst beim Anzeigen übersetzen, damit ein Sprachwechsel sofort wirkt (UX-Audit 16.11. AND-11)
+internal enum class Tab(private val labelText: () -> String, private val shortText: () -> String = labelText) {
+    TERMINE({ tr("Termine") }), NOTEN({ tr("Noten") }), AUFGABEN({ tr("Aufgaben") }), MITTEILUNGEN({ tr("Mitteilungen") }, { tr("Neues") }), ICH({ tr("Ich") }),
+    VERWALTUNG({ tr("Verwaltung") }, { tr("Verwalten") }), KONTO({ tr("Mein Konto") });
+
+    val label: String get() = labelText()
+    val short: String get() = shortText()
 }
 
 /**
@@ -233,7 +238,12 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     val backHost = remember { BackHost() }
     val detail = backHost.current
     // Navigationsleiste unten auf dem Telefon, seitlich auf dem Tablet (passt sich selbst an)
-    CompositionLocalProvider(LocalBackHost provides backHost) {
+    val unreadCount = vm.unreadCirculars.collectAsStateWithLifecycle().value.size
+    // Rückmeldungen nach Aktionen unten im sichtbaren Bereich (UX-Audit 16.11. AND-08)
+    val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
+    val messageScope = androidx.compose.runtime.rememberCoroutineScope()
+    val actionMessages = remember(snackbar, messageScope) { ActionMessages(snackbar, messageScope) }
+    CompositionLocalProvider(LocalBackHost provides backHost, LocalActionMessages provides actionMessages) {
     NavigationSuiteScaffold(
         layoutType = if (wide) {
             androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType.NavigationRail
@@ -246,6 +256,18 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     selected = tab == t,
                     onClick = { if (t != tab) leave.request { tab = t } },
                     icon = {
+                        // Plakette mit der Zahl ungelesener Mitteilungen (UX-Audit 16.11. AND-15)
+                        val count = if (t == Tab.MITTEILUNGEN) unreadCount else 0
+                        androidx.compose.material3.BadgedBox(
+                            badge = {
+                                if (count > 0) {
+                                    val text = trn("{n} neue Mitteilung", "{n} neue Mitteilungen", count)
+                                    androidx.compose.material3.Badge(Modifier.semantics { contentDescription = text }) {
+                                        Text(if (count > 99) "99+" else count.toString())
+                                    }
+                                }
+                            },
+                        ) {
                         Icon(
                             when (t) {
                                 Tab.AUFGABEN -> Icons.Filled.CheckCircle
@@ -258,6 +280,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                             },
                             contentDescription = null,
                         )
+                        }
                     },
                     label = { BarLabel(t.short) },
                     colors = barColors,
@@ -320,8 +343,15 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                 ),
             )
             // Offline als neutrale Fläche, nicht in Fehlerrot (UX-Audit 08.11. A-03)
-            if (main.offline) OfflineBanner(since = null, onRetry = vm::reload)
+            // Offline als neutrale Fläche, ein Serverfehler nennt HUBIplan statt des Internets (AND-07)
+            if (main.offline) {
+                val problem = main.problem
+                if (problem != null && !problem.offline) ProblemNotice(problem, onRetry = vm::reload) else OfflineBanner(since = null, onRetry = vm::reload)
+                ReloadWhenOnline(vm::reload)
+            }
             val access = main.access
+            val signedOut by vm.signedOut.collectAsStateWithLifecycle()
+            signedOut?.let { SignedOutDialog(it, onReconnect = { vm.signedOutSeen(); vm.addAccount() }, onDismiss = vm::signedOutSeen) }
             val offer by vm.shortcutOffer.collectAsStateWithLifecycle()
             // Nur in der Terminliste, nie über einem geöffneten Termin (A-15)
             if (offer && access != null && tab == Tab.TERMINE && detail == null) ShortcutOffer(vm)
@@ -342,8 +372,9 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     main.offline && tab == Tab.ICH -> OfflineCardPane(main, vm)
                     // Ohne Netz beim Kaltstart: Hinweis statt leerer Fläche, dazu wartende
                     // Kassenvorgänge dieses Telefons (UX-Audit 31.10. A15, F03)
-                    main.offline -> OfflinePane(main, events = tab == Tab.TERMINE)
+                    main.offline -> OfflinePane(main, events = tab == Tab.TERMINE, vm)
                 }
+                androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
             }
         }
     }
@@ -498,8 +529,56 @@ private fun OfflineCardPane(main: Screen.Main, vm: AppViewModel) {
     }
 }
 
+/**
+ * Ohne Netz beim Start: zuletzt geladene Termine bzw. Mitteilungen mit Standzeit, nur zum Lesen
+ * (UX-Audit 16.11. AND-07). Ohne gespeicherten Stand der bisherige Hinweis.
+ */
 @Composable
-private fun OfflinePane(main: Screen.Main, events: Boolean) {
+private fun OfflinePane(main: Screen.Main, events: Boolean, vm: AppViewModel) {
+    val accessId = main.account.selectedAccess
+    var savedEvents by remember(accessId) { mutableStateOf<de.hubiplan.app.data.OfflineStore.Saved<List<de.hubiplan.app.data.Occurrence>>?>(null) }
+    var savedCirculars by remember(accessId) { mutableStateOf<de.hubiplan.app.data.OfflineStore.Saved<List<de.hubiplan.app.data.CircularItem>>?>(null) }
+    LaunchedEffect(accessId) {
+        if (accessId == null) return@LaunchedEffect
+        val store = vm.offlineStore() ?: return@LaunchedEffect
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            savedEvents = store.events(accessId)
+            savedCirculars = store.circulars(accessId)
+        }
+    }
+    val saved = if (events) savedEvents else savedCirculars
+    if (saved != null) {
+        androidx.compose.foundation.lazy.LazyColumn(Modifier.fillMaxSize()) {
+            item {
+                Text(
+                    tr("Gespeicherter Stand von {time}. Zusagen und Antworten gehen erst wieder mit Verbindung.", "time" to formatSince(saved.savedAt, System.currentTimeMillis())),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = Abstand.rand, vertical = Abstand.klein),
+                )
+            }
+            if (events) {
+                val list = savedEvents?.items.orEmpty()
+                if (list.isEmpty()) item { Text(tr("Keine anstehenden Termine."), Modifier.padding(Abstand.rand)) }
+                list.forEach { occ ->
+                    item(key = occ.key) {
+                        EventRow(occ, false, null)
+                        androidx.compose.material3.HorizontalDivider()
+                    }
+                }
+            } else {
+                val list = savedCirculars?.items.orEmpty()
+                if (list.isEmpty()) item { Text(tr("Noch keine Mitteilungen."), Modifier.padding(Abstand.rand)) }
+                list.forEach { c ->
+                    item(key = c.id) {
+                        CircularRow(c, false, onClick = null)
+                        androidx.compose.material3.HorizontalDivider()
+                    }
+                }
+            }
+            item { Column(Modifier.padding(Abstand.rand)) { PendingLocalCard(main) } }
+        }
+        return
+    }
     Column(
         Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState()).padding(Abstand.rand),
         verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
@@ -512,6 +591,24 @@ private fun OfflinePane(main: Screen.Main, events: Boolean) {
             },
         )
         PendingLocalCard(main)
+    }
+}
+
+/** Kommt die Verbindung zurück, selbst neu laden statt auf „Erneut laden“ zu warten (AND-07). */
+@Composable
+private fun ReloadWhenOnline(reload: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val current by androidx.compose.runtime.rememberUpdatedState(reload)
+    androidx.compose.runtime.DisposableEffect(context) {
+        val cm = context.getSystemService(android.net.ConnectivityManager::class.java)
+        val main = android.os.Handler(android.os.Looper.getMainLooper())
+        val callback = object : android.net.ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: android.net.Network) {
+                main.post { current() }
+            }
+        }
+        val registered = runCatching { cm?.registerDefaultNetworkCallback(callback) }.isSuccess && cm != null
+        onDispose { if (registered) runCatching { cm?.unregisterNetworkCallback(callback) } }
     }
 }
 
@@ -550,3 +647,23 @@ fun PendingLocalCard(main: Screen.Main) {
 /** „1 Kassenvorgang wartet auf Versand“ / „3 Kassenvorgänge warten auf Versand“. */
 fun pendingCountText(count: Int): String =
     if (count == 1) tr("1 Kassenvorgang wartet auf Versand") else tr("{count} Kassenvorgänge warten auf Versand", "count" to count)
+
+/** Ein Konto wurde auf diesem Gerät abgemeldet; die App zeigt jetzt ein anderes (AND-16). */
+@Composable
+private fun SignedOutDialog(info: AppViewModel.SignedOut, onReconnect: () -> Unit, onDismiss: () -> Unit) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tr("Konto abgemeldet")) },
+        text = {
+            Text(
+                tr(
+                    "{dropped} wurde auf diesem Gerät abgemeldet. Du siehst jetzt {now}.",
+                    "dropped" to info.dropped,
+                    "now" to info.now,
+                ),
+            )
+        },
+        confirmButton = { androidx.compose.material3.TextButton(onClick = onDismiss) { Text(tr("OK")) } },
+        dismissButton = { androidx.compose.material3.TextButton(onClick = onReconnect) { Text(tr("Neu verbinden")) } },
+    )
+}

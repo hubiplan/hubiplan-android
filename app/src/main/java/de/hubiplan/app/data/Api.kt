@@ -716,6 +716,14 @@ class Api(
     suspend fun eventAttachment(accessId: Int, eventId: Int, attachmentId: Int): ByteArray =
         file("/api/portal/$accessId/events/$eventId/attachments/$attachmentId/")
 
+    /** Anhang einer Mitteilung, in der App geöffnet statt im Browser (UX-Audit 16.11. AND-15). */
+    suspend fun circularAttachment(accessId: Int, circularId: Int, attachmentId: Int): ByteArray =
+        file("/api/portal/$accessId/circulars/$circularId/attachments/$attachmentId/")
+
+    /** Anhang einer Aufgabe (AND-15). */
+    suspend fun todoAttachment(accessId: Int, todoId: Int, attachmentId: Int): ByteArray =
+        file("/api/portal/$accessId/todos/$todoId/attachments/$attachmentId/")
+
     suspend fun minutesPdf(accessId: Int, meetingId: Int): ByteArray =
         file("/api/portal/$accessId/meetings/$meetingId/minutes/")
 

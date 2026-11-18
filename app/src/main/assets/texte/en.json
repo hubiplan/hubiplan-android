@@ -1297,5 +1297,13 @@
  "Benachrichtigungen erlauben?": "Allow notifications?",
  "Dann erinnert dich die App, wenn eine Rückmeldung zu einem Termin fehlt, und zeigt neue Mitteilungen und Aufgaben. Ohne Erlaubnis bleibt sie stumm. Du kannst das später unter „Mein Konto“ ändern.": "The app then reminds you when a response to an event is missing and shows new messages and tasks. Without permission it stays silent. You can change this later under “My account”.",
  "Erlauben": "Allow",
- "Später": "Later"
+ "Später": "Later",
+ "Konto abgemeldet": "Account signed out",
+ "{dropped} wurde auf diesem Gerät abgemeldet. Du siehst jetzt {now}.": "{dropped} was signed out on this device. You are now viewing {now}.",
+ "Neu verbinden": "Reconnect",
+ "● neu": "● new",
+ "{n} neue Mitteilung": "{n} new message",
+ "{n} neue Mitteilungen": "{n} new messages",
+ "Gespeicherter Stand von {time}. Zusagen und Antworten gehen erst wieder mit Verbindung.": "Saved as of {time}. Replies and answers only go out once you are connected again.",
+ "„{name}“ wird geladen …": "Loading “{name}” …"
 }

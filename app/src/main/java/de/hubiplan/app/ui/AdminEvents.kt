@@ -289,7 +289,11 @@ private fun shiftEnd(start: String, end: String, occurrence: String): String = r
     java.time.OffsetDateTime.parse(occurrence).plus(java.time.Duration.between(s, e)).toString()
 }.getOrDefault(occurrence)
 
-private enum class ListTab(val label: String) { YES(tr("Zusagen")), NO(tr("Absagen")), OPEN(tr("Offen")) }
+private enum class ListTab(private val labelText: () -> String) {
+    YES({ tr("Zusagen") }), NO({ tr("Absagen") }), OPEN({ tr("Offen") });
+
+    val label: String get() = labelText()
+}
 
 @Composable
 private fun ResponseLists(r: AdminResponses, canEnter: Boolean, onPick: (EventDialog.Respond) -> Unit) {

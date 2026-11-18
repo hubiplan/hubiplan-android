@@ -264,6 +264,8 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
                 Text(tr("Mitgliedsausweis"), color = onPrimary, style = MaterialTheme.typography.labelSmall)
             }
         }
+        // Ab Schriftfaktor 1,3 steht der QR-Code unter den Angaben statt daneben (UX-Audit 16.11. AND-13)
+        val stacked = androidx.compose.ui.platform.LocalDensity.current.fontScale >= 1.3f
         Row(Modifier.fillMaxWidth().padding(Abstand.mittel), horizontalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
             photo?.let {
                 if (display.isOrganization) {
@@ -296,12 +298,24 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
                     fontWeight = FontWeight.Bold,
                 )
             }
+            if (!stacked) {
+                qr?.let {
+                    Image(
+                        it.asImageBitmap(),
+                        contentDescription = tr("QR-Code zur Prüfung"),
+                        filterQuality = FilterQuality.None,
+                        modifier = Modifier.size(96.dp),
+                    )
+                }
+            }
+        }
+        if (stacked) {
             qr?.let {
                 Image(
                     it.asImageBitmap(),
                     contentDescription = tr("QR-Code zur Prüfung"),
                     filterQuality = FilterQuality.None,
-                    modifier = Modifier.size(96.dp),
+                    modifier = Modifier.padding(bottom = Abstand.mittel).size(120.dp).align(Alignment.CenterHorizontally),
                 )
             }
         }

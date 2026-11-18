@@ -57,8 +57,11 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
 
     LaunchedEffect(access.id, circulars.tick) {
         val api = vm.api() ?: return@LaunchedEffect
-        circulars.load(vm::deviceRevoked) { api.circulars(access.id) }
+        circulars.load(vm::deviceRevoked) { api.circulars(access.id).also { vm.circularsLoaded(access.id, it) } }
     }
+    val unread by vm.unreadCirculars.collectAsStateWithLifecycle()
+    // Geöffnet (auch aus einer Benachrichtigung): gilt als gelesen (AND-15)
+    LaunchedEffect(access.id, selected) { selected?.takeIf { it > 0 }?.let { vm.circularOpened(access.id, it) } }
 
     ListDetail(
         hasDetail = selected != null,
@@ -75,12 +78,12 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                             Button(onClick = { if (selected != SEND) { notice = null; if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
                         }
                     }
-                    notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
+                    ActionNotice(notice, Modifier.padding(horizontal = Abstand.rand)) { notice = null }
                 },
             ) { list ->
                 LazyColumn(Modifier.fillMaxSize()) {
                     items(list, key = { it.id }) { c ->
-                        CircularRow(c, c.id == selected) {
+                        CircularRow(c, c.id == selected, unread = c.id in unread) {
                             if (leave == null) selected = c.id else leave.request { selected = c.id }
                         }
                         HorizontalDivider()
@@ -107,14 +110,29 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
 }
 
 /** Auswahlzustand gehört zur selben bedienbaren Zeile wie Betreff und Absender. */
+/**
+ * Ungelesene Mitteilung: „neu“ als Text vorn in der Zeile und Betreff fett, also nicht nur an der
+ * Farbe erkennbar (UX-Audit 16.11. AND-15). Ohne [onClick] nur zum Lesen (ohne Netz, AND-07).
+ */
 @Composable
-internal fun CircularRow(c: CircularItem, isSelected: Boolean, onClick: () -> Unit) {
+internal fun CircularRow(c: CircularItem, isSelected: Boolean, unread: Boolean = false, onClick: (() -> Unit)?) {
     ListItem(
-        modifier = Modifier.semantics { selected = isSelected }.clickable(role = Role.Button, onClick = onClick)
+        modifier = Modifier.semantics { selected = isSelected }
+            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
             .selectedRowMark(isSelected, MaterialTheme.colorScheme.onPrimaryContainer),
         colors = selectedRowColors(isSelected),
-        overlineContent = { Text(listOf(c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · ")) },
-        headlineContent = { Text(c.subject.ifBlank { tr("(ohne Betreff)") }) },
+        overlineContent = {
+            Text(
+                listOf(if (unread) tr("● neu") else "", c.kindLabel, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · "),
+                fontWeight = if (unread) androidx.compose.ui.text.font.FontWeight.Bold else null,
+            )
+        },
+        headlineContent = {
+            Text(
+                c.subject.ifBlank { tr("(ohne Betreff)") },
+                fontWeight = if (unread) androidx.compose.ui.text.font.FontWeight.Bold else null,
+            )
+        },
         supportingContent = { if (c.sender.isNotBlank()) Text(c.sender) },
     )
 }
@@ -150,6 +168,6 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
         }
         Text(c.subject, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(listOf(c.sender, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-        CircularContent(c, (screen as? Screen.Main)?.account?.server, access.id)
+        CircularContent(c, (screen as? Screen.Main)?.account?.server, access.id, vm)
     }
 }

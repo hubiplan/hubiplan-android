@@ -20,7 +20,7 @@ import kotlinx.serialization.json.put
  * Abmelden werden Ordner und Schlüssel gelöscht.
  */
 object LocalAccountData {
-    private val FOLDERS = listOf("entwuerfe", "quittungen", "ausweise", ClubLogo.FOLDER, FormAttachments.FOLDER)
+    private val FOLDERS = listOf("entwuerfe", "quittungen", "ausweise", ClubLogo.FOLDER, FormAttachments.FOLDER, OfflineStore.FOLDER, ReadStore.FOLDER)
 
     /** Kontokennung wie bisher: Serveradresse und Geräte-Nummer. */
     fun key(server: String, deviceId: Int) = "$server-$deviceId"
@@ -54,6 +54,8 @@ object LocalAccountData {
      */
     fun retire(context: Context, accountKey: String, server: String = "", email: String = "") {
         dir(context, "ausweise", accountKey).deleteRecursively()
+        dir(context, OfflineStore.FOLDER, accountKey).deleteRecursively()
+        dir(context, ReadStore.FOLDER, accountKey).deleteRecursively()
         // Noten nie behalten, wenn das Gerät abgemeldet ist (Konzept Noten, Abschnitt 5)
         NotenStore.forget(context, accountKey)
         LastUnitStore.forget(context, accountKey)

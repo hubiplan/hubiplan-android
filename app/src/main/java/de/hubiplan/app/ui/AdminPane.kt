@@ -239,19 +239,23 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel, withCode: Boolean, w
  * Bereiche der Verwaltung. Sie stehen untereinander in einer Startliste statt als waagerecht
  * scrollende Filterchips (UX-Audit 05.11. A-03); „Zu erledigen“ hebt sich von „Aufgaben“ ab (Begriff wie auf der Web-Startseite).
  */
-internal enum class Section(val label: String, val hint: String) {
-    TASKS(tr("Zu erledigen"), tr("Datenänderungen, Fotos und Termine, die auf dich warten")),
+// Übersetzt beim Anzeigen (AND-11)
+internal enum class Section(private val labelText: () -> String, private val hintText: () -> String) {
+    TASKS({ tr("Zu erledigen") }, { tr("Datenänderungen, Fotos und Termine, die auf dich warten") }),
     // „Aufgaben verteilen“: der Reiter „Aufgaben“ zeigt die eigenen (UX-Audit 08.11. A-04)
-    TODOS(tr("Aufgaben verteilen"), tr("Aufgaben anlegen, verteilen und erledigen")),
-    MEMBERS(tr("Mitglieder"), tr("Suchen, anrufen, Mitgliedsakte öffnen")),
-    EVENTS(tr("Termine"), tr("Termine anlegen, Zu- und Absagen eintragen")),
-    FINANCE(tr("Kassenbuch"), tr("Buchungen und Quittungen")),
-    BILLING(tr("Rechnungen"), tr("Offene und bezahlte Rechnungen der Mitglieder")),
-    OCCASIONS(tr("Jubiläen und Geburtstage"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
-    COMPETITIONS(tr("Wettbewerbe"), tr("Schießen im Standmodus erfassen, auch ohne Empfang")),
-    PARTNERS(tr("Geschäftspartner"), tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen")),
-    QUALIFICATIONS(tr("Qualifikationen"), tr("Nachweise, die bald ablaufen")),
-    OBLIGATIONS(tr("Fristen"), tr("Vereinspflichten mit Frist und Zuständigkeit")),
+    TODOS({ tr("Aufgaben verteilen") }, { tr("Aufgaben anlegen, verteilen und erledigen") }),
+    MEMBERS({ tr("Mitglieder") }, { tr("Suchen, anrufen, Mitgliedsakte öffnen") }),
+    EVENTS({ tr("Termine") }, { tr("Termine anlegen, Zu- und Absagen eintragen") }),
+    FINANCE({ tr("Kassenbuch") }, { tr("Buchungen und Quittungen") }),
+    BILLING({ tr("Rechnungen") }, { tr("Offene und bezahlte Rechnungen der Mitglieder") }),
+    OCCASIONS({ tr("Jubiläen und Geburtstage") }, { tr("Geburtstage und Jubiläen der nächsten Wochen") }),
+    COMPETITIONS({ tr("Wettbewerbe") }, { tr("Schießen im Standmodus erfassen, auch ohne Empfang") }),
+    PARTNERS({ tr("Geschäftspartner") }, { tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen") }),
+    QUALIFICATIONS({ tr("Qualifikationen") }, { tr("Nachweise, die bald ablaufen") }),
+    OBLIGATIONS({ tr("Fristen") }, { tr("Vereinspflichten mit Frist und Zuständigkeit") });
+
+    val label: String get() = labelText()
+    val hint: String get() = hintText()
 }
 
 /**

@@ -409,7 +409,7 @@ private fun MappeDetail(
                     }
                 }
                 progress?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
-                notice?.let { StatusNotice(it) }
+                ActionNotice(notice) { notice = null }
                 if (!mappe.isEvent && hasNumbers) {
                     Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         FilterChip(sort == Sortierung.REIHENFOLGE, onClick = { sort = Sortierung.REIHENFOLGE }, label = { Text(tr("Reihenfolge")) })

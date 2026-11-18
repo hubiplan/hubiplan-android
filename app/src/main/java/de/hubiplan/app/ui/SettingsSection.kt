@@ -76,17 +76,7 @@ fun SettingsSection(vm: AppViewModel) {
             Text(tr("Sprache"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
             Text(tr("Gilt für die App und dein Konto im Browser."), style = MaterialTheme.typography.bodySmall)
             for (option in languages) {
-                Row(
-                    Modifier.fillMaxWidth().selectable(
-                        selected = Texte.sprache == option.code,
-                        onClick = { vm.setLanguage(option.code) },
-                        role = Role.RadioButton,
-                    ).padding(vertical = Abstand.eng),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    RadioButton(selected = Texte.sprache == option.code, onClick = null)
-                    Text(option.name, Modifier.padding(start = Abstand.klein))
-                }
+                LabeledRadio(option.name, Texte.sprache == option.code, { vm.setLanguage(option.code) })
             }
             if (Texte.systemSprache(context) != null) {
                 Text(

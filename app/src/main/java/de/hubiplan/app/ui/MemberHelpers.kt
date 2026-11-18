@@ -144,7 +144,7 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand))
             error?.let { ProblemNotice(it, onRetry = { refreshing = true; reload++ }, since = loadedAt.takeIf { current != null }) }
             if (error == null) loadedAt?.let { FreshnessLine(it) { refreshing = true; reload++ } }
-            notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
+            ActionNotice(notice, Modifier.padding(horizontal = Abstand.rand)) { notice = null }
             if (current == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth().padding(Abstand.rand))
         }
         if (current != null) {
