@@ -84,9 +84,38 @@ data class RegistrationOffer(
     @SerialName("guests_allowed") val guestsAllowed: Boolean = false,
     val terms: String = "",
     val prices: List<RegistrationPrice> = emptyList(),
+    /** Warteliste, wenn alle Plätze vergeben sind (Stufe A3) */
+    val waitlist: Boolean = false,
+    /** Anmeldungen auf der Warteliste */
+    val waiting: Int = 0,
+    @SerialName("substitute_allowed") val substituteAllowed: Boolean = false,
+    @SerialName("cancel_rules") val cancelRules: List<CancelRule> = emptyList(),
+    @SerialName("cancel_fee_fixed") val cancelFeeFixed: String? = null,
 ) {
     /** Tarife für ein Mitglied bzw. einen Gast, die sich gerade buchen lassen. */
     fun pricesFor(member: Boolean): List<RegistrationPrice> = prices.filter { it.bookable && it.fits(member) }
+
+    /** Anmelden geht: offen, oder voll mit Warteliste (dann auf die Warteliste). */
+    val canJoin: Boolean get() = state == "open" || (state == "full" && waitlist)
+
+    /** Neue Anmeldungen kommen auf die Warteliste. */
+    val toWaitlist: Boolean get() = state == "full" && waitlist
+}
+
+/** Stornostaffel: „weniger als [days] Tage vorher: [percent] %“ */
+@Serializable
+data class CancelRule(val days: Int = 0, val percent: Int = 0)
+
+/** Vorschau der Stornogebühr (GET …/cancel/?participants=…). */
+@Serializable
+data class FeeQuote(
+    val base: String = "0",
+    val percent: Int = 0,
+    val fee: String = "0",
+    /** warum kostenfrei: "", waitlist, moved_up, event_cancelled */
+    @SerialName("free_reason") val freeReason: String = "",
+) {
+    val hasFee: Boolean get() = (fee.toBigDecimalOrNull()?.signum() ?: 0) > 0
 }
 
 @Serializable
@@ -94,6 +123,7 @@ data class RegistrationParticipant(
     val id: Int = 0,
     val name: String = "",
     @SerialName("membership_id") val membershipId: Int? = null,
+    @SerialName("price_id") val priceId: Int = 0,
     @SerialName("price_name") val priceName: String = "",
     val amount: String = "0",
     /** active, cancelled */
@@ -121,8 +151,21 @@ data class MyRegistration(
     @SerialName("paid_state") val paidState: String = "open",
     val participants: List<RegistrationParticipant> = emptyList(),
     val invoice: RegistrationInvoice? = null,
+    @SerialName("waitlist_position") val waitlistPosition: Int? = null,
+    @SerialName("moved_up_at") val movedUpAt: String? = null,
+    @SerialName("free_cancel_until") val freeCancelUntil: String? = null,
+    @SerialName("cancel_fee") val cancelFee: String = "0",
+    @SerialName("fee_invoice") val feeInvoice: RegistrationInvoice? = null,
+    /** Ältere Server ohne Angabe: dann gilt `can_cancel` des Angebots */
+    @SerialName("can_cancel") val canCancel: Boolean? = null,
+    @SerialName("can_substitute") val canSubstitute: Boolean = false,
 ) {
-    val active: Boolean get() = status == "registered"
+    /** Angemeldet oder auf der Warteliste (nicht abgemeldet) */
+    val active: Boolean get() = status == "registered" || status == "waiting"
+
+    val waiting: Boolean get() = status == "waiting"
+
+    val activeParticipants: List<RegistrationParticipant> get() = participants.filter { it.status == "active" }
 }
 
 @Serializable
@@ -200,3 +243,21 @@ fun registrationMissing(
 }
 
 enum class RegistrationGap { NOBODY, TOO_MANY, NAME, BIRTH_DATE, TERMS }
+
+/** Inhalt von POST …/cancel/: leer für alle, sonst nur die genannten Personen. */
+fun cancelPayload(participants: List<Int>): JsonObject =
+    JsonObject(if (participants.isEmpty()) emptyMap() else mapOf("participants" to JsonArray(participants.map { JsonPrimitive(it) })))
+
+/** Abfrage der Gebührenvorschau: „?participants=4,5“ oder leer für alle. */
+fun cancelQuery(participants: List<Int>): String =
+    if (participants.isEmpty()) "" else "?participants=" + participants.joinToString(",")
+
+/** Inhalt von POST …/participants/<id>/: Mitglied der Familie oder Gast mit Namen. */
+fun substitutePayload(membershipId: Int?, name: String, birthDate: String?): JsonObject =
+    JsonObject(
+        buildMap {
+            put("membership_id", membershipId?.let { JsonPrimitive(it) } ?: JsonNull)
+            if (membershipId == null) put("name", JsonPrimitive(name.trim()))
+            birthDate?.let { put("birth_date", JsonPrimitive(it)) }
+        },
+    )

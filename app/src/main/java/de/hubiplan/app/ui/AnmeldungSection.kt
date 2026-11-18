@@ -29,20 +29,26 @@ import androidx.compose.ui.text.input.KeyboardType
 import de.hubiplan.app.Texte
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.EventDetail
+import de.hubiplan.app.data.FeeQuote
 import de.hubiplan.app.data.MemberRegistration
 import de.hubiplan.app.data.MyRegistration
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.RegistrationChoice
 import de.hubiplan.app.data.RegistrationGap
+import de.hubiplan.app.data.RegistrationOffer
+import de.hubiplan.app.data.RegistrationParticipant
+import de.hubiplan.app.data.RegistrationPerson
 import de.hubiplan.app.data.RegistrationPrice
 import de.hubiplan.app.data.registrationMissing
 import de.hubiplan.app.data.registrationPayload
 import de.hubiplan.app.data.registrationSum
+import de.hubiplan.app.data.substitutePayload
 import de.hubiplan.app.tr
 import de.hubiplan.app.trk
 import kotlinx.coroutines.launch
 
-// Verbindliche Anmeldung mit Teilnahmegebühr am Termin, wie im Mitgliederbereich (HUBIplan A1/A2).
+// Verbindliche Anmeldung mit Teilnahmegebühr am Termin, wie im Mitgliederbereich (HUBIplan A1–A3):
+// Warteliste, Abmelden einzelner Personen mit Vorschau der Stornogebühr, Ersatzperson.
 
 private val english: Boolean get() = Texte.sprache == "en"
 
@@ -63,6 +69,7 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
     var busy by remember { mutableStateOf(false) }
     var attempt by remember { mutableIntStateOf(0) }
     var cancelling by remember { mutableStateOf<MyRegistration?>(null) }
+    var replacing by remember { mutableStateOf<Pair<MyRegistration, RegistrationParticipant>?>(null) }
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(access.id, e.id, attempt) {
@@ -110,35 +117,42 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
     offer.prices.filter { it.isActive }.forEach { PriceLine(it) }
 
     d.mine.forEach { reg ->
-        MyRegistrationCard(reg, canCancel = d.canCancel && reg.active, busy = busy) { cancelling = reg }
-    }
-    cancelling?.let { reg ->
-        AlertDialog(
-            onDismissRequest = { cancelling = null },
-            title = { Text(tr("Anmeldung {number} abmelden?", "number" to reg.number)) },
-            text = {
-                Text(
-                    if (reg.invoice != null && (reg.invoice.paid.toBigDecimalOrNull()?.signum() ?: 0) > 0) {
-                        tr("Die Rechnung wird storniert; den gezahlten Betrag erstattet der Verein.")
-                    } else if (reg.invoice != null) {
-                        tr("Die Rechnung wird storniert.")
-                    } else {
-                        tr("Du bist dann nicht mehr angemeldet.")
-                    },
-                )
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    cancelling = null
-                    val api = vm.api() ?: return@TextButton
-                    run(tr("Du bist abgemeldet. Die Bestätigung kommt per E-Mail.")) { api.cancelRegistration(access.id, e.id, reg.id) }
-                }) { Text(trk("anmeldung", "Abmelden")) }
-            },
-            dismissButton = { TextButton(onClick = { cancelling = null }) { Text(tr("Abbrechen")) } },
+        MyRegistrationCard(
+            reg,
+            canCancel = reg.active && (reg.canCancel ?: d.canCancel),
+            busy = busy,
+            onCancel = { cancelling = reg },
+            onSubstitute = { p -> replacing = reg to p },
         )
     }
+    cancelling?.let { reg ->
+        CancelDialog(
+            reg = reg,
+            offer = offer,
+            quote = { ids -> vm.api()?.cancelQuote(access.id, e.id, reg.id, ids) },
+            onDismiss = { cancelling = null },
+        ) { ids ->
+            cancelling = null
+            val api = vm.api() ?: return@CancelDialog
+            run(tr("Du bist abgemeldet. Die Bestätigung kommt per E-Mail.")) { api.cancelRegistration(access.id, e.id, reg.id, ids) }
+        }
+    }
+    replacing?.let { (reg, p) ->
+        SubstituteDialog(
+            participant = p,
+            offer = offer,
+            family = d.persons.filter { !it.registered },
+            onDismiss = { replacing = null },
+        ) { membershipId, name, birth ->
+            replacing = null
+            val api = vm.api() ?: return@SubstituteDialog
+            run(tr("Ersatzperson eingetragen.")) {
+                api.substitute(access.id, e.id, reg.id, p.id, substitutePayload(membershipId, name, birth))
+            }
+        }
+    }
 
-    val open = offer.state == "open"
+    val open = offer.canJoin
     val free = d.persons.filter { !it.registered }
     if (!open || (free.isEmpty() && !offer.guestsAllowed)) return
 
@@ -224,7 +238,12 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
             gap = registrationMissing(offer, persons, needs, terms)
             if (gap != null || unpriced) return@Button
             val api = vm.api() ?: return@Button
-            run(tr("Angemeldet. Die Bestätigung kommt per E-Mail.")) {
+            val done = if (offer.toWaitlist) {
+                tr("Du stehst auf der Warteliste. Die Bestätigung kommt per E-Mail.")
+            } else {
+                tr("Angemeldet. Die Bestätigung kommt per E-Mail.")
+            }
+            run(done) {
                 api.register(access.id, e.id, registrationPayload(persons, note, terms)).also {
                     chosen.clear()
                     births.clear()
@@ -237,7 +256,13 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
         enabled = !busy && persons.isNotEmpty(),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text(if (sum.signum() > 0) tr("Zahlungspflichtig anmelden") else tr("Verbindlich anmelden"))
+        Text(
+            when {
+                offer.toWaitlist -> tr("Auf die Warteliste")
+                sum.signum() > 0 -> tr("Zahlungspflichtig anmelden")
+                else -> tr("Verbindlich anmelden")
+            },
+        )
     }
 }
 
@@ -305,23 +330,191 @@ private fun BirthField(value: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun MyRegistrationCard(reg: MyRegistration, canCancel: Boolean, busy: Boolean, onCancel: () -> Unit) {
+private fun MyRegistrationCard(
+    reg: MyRegistration,
+    canCancel: Boolean,
+    busy: Boolean,
+    onCancel: () -> Unit,
+    onSubstitute: (RegistrationParticipant) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
         Text(tr("Deine Anmeldung {number}", "number" to reg.number), style = MaterialTheme.typography.titleSmall)
         Text(paidText(reg.paidState), style = MaterialTheme.typography.bodySmall)
+        reg.waitlistPosition?.let {
+            Text(
+                tr(
+                    "Du stehst auf Platz {n} der Warteliste. Wird ein Platz frei, rückst du automatisch verbindlich nach und bekommst die Rechnung per E-Mail.",
+                    "n" to it,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+        if (reg.status == "registered" && reg.freeCancelUntil != null && reg.movedUpAt != null) {
+            Text(
+                tr("Nachgerückt: Bis {when} kannst du dich kostenfrei abmelden.", "when" to formatDate(reg.freeCancelUntil)),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
         reg.participants.forEach { p ->
             val price = if ((p.amount.toBigDecimalOrNull()?.signum() ?: 0) > 0) "${p.priceName}, ${formatMoney(p.amount)}" else p.priceName
             val mark = if (p.status == "active") "" else " (" + tr("abgemeldet") + ")"
             Text("${p.name}: $price$mark")
+            if (p.status == "active" && reg.canSubstitute) {
+                TextButton(onClick = { onSubstitute(p) }, enabled = !busy) {
+                    Text(tr("Ersatzperson für {name}", "name" to p.name))
+                }
+            }
         }
-        reg.invoice?.let { inv ->
+        reg.invoice?.takeIf { reg.status == "registered" }?.let { inv ->
             Text(
                 tr("Rechnung {number} über {total}, zahlbar bis {due}", "number" to inv.number, "total" to formatMoney(inv.total), "due" to formatDate(inv.dueDate)),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
+        if ((reg.cancelFee.toBigDecimalOrNull()?.signum() ?: 0) > 0) {
+            val line = tr("Stornogebühr {fee}", "fee" to formatMoney(reg.cancelFee))
+            val invoice = reg.feeInvoice?.let {
+                " · " + tr("Rechnung {number} über {total}, zahlbar bis {due}", "number" to it.number, "total" to formatMoney(it.total), "due" to formatDate(it.dueDate))
+            }.orEmpty()
+            Text(line + invoice, style = MaterialTheme.typography.bodySmall)
+        }
         if (canCancel) TextButton(onClick = onCancel, enabled = !busy) { Text(trk("anmeldung", "Abmelden")) }
     }
+}
+
+/** Wofür die Stornogebühr anfällt oder warum nicht (wie im Mitgliederbereich). */
+internal fun feeText(q: FeeQuote): String = when {
+    q.freeReason == "event_cancelled" -> tr("Kostenfrei: Der Termin ist abgesagt.")
+    q.freeReason == "waitlist" -> tr("Kostenfrei: Die Anmeldung steht auf der Warteliste.")
+    q.freeReason == "moved_up" -> tr("Kostenfrei: innerhalb von 48 Stunden nach dem Nachrücken von der Warteliste.")
+    !q.hasFee -> tr("Es fällt keine Stornogebühr an.")
+    q.percent > 0 -> tr(
+        "Stornogebühr: {fee} ({percent} % von {base} nach den Teilnahmebedingungen).",
+        "fee" to formatMoney(q.fee),
+        "percent" to q.percent,
+        "base" to formatMoney(q.base),
+    )
+    else -> tr("Stornogebühr: {fee} (Bearbeitungsgebühr).", "fee" to formatMoney(q.fee))
+}
+
+/** Abmelden ganz oder für einzelne Personen, mit Vorschau der Gebühr. */
+@Composable
+private fun CancelDialog(
+    reg: MyRegistration,
+    offer: RegistrationOffer,
+    quote: suspend (List<Int>) -> FeeQuote?,
+    onDismiss: () -> Unit,
+    onConfirm: (List<Int>) -> Unit,
+) {
+    val active = reg.activeParticipants
+    val chosen = remember(reg.id) { mutableStateListOf<Int>().apply { addAll(active.map { it.id }) } }
+    var preview by remember(reg.id) { mutableStateOf<FeeQuote?>(null) }
+    val whole = chosen.size == active.size
+    val key = chosen.sorted().joinToString(",")
+    LaunchedEffect(reg.id, key) {
+        preview = null
+        if (chosen.isEmpty()) return@LaunchedEffect
+        preview = try {
+            quote(if (whole) emptyList() else chosen.toList())
+        } catch (_: ApiException) {
+            null
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tr("Anmeldung {number} abmelden", "number" to reg.number)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                if (active.size > 1) {
+                    Text(tr("Wer wird abgemeldet?"), style = MaterialTheme.typography.titleSmall)
+                    active.forEach { p ->
+                        LabeledCheckbox("${p.name} (${p.priceName}, ${formatMoney(p.amount)})", p.id in chosen, { on ->
+                            if (on) chosen.add(p.id) else chosen.remove(p.id)
+                        })
+                    }
+                }
+                preview?.let { Text(feeText(it), modifier = Modifier.announce()) }
+                if (preview?.hasFee == true && offer.waitlist && offer.waiting > 0) {
+                    Text(tr("Rückt dafür jemand von der Warteliste nach, entfällt die Gebühr."), style = MaterialTheme.typography.bodySmall)
+                }
+                if (reg.invoice != null && !reg.waiting) {
+                    Text(
+                        if (whole && preview?.hasFee != true) {
+                            if ((reg.invoice.paid.toBigDecimalOrNull()?.signum() ?: 0) > 0) {
+                                tr("Die Rechnung wird storniert; den gezahlten Betrag erstattet der Verein.")
+                            } else {
+                                tr("Die Rechnung wird storniert.")
+                            }
+                        } else {
+                            tr("Die Rechnung wird storniert, und es kommt eine neue Rechnung über den Rest. Schon Gezahltes wird damit verrechnet.")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                } else if (reg.invoice == null) {
+                    Text(tr("Du bist dann nicht mehr angemeldet."), style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(if (whole) emptyList() else chosen.toList()) }, enabled = chosen.isNotEmpty()) {
+                Text(if (whole) tr("Verbindlich abmelden") else tr("Ausgewählte abmelden"))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Abbrechen")) } },
+    )
+}
+
+/** Ersatzperson zum selben Tarif und Preis: jemand aus der Familie oder ein Gast. */
+@Composable
+private fun SubstituteDialog(
+    participant: RegistrationParticipant,
+    offer: RegistrationOffer,
+    family: List<RegistrationPerson>,
+    onDismiss: () -> Unit,
+    onConfirm: (Int?, String, String?) -> Unit,
+) {
+    var member by remember(participant.id) { mutableStateOf<Int?>(if (offer.guestsAllowed) null else family.firstOrNull()?.membershipId) }
+    var name by remember(participant.id) { mutableStateOf("") }
+    var birth by remember(participant.id) { mutableStateOf("") }
+    val price = offer.prices.firstOrNull { it.id == participant.priceId }
+    val person = family.firstOrNull { it.membershipId == member }
+    val needsBirth = price?.hasAge == true && (person == null || !person.hasBirthDate)
+    val ready = (member != null || name.isNotBlank()) && (!needsBirth || parseGermanDate(birth) != null)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(tr("Ersatzperson für {name}", "name" to participant.name)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                Text(
+                    tr("Tarif und Preis bleiben, die Rechnung auch: {price}, {amount}", "price" to participant.priceName, "amount" to formatMoney(participant.amount)),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                family.forEach { f ->
+                    LabeledRadio(f.name, selected = member == f.membershipId, onClick = { member = f.membershipId })
+                }
+                if (offer.guestsAllowed) {
+                    LabeledRadio(tr("ein Gast (Name eingeben)"), selected = member == null, onClick = { member = null })
+                    if (member == null) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it.take(200) },
+                            label = { Text(tr("Name")) },
+                            singleLine = true,
+                            keyboardOptions = TITELZEILE,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                if (needsBirth) BirthField(birth) { birth = it }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(member, name, if (needsBirth) parseGermanDate(birth) else null) }, enabled = ready) {
+                Text(tr("Ersatzperson eintragen"))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(tr("Abbrechen")) } },
+    )
 }
 
 private fun paidText(state: String): String = when (state) {
@@ -329,5 +522,6 @@ private fun paidText(state: String): String = when (state) {
     "paid" -> tr("bezahlt")
     "partly" -> tr("teilweise bezahlt")
     "cancelled" -> tr("abgemeldet")
+    "waiting" -> tr("Warteliste")
     else -> tr("offen")
 }
