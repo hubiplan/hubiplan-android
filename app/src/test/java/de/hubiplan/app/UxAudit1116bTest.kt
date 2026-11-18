@@ -27,7 +27,7 @@ class UxAudit1116bTest {
         assertEquals(Texte.text("Neues"), Tab.MITTEILUNGEN.short)
     }
 
-    /** AND-07: Auswahlknöpfe als ganze Zeile mit 48 dp. */
+    /** AND-14: Auswahlknöpfe als ganze Zeile mit 48 dp. */
     @Test
     fun auswahlzeilenStattEinzelknopf() {
         assertTrue("fun LabeledRadio(" in quelle("A11y.kt"))
@@ -36,7 +36,7 @@ class UxAudit1116bTest {
         }
     }
 
-    /** AND-08/AND-14: Rückmeldungen nach Aktionen kommen als Meldung am unteren Rand. */
+    /** AND-08: Rückmeldungen nach Aktionen kommen als Meldung am unteren Rand. */
     @Test
     fun meldungenUnten() {
         assertTrue("SnackbarHost(" in quelle("MainScreen.kt"))
@@ -45,7 +45,7 @@ class UxAudit1116bTest {
         }
     }
 
-    /** AND-15: Abgemeldetes Konto wird gemeldet, ungelesene Mitteilungen sind markiert. */
+    /** AND-16: abgemeldetes Konto wird gemeldet; AND-15: ungelesene Mitteilungen sind markiert. */
     @Test
     fun abmeldungUndUngelesen() {
         val main = quelle("MainScreen.kt")
@@ -54,7 +54,7 @@ class UxAudit1116bTest {
         assertTrue("\"● neu\"" in quelle("CircularsPane.kt"))
     }
 
-    /** AND-16: offline bleibt der gespeicherte Stand sichtbar und lädt bei Verbindung neu. */
+    /** AND-07: offline bleibt der gespeicherte Stand sichtbar und lädt bei Verbindung neu. */
     @Test
     fun offlineStand() {
         val main = quelle("MainScreen.kt")
