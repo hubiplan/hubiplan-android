@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,9 +49,12 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
     var error by remember { mutableStateOf<String?>(null) }
     val fields = rememberServerFields()
     var preview by remember { mutableStateOf<Map<String, Int>?>(null) }
+    // Absender neu laden, wenn der erste Abruf scheiterte (AND-26)
+    var loadKey by remember { mutableIntStateOf(0) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(loadKey) {
         val api = vm.api() ?: return@LaunchedEffect
+        error = null
         try {
             val data = api.senders()
             senders = data.senders
@@ -97,10 +101,13 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
         when {
             list == null && error == null -> Loading()
             list != null && list.isEmpty() -> Text(tr("Für dieses Konto gibt es keine Einheit, an die du senden darfst."))
+            list == null && error != null -> TextButton(onClick = { loadKey++ }) { Text(tr("Erneut laden")) }
         }
         if (!list.isNullOrEmpty()) {
-            Box {
-                val senderName = sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–"
+            val senderName = sender?.let { s -> s.name + if (s.club.isNotBlank()) " (${s.club})" else "" } ?: "–"
+            // Nur ein Empfängerkreis: Text statt Knopf ohne Wirkung (AND-26)
+            if (list.size == 1) Text(tr("An") + ": " + senderName, style = MaterialTheme.typography.titleSmall)
+            else Box {
                 OutlinedButton(
                     onClick = { pick = list.size > 1 },
                     enabled = !busy,
@@ -136,9 +143,13 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                // Nicht stumm gesperrt: bei leeren Feldern sagen, was fehlt (AND-26, wie die Anmeldung)
                 Button(
-                    onClick = { call(confirm = false) },
-                    enabled = !busy && sender != null && subject.isNotBlank() && body.isNotBlank(),
+                    onClick = {
+                        if (subject.isBlank() || body.isBlank()) error = tr("Bitte Betreff und Text eingeben.")
+                        else call(confirm = false)
+                    },
+                    enabled = !busy && sender != null,
                 ) { Text(tr("Weiter")) }
             }
         }

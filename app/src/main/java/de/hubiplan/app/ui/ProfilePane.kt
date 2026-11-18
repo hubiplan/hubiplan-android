@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package de.hubiplan.app.ui
 
 import android.Manifest
@@ -176,7 +178,8 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
                 modifier = Modifier.weight(1f),
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+        // Bei großer Schrift untereinander statt als dreizeiliger Knopf (AND-29)
+        androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(Abstand.klein), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             OutlinedButton(onClick = {
                 error = null
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {

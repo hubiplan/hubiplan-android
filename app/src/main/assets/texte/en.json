@@ -1305,5 +1305,16 @@
  "{n} neue Mitteilung": "{n} new message",
  "{n} neue Mitteilungen": "{n} new messages",
  "Gespeicherter Stand von {time}. Zusagen und Antworten gehen erst wieder mit Verbindung.": "Saved as of {time}. Replies and answers only go out once you are connected again.",
- "„{name}“ wird geladen …": "Loading “{name}” …"
+ "„{name}“ wird geladen …": "Loading “{name}” …",
+ "Beleg {n} entfernen": "Remove receipt {n}",
+ "Bitte Betreff und Text eingeben.": "Please enter a subject and text.",
+ "Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser: {url}": "The browser could not be opened. Open this address in a browser: {url}",
+ "Höchstens {n} Begleitpersonen.": "At most {n} guests.",
+ "Meiste Zusagen": "Most votes",
+ "Oder melde dich mit E-Mail und Passwort an.": "Or sign in with email and password.",
+ "Verbindlich eintragen?": "Sign up for good?",
+ "Einstellungen öffnen": "Open settings",
+ "Kamera nicht erlaubt": "Camera not allowed",
+ "Ohne Kamera lässt sich der QR-Code nicht scannen. Erlaube die Kamera in den Android-Einstellungen.": "The QR code cannot be scanned without the camera. Allow the camera in Android settings.",
+ "Für {dienst}, {zeit} eintragen? Absagen geht danach nur über die Verwaltung.": "Sign up for {dienst}, {zeit}? Cancelling afterwards is only possible via the club office."
 }

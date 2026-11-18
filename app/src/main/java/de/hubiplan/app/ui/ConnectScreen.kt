@@ -80,9 +80,14 @@ fun ConnectScreen(state: ConnectState, vm: AppViewModel) {
         LicensesPage(onClose = { licenses = false })
         return
     }
+    val scanContext = LocalContext.current
+    var scanProblem by remember { mutableStateOf<String?>(null) }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
-        result.contents?.let(vm::scanned)
+        val code = result.contents
+        if (code != null) vm.scanned(code)
+        else scanProblem = scanWithoutResult(scanContext, tr("Oder melde dich mit E-Mail und Passwort an."))
     }
+    ScanProblemDialog(scanProblem) { scanProblem = null }
     state.pendingPairing?.let { link ->
         AlertDialog(
             onDismissRequest = vm::cancelPairing,

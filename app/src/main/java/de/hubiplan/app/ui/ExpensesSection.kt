@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package de.hubiplan.app.ui
 
 import android.Manifest
@@ -37,6 +39,8 @@ import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -336,7 +340,8 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
                     TextButton(onClick = { draft = draft.copy(amounts = draft.amounts + "") }) { Text(tr("Weitere Position")) }
                 }
                 Text(tr("Belege"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
-                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                // Bei großer Schrift untereinander statt gequetscht (AND-29)
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(Abstand.klein), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                     Button(onClick = shoot, enabled = photos.size < 10) { Text(tr("Foto aufnehmen")) }
                     OutlinedButton(onClick = pick, enabled = photos.size < 10) { Text(tr("Aus der Galerie")) }
                 }
@@ -386,7 +391,11 @@ private fun PhotoStrip(photos: MutableList<ByteArray>) {
             val bitmap = remember(jpeg) { android.graphics.BitmapFactory.decodeByteArray(jpeg, 0, jpeg.size) }
             Column {
                 bitmap?.let { Thumb(it, tr("Beleg {n}", "n" to i + 1)) }
-                TextButton(onClick = { photos.removeAt(i) }) { Text(tr("Entfernen")) }
+                // Mit Bezug, damit TalkBack nicht zehnmal nur „Entfernen“ sagt (AND-26)
+                TextButton(
+                    onClick = { photos.removeAt(i) },
+                    modifier = Modifier.semantics { contentDescription = tr("Beleg {n} entfernen", "n" to i + 1) },
+                ) { Text(tr("Entfernen")) }
             }
         }
     }

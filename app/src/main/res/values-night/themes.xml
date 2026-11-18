@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dunkelmodus: kein heller Rahmen beim Start, Kalender- und Uhrzeitauswahl ebenfalls dunkel
+     (UX-Audit 16.11., AND-20). Hintergrund wie der dunkle Grund der App. -->
+<resources>
+    <style name="Theme.Hubiplan" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/hubiplan_dunkel_grund</item>
+        <item name="android:colorBackground">@color/hubiplan_dunkel_grund</item>
+    </style>
+</resources>

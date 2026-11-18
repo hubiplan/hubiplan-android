@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -190,7 +191,8 @@ private fun EventDetailView(
         }
         ActionNotice(notice) { notice = null }
         // Datum, Ort und Absage des gewählten Einzeltermins, nicht des ersten der Serie (A05)
-        Text(e.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        // Voller Titel sichtbar; TalkBack liest ihn nur einmal, aus der Kopfleiste (AND-26)
+        Text(e.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.clearAndSetSemantics {})
         Text(formatWhen(occ.startsAt, occ.endsAt, occ.allDay), style = MaterialTheme.typography.titleMedium)
         if (series) Text(tr("Termin einer Serie"), style = MaterialTheme.typography.bodySmall)
         if (occ.isCancelled || (!series && e.isCancelled)) {
@@ -251,16 +253,21 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int,
             AssistChip(
                 onClick = { if (guests > 0) guests-- },
                 label = { Text("−") },
-                enabled = !busy,
+                enabled = !busy && guests > 0,
                 modifier = Modifier.semantics { contentDescription = tr("Begleitperson entfernen") },
             )
-            Text(tr("Begleitpersonen: {guests}", "guests" to guests), Modifier.weight(1f, fill = false))
+            // Neue Zahl wird angesagt (AND-26)
+            Text(tr("Begleitpersonen: {guests}", "guests" to guests), Modifier.weight(1f, fill = false).announce())
             AssistChip(
                 onClick = { if (guests < rsvp.maxGuests) guests++ },
                 label = { Text("+") },
-                enabled = !busy,
+                // Am Höchstwert gesperrt, mit Hinweis darunter (AND-22)
+                enabled = !busy && guests < rsvp.maxGuests,
                 modifier = Modifier.semantics { contentDescription = tr("Begleitperson hinzufügen") },
             )
+        }
+        if (guests >= rsvp.maxGuests) {
+            Text(tr("Höchstens {n} Begleitpersonen.", "n" to rsvp.maxGuests), style = MaterialTheme.typography.bodySmall)
         }
     }
     if (rsvp.noteAllowed) {

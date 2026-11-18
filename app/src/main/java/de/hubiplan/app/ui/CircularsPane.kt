@@ -1,6 +1,5 @@
 package de.hubiplan.app.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,9 +26,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.hubiplan.app.data.ApiException
@@ -118,7 +117,8 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
 internal fun CircularRow(c: CircularItem, isSelected: Boolean, unread: Boolean = false, onClick: (() -> Unit)?) {
     ListItem(
         modifier = Modifier.semantics { selected = isSelected }
-            .then(if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            // Aktion benannt wie bei Terminen (AND-26)
+            .then(if (onClick != null) Modifier.openRow(onClick = onClick) else Modifier)
             .selectedRowMark(isSelected, MaterialTheme.colorScheme.onPrimaryContainer),
         colors = selectedRowColors(isSelected),
         overlineContent = {
@@ -166,7 +166,8 @@ private fun CircularDetail(access: PortalAccess, id: Int, vm: AppViewModel, onBa
             if (error == null) Loading()
             return@Column
         }
-        Text(c.subject, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        // Voller Betreff sichtbar; TalkBack liest ihn nur einmal, aus der Kopfleiste (AND-26)
+        Text(c.subject, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.clearAndSetSemantics {})
         Text(listOf(c.sender, formatDate(c.sentAt)).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
         CircularContent(c, (screen as? Screen.Main)?.account?.server, access.id, vm)
     }

@@ -1,7 +1,5 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +30,8 @@ import de.hubiplan.app.tr
 @Composable
 fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     val context = LocalContext.current
-    fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    val messages = LocalActionMessages.current
+    fun open(url: String) { openInBrowser(context, url, messages) }
     var deleteInfo by remember { mutableStateOf(false) }
     var licenses by remember { mutableStateOf(false) }
     // Lizenzen als Seite an Stelle des Kontos, Pfeil zurück in der Kopfleiste (A-11)

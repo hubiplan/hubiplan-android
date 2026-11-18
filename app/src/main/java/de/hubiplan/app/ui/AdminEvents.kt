@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+
 package de.hubiplan.app.ui
 
 import androidx.compose.foundation.layout.Arrangement
@@ -86,14 +88,16 @@ fun EventsSection(
         }
         LazyColumn(Modifier.fillMaxSize()) {
             item {
-                Row(
+                // Überschrift und Knöpfe umbrechend: bei großer Schrift stehen die Knöpfe unter der
+                // Überschrift statt ein „Aktualisie-ren“ zu erzwingen (AND-29)
+                androidx.compose.foundation.layout.FlowRow(
                     Modifier.fillMaxWidth().padding(start = Abstand.rand, end = Abstand.klein, top = Abstand.klein),
                     horizontalArrangement = Arrangement.spacedBy(Abstand.klein),
-                    verticalAlignment = Alignment.CenterVertically,
+                    itemVerticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(tr("Kommende Termine"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().weight(1f))
-                    TextButton(onClick = { refresh++ }) { Text(tr("Aktualisieren")) }
-                    if (list.canManage) Button(onClick = { onCreate(list.rsvpAllowed) }) { Text(tr("Neuer Termin")) }
+                    TextButton(onClick = { refresh++ }) { Text(tr("Aktualisieren"), softWrap = false) }
+                    if (list.canManage) Button(onClick = { onCreate(list.rsvpAllowed) }) { Text(tr("Neuer Termin"), softWrap = false) }
                 }
             }
             if (list.items.isEmpty()) item { Text(tr("Keine Termine im nächsten halben Jahr."), Modifier.padding(Abstand.rand)) }

@@ -393,7 +393,8 @@ private fun ResultBlock(q: ResultQuestion, total: Int) {
 private fun ResultLine(label: String, count: Int, total: Int, names: List<String>, best: Boolean, countText: String = count.toString()) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(if (best) "★ $label" else label, modifier = Modifier.weight(1f))
+            // Stern mit Text, nicht nur als Zeichen (AND-26)
+            Text(if (best) "★ $label · ${tr("Meiste Zusagen")}" else label, modifier = Modifier.weight(1f))
             Text(countText, style = MaterialTheme.typography.labelLarge)
         }
         LinearProgressIndicator(

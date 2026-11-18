@@ -1,8 +1,6 @@
 package de.hubiplan.app.ui
 
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
@@ -61,7 +59,8 @@ fun LicensesPage(onClose: () -> Unit) {
     val libraries = remember { Licenses.parse(context.asset(Licenses.LIBRARIES_ASSET).orEmpty()) }
     // Angezeigter Volltext: Titel und Inhalt
     var shown by remember { mutableStateOf<Pair<String, String>?>(null) }
-    fun open(url: String) = context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    val messages = LocalActionMessages.current
+    fun open(url: String) { openInBrowser(context, url, messages) }
     val text = shown
     val back = { if (shown != null) shown = null else onClose() }
     androidx.activity.compose.BackHandler { back() }

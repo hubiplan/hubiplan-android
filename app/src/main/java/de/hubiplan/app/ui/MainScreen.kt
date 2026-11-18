@@ -244,6 +244,9 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     val messageScope = androidx.compose.runtime.rememberCoroutineScope()
     val actionMessages = remember(snackbar, messageScope) { ActionMessages(snackbar, messageScope) }
     CompositionLocalProvider(LocalBackHost provides backHost, LocalActionMessages provides actionMessages) {
+    // Ein gemeinsamer Faktor für alle Beschriftungen der Leiste: keine sichtbar kleiner als die
+    // anderen (UX-Audit 16.11., AND-29)
+    val barScale = remember(tabs.map { it.short }) { mutableFloatStateOf(1f) }
     NavigationSuiteScaffold(
         layoutType = if (wide) {
             androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType.NavigationRail
@@ -282,7 +285,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                         )
                         }
                     },
-                    label = { BarLabel(t.short) },
+                    label = { BarLabel(t.short, barScale) },
                     colors = barColors,
                 )
             }
@@ -386,11 +389,11 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
  * Breite, wird sie schrittweise kleiner, höchstens bis zur Standardgröße (A-14).
  */
 @Composable
-private fun BarLabel(text: String) {
+private fun BarLabel(text: String, shared: androidx.compose.runtime.MutableFloatState) {
     val base = LocalTextStyle.current
     val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
     val min = barLabelMinScale(fontScale)
-    var scale by remember(text, base, fontScale) { mutableFloatStateOf(1f) }
+    var scale by shared
     var fits by remember(text, base, fontScale) { mutableStateOf(false) }
     Text(
         text,
@@ -447,7 +450,8 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             accesses.forEach { a ->
                 // Ansprechpartner sehen die Organisation dazu (J7)
-                DropdownMenuItem(text = { Text(a.label) }, onClick = {
+                // Häkchen am gewählten Zugang (AND-26)
+                DropdownMenuItem(text = { Text(a.label) }, leadingIcon = { MenuCheck(a.id == current?.id) }, onClick = {
                     open = false
                     if (a.id != current?.id) { if (leave == null) vm.selectAccess(a) else leave.request { vm.selectAccess(a) } }
                 })

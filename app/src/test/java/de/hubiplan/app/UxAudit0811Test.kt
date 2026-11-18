@@ -38,7 +38,7 @@ class UxAudit0811Test {
         assertEquals("Verwalten", Tab.VERWALTUNG.short)
         assertEquals("Mitteilungen", Tab.MITTEILUNGEN.label)
         val src = File(ui, "MainScreen.kt").readText()
-        assertTrue("Leiste nutzt die Kurzform", "BarLabel(t.short)" in src)
+        assertTrue("Leiste nutzt die Kurzform", "BarLabel(t.short" in src)
         assertTrue("einzeilig", "maxLines = 1" in src && "softWrap = false" in src)
         assertEquals(1f, barLabelMinScale(1f), 0.001f)
         assertEquals(0.6f, barLabelMinScale(2f), 0.001f)

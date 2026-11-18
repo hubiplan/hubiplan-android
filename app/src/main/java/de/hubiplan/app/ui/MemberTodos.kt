@@ -1,7 +1,5 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -148,6 +146,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
     var reload by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val actionMessages = LocalActionMessages.current
     LaunchedEffect(api, access, id, reloadKey, reload) {
         task = null
         error = null
@@ -179,10 +178,15 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
                 }
                 onChanged()
             } catch (e: ApiException) {
-                task = null
-                if (e.status == 401) vm.deviceRevoked(e) else {
-                    val problem = e.problem()
-                    error = problem; onInvalidated(problem)
+                when (e.status) {
+                    401 -> { task = null; vm.deviceRevoked(e) }
+                    // Aufgabe weg oder inzwischen geändert: neu laden
+                    404, 409, 410 -> { task = null; val problem = e.problem(); error = problem; onInvalidated(problem) }
+                    // Sonst (Funkloch, Serverfehler): Aufgabe bleibt stehen, Hinweis unten (AND-24)
+                    else -> {
+                        val text = e.problem().text
+                        if (actionMessages != null) actionMessages.show(text, error = true) else notice = text
+                    }
                 }
             } finally { busy = false }
         }
@@ -216,7 +220,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
                 }
                 if (viewer.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
                 viewer.message?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
-                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$server/mein-bereich/aufgaben?zugang=$access&aufgabe=$id"))) }) {
+                TextButton(onClick = { openInBrowser(context, "$server/mein-bereich/aufgaben?zugang=$access&aufgabe=$id", actionMessages) }) {
                     Text(tr("Mit Anhängen im Browser öffnen"))
                 }
             }
