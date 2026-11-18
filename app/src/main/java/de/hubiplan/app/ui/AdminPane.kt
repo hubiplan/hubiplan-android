@@ -59,6 +59,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -197,7 +198,7 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel, withCode: Boolean, w
                 onValueChange = { code = it.filter(Char::isDigit).take(8) },
                 label = { Text(tr("Code aus der Authenticator-App")) },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth(),
             )
             Button(

@@ -52,6 +52,7 @@ fun TitleInput(value: String, enabled: Boolean = true, onChange: (String) -> Uni
             placeholder = { Text(tr("z. B. Dipl.-Ing.")) },
             singleLine = true,
             enabled = enabled,
+            keyboardOptions = WEITER,
             modifier = Modifier.fillMaxWidth(),
         )
     }

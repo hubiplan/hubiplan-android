@@ -318,6 +318,7 @@ private fun ResponseLists(r: AdminResponses, canEnter: Boolean, onPick: (EventDi
         onValueChange = { search = it },
         label = { Text(tr("Name suchen")) },
         singleLine = true,
+        keyboardOptions = SUCHE, keyboardActions = sucheFertig(),
         modifier = Modifier.fillMaxWidth(),
     )
     val q = search.trim().lowercase()
@@ -373,7 +374,7 @@ private fun CancelDialog(series: Boolean, saving: Boolean, saveError: String?, o
                         tr("Der Termin bleibt im Kalender, als abgesagt gekennzeichnet. Rückmeldungen bleiben erhalten.")
                     },
                 )
-                OutlinedTextField(value = note, onValueChange = { note = it.take(300) }, label = { Text(tr("Hinweis (optional)")) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = note, onValueChange = { note = it.take(300) }, label = { Text(tr("Hinweis (optional)")) }, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
                 if (!series) {
                     LabeledSwitch(tr("Eingeladene per E-Mail informieren"), notify, { notify = it })
                 }
@@ -425,7 +426,7 @@ private fun RespondDialog(
                         ) { Text("+") }
                     }
                 }
-                OutlinedTextField(value = note, onValueChange = { note = it.take(200) }, label = { Text(tr("Notiz (optional)")) }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = note, onValueChange = { note = it.take(200) }, label = { Text(tr("Notiz (optional)")) }, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
                 if (d.status != null) TextButton(onClick = onRemove, enabled = !saving) { Text(tr("Rückmeldung entfernen")) }
             }
         },

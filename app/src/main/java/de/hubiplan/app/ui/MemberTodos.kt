@@ -111,7 +111,7 @@ private fun MemberTaskList(api: Api, access: Int, selected: Int?, server: String
                 header = {
                     Text(tr("Aufgaben"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading().padding(Abstand.rand))
                     switch?.invoke()
-                    Text(tr("Für dich freigegebene Aufgaben und offene Angebote deiner Einheit."), modifier = Modifier.padding(horizontal = Abstand.rand))
+                    Text(tr("Für dich freigegebene Aufgaben und offene Angebote deines Vereins oder deiner Gruppe."), modifier = Modifier.padding(horizontal = Abstand.rand))
                     Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         FilterChip(selected = !done, onClick = { done = false }, label = { Text(tr("Offen")) })
                         FilterChip(selected = done, onClick = { done = true }, label = { Text(tr("Erledigt")) })

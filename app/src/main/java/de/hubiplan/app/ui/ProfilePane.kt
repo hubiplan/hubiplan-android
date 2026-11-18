@@ -411,7 +411,7 @@ private fun ChangeForm(
         OutlinedTextField(
             value = message,
             onValueChange = { message = it.take(500) },
-            label = { Text(tr("Nachricht an den Vorstand (freiwillig)")) },
+            label = { Text(tr("Nachricht an den Verein (freiwillig)")) },
             keyboardOptions = FREITEXT,
             modifier = Modifier.fillMaxWidth(),
         )

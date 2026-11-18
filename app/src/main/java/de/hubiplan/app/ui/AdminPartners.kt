@@ -85,6 +85,7 @@ fun PartnersSection(client: AdminClient, errors: AdminErrors, reload: Int) {
                     onValueChange = { search = it },
                     label = { Text(tr("Name, Ort oder Ansprechpartner")) },
                     singleLine = true,
+                    keyboardOptions = SUCHE, keyboardActions = sucheFertig(),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }

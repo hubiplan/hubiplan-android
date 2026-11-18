@@ -55,7 +55,7 @@ object Notifications {
         )
         manager.createNotificationChannel(
             NotificationChannel(CHANNEL_MESSAGES, tr("Mitteilungen"), NotificationManager.IMPORTANCE_HIGH).apply {
-                description = tr("Mitteilungen und Rundschreiben des Vorstands")
+                description = tr("Mitteilungen deines Vereins")
             },
         )
         manager.createNotificationChannel(

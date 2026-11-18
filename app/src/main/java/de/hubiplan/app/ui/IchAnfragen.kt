@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.Belegung
@@ -98,7 +99,7 @@ private fun DayField(label: String, value: String, enabled: Boolean, onChange: (
         enabled = enabled,
         isError = value.isNotBlank() && parseGermanDate(value) == null,
         trailingIcon = { DatePickButton(value, onChange) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
         modifier = modifier,
     )
 }
@@ -113,6 +114,7 @@ private fun ClockField(label: String, value: String, enabled: Boolean, onChange:
         enabled = enabled,
         isError = value.isNotBlank() && parseTime(value) == null,
         trailingIcon = { TimePickButton(value) { onChange(it) } },
+        keyboardOptions = WEITER,
         modifier = modifier,
     )
 }
@@ -267,7 +269,7 @@ private fun BookingForm(access: PortalAccess, vm: AppViewModel, week: BookingWee
             }
         }
     }
-    OutlinedTextField(title, { title = it.take(200) }, label = { Text(tr("Zweck")) }, singleLine = true, enabled = !busy, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(title, { title = it.take(200) }, label = { Text(tr("Zweck")) }, singleLine = true, enabled = !busy, keyboardOptions = TITELZEILE, modifier = Modifier.fillMaxWidth())
     LabeledSwitch(tr("Ganztägig"), allDay, { allDay = it })
     if (allDay) {
         DayField(tr("Von (TT.MM.JJJJ)"), from, !busy, { from = it })
@@ -285,7 +287,7 @@ private fun BookingForm(access: PortalAccess, vm: AppViewModel, week: BookingWee
     if (item.horizonDays > 0) {
         Text(tr("Bis zu {n} Tage im Voraus buchbar.", "n" to item.horizonDays), style = MaterialTheme.typography.bodySmall)
     }
-    OutlinedTextField(note, { note = it.take(2000) }, label = { Text(tr("Notiz (optional)")) }, minLines = 2, enabled = !busy, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(note, { note = it.take(2000) }, label = { Text(tr("Notiz (optional)")) }, minLines = 2, enabled = !busy, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
     if (from.isNotBlank() && times == null) {
         Text(tr("Bitte Tag als TT.MM.JJJJ und Zeit als HH:MM eingeben; das Ende liegt nach dem Beginn."), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
     }
@@ -567,7 +569,7 @@ internal fun CancellationBlock(access: PortalAccess, vm: AppViewModel, info: Can
         if (tooEarly) {
             Text(tr("Frühestens zum {date}.", "date" to formatPlainDate(info.earliestDate)), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
-        OutlinedTextField(message, { message = it.take(500) }, label = { Text(tr("Nachricht an den Vorstand (optional)")) }, minLines = 2, enabled = !busy, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(message, { message = it.take(500) }, label = { Text(tr("Nachricht an den Verein (optional)")) }, minLines = 2, enabled = !busy, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
         Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
             Button(
                 enabled = !busy && chosen != null && !tooEarly,

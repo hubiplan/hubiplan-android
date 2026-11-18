@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.data.ReceiptCache
@@ -100,6 +101,7 @@ fun BillingSection(client: AdminClient, errors: AdminErrors, reload: Int, onOpen
                     onValueChange = { search = it },
                     label = { Text(tr("Name, Betreff oder Rechnungsnummer")) },
                     singleLine = true,
+                    keyboardOptions = SUCHE, keyboardActions = sucheFertig(),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
@@ -300,7 +302,7 @@ fun InvoiceScreen(
                                 } else {
                                     null
                                 },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             OutlinedTextField(
@@ -310,7 +312,7 @@ fun InvoiceScreen(
                                 singleLine = true,
                                 isError = dateValue == null,
                                 trailingIcon = { DatePickButton(date) { date = it } },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                                 modifier = Modifier.fillMaxWidth(),
                             )
                             if (accounts.size > 1) {

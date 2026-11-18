@@ -1,6 +1,7 @@
 package de.hubiplan.app.ui
 
 import android.content.ActivityNotFoundException
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.platform.LocalAutofillManager
 import androidx.compose.ui.platform.LocalContext
@@ -243,7 +244,8 @@ internal fun PasskeyLogin(state: ConnectState, buttonLabel: String = tr("Passkey
         } else {
             null
         },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+        keyboardActions = KeyboardActions(onGo = { if (server.isBlank()) missing = true else onLogin(server) }),
         modifier = Modifier.fillMaxWidth().focusRequester(serverFocus),
     )
     OutlinedButton(
@@ -411,7 +413,8 @@ private fun SecondFactor(state: ConnectState, vm: AppViewModel) {
         onValueChange = { code = it },
         label = { Text(tr("Code")) },
         singleLine = true,
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Go),
+        keyboardActions = KeyboardActions(onGo = { if (code.isNotBlank()) vm.secondFactor(code) }),
         modifier = Modifier.fillMaxWidth(),
     )
     Button(

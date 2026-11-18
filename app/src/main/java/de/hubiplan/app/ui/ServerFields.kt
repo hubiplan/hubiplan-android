@@ -20,6 +20,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.tr
 
@@ -84,7 +85,8 @@ fun ServerTextField(
         minLines = minLines,
         isError = isError || message != null,
         enabled = enabled,
-        keyboardOptions = keyboardOptions,
+        // Einzeilige Felder führen mit der Eingabetaste weiter, sofern der Aufrufer nichts anderes will (AND-09)
+        keyboardOptions = if (singleLine && keyboardOptions.imeAction == ImeAction.Default) keyboardOptions.copy(imeAction = ImeAction.Next) else keyboardOptions,
         trailingIcon = trailingIcon,
         supportingText = if (message != null) ({ Text(message) }) else supportingText,
     )

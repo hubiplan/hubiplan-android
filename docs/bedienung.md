@@ -50,7 +50,7 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
 
 - **Meine Daten**: Anschrift, Telefon, Foto, „Änderung melden“. Erlaubt der Verein das Kündigen im
   Mitgliederbereich, steht darunter „Mitgliedschaft kündigen“: frühestes Datum nach der Regel des
-  Vereins, ein späteres ist wählbar, dazu eine Nachricht an den Vorstand. Eine offene Kündigung
+  Vereins, ein späteres ist wählbar, dazu eine Nachricht an den Verein. Eine offene Kündigung
   lässt sich zurücknehmen, bis der Vorstand entschieden hat.
 - **Rechnungen**: offene zuerst mit Betrag und Fälligkeit, „PDF ansehen“, darunter Beiträge über
   eine Sammelrechnung und das Lastschriftmandat (nur ansehen; erteilen, ändern und widerrufen im

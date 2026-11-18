@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.data.ApiException
@@ -324,7 +325,7 @@ private fun QuestionInput(q: SurveyQuestion, row: SurveyAnswerRow, set: (SurveyA
                             set(row.copy(quantities = amounts + (key to n)))
                         },
                         label = { Text(o.display()) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Next),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -341,6 +342,7 @@ private fun QuestionInput(q: SurveyQuestion, row: SurveyAnswerRow, set: (SurveyA
                 value = row.text.orEmpty(),
                 onValueChange = { set(row.copy(text = it.take(500))) },
                 label = { Text(tr("Antwort")) },
+                keyboardOptions = FREITEXT,
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2,
             )

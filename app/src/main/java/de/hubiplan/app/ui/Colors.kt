@@ -46,9 +46,69 @@ fun readableOn(background: Long): Long {
 
 const val DARK_TEXT = 0xFF1D2421L
 
-/** Hintergründe von Material 3 (hell/dunkel), auf denen Text in Vereinsfarbe steht. */
-const val LIGHT_SURFACE = 0xFFFEF7FFL
-const val DARK_SURFACE = 0xFF141218L
+/**
+ * Neutrale Flächen, Schrift und Linien wie in der Weboberfläche (frontend/src/theme/theme.css:
+ * --color-bg, --color-surface, --color-text, --color-text-muted, --color-border), statt der
+ * violettstichigen Grundwerte von Material (UX-Audit 16.11., AND-19).
+ */
+data class Neutral(
+    val surface: Long,
+    val onSurface: Long,
+    val onSurfaceVariant: Long,
+    val containerLowest: Long,
+    val containerLow: Long,
+    val container: Long,
+    val containerHigh: Long,
+    val containerHighest: Long,
+    val outline: Long,
+    val outlineVariant: Long,
+    val inverseSurface: Long,
+    val inverseOnSurface: Long,
+    val dim: Long,
+    val bright: Long,
+) {
+    /** Alle Flächen, auf denen Text oder Vereinsfarbe stehen kann. */
+    val flaechen: List<Long>
+        get() = listOf(surface, containerLowest, containerLow, container, containerHigh, containerHighest, dim, bright)
+}
+
+val NEUTRAL_HELL = Neutral(
+    surface = 0xFFFBFCFBL,
+    onSurface = 0xFF121614L,
+    onSurfaceVariant = 0xFF545E5AL,
+    containerLowest = 0xFFFFFFFFL,
+    containerLow = 0xFFF5F7F5L,
+    container = 0xFFEEF0EDL,
+    containerHigh = 0xFFE7EAE7L,
+    containerHighest = 0xFFE1E4E1L,
+    outline = 0xFF737D79L,
+    outlineVariant = 0xFFDDE1DEL,
+    inverseSurface = 0xFF2A302DL,
+    inverseOnSurface = 0xFFEEF1F0L,
+    dim = 0xFFDADDDAL,
+    bright = 0xFFFBFCFBL,
+)
+
+val NEUTRAL_DUNKEL = Neutral(
+    surface = 0xFF111614L,
+    onSurface = 0xFFDFE5E2L,
+    onSurfaceVariant = 0xFFA3ADA8L,
+    containerLowest = 0xFF0C100EL,
+    containerLow = 0xFF161B19L,
+    container = 0xFF1A201DL,
+    containerHigh = 0xFF242B27L,
+    containerHighest = 0xFF2F3833L,
+    outline = 0xFF838D88L,
+    outlineVariant = 0xFF2F3833L,
+    inverseSurface = 0xFFDFE5E2L,
+    inverseOnSurface = 0xFF1A201DL,
+    dim = 0xFF111614L,
+    bright = 0xFF353D39L,
+)
+
+/** Hintergründe (hell/dunkel), auf denen Text in Vereinsfarbe steht. */
+val LIGHT_SURFACE = NEUTRAL_HELL.surface
+val DARK_SURFACE = NEUTRAL_DUNKEL.surface
 
 /**
  * Vereinsfarbe so wenig wie nötig zu [toward] (Schwarz im hellen, Weiß im dunklen Schema)

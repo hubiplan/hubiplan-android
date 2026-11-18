@@ -319,7 +319,7 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
                     label = { Text(tr("Gefahrene Kilometer (hin und zurück)")) },
                     supportingText = { Text(tr("{rate} je km", "rate" to formatMoney(options.kmRate))) },
                     isError = "km" in fieldErrors,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -331,7 +331,7 @@ private fun ExpenseForm(access: PortalAccess, vm: AppViewModel, overview: Expens
                         label = { Text(tr("Betrag in €")) },
                         isError = "lines" in fieldErrors,
                         supportingText = if (i == draft.amounts.lastIndex) fieldErrors["lines"]?.let { { Text(it) } } else null,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal, imeAction = ImeAction.Next),
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -468,7 +468,7 @@ private fun ExpenseDetail(access: PortalAccess, vm: AppViewModel, id: Int, onBac
         Text(trn("1 Beleg", "{n} Belege", c.files.size), style = MaterialTheme.typography.bodySmall)
         if (c.asksMe) {
             c.question?.let { Text(tr("Rückfrage der Kasse: {text}", "text" to it), color = MaterialTheme.colorScheme.error) }
-            OutlinedTextField(answer, { answer = it.take(2000) }, label = { Text(tr("Deine Antwort")) }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(answer, { answer = it.take(2000) }, label = { Text(tr("Deine Antwort")) }, keyboardOptions = FREITEXT, modifier = Modifier.fillMaxWidth())
             Button(
                 onClick = { act(tr("Antwort gesendet. Die Kasse prüft erneut.")) { it.expenseAction(access.id, id, "answer", answer.trim()) }.also { answer = "" } },
                 enabled = !busy && answer.isNotBlank(),
