@@ -358,6 +358,8 @@ data class EventDetail(
     val longitude: Double? = null,
     @SerialName("map_links") val mapLinks: MapLinks = MapLinks(),
     val attachments: List<EventFile> = emptyList(),
+    /** Verbindliche Anmeldung (Modul „Anmeldungen“); ohne Modul oder bei älteren Servern null */
+    val registration: RegistrationBrief? = null,
 )
 
 @Serializable
