@@ -835,8 +835,26 @@ class Api(
     suspend fun register(accessId: Int, eventId: Int, payload: JsonObject): MemberRegistration =
         decodeApi(expect("POST", "/api/portal/$accessId/events/$eventId/registration/", json.encodeToString(JsonObject.serializer(), payload)))
 
-    suspend fun cancelRegistration(accessId: Int, eventId: Int, registrationId: Int): MemberRegistration =
-        decodeApi(expect("POST", "/api/portal/$accessId/events/$eventId/registration/$registrationId/cancel/", "{}"))
+    suspend fun cancelRegistration(accessId: Int, eventId: Int, registrationId: Int, participants: List<Int> = emptyList()): MemberRegistration =
+        decodeApi(
+            expect(
+                "POST",
+                "/api/portal/$accessId/events/$eventId/registration/$registrationId/cancel/",
+                json.encodeToString(JsonObject.serializer(), cancelPayload(participants)),
+            ),
+        )
+
+    suspend fun cancelQuote(accessId: Int, eventId: Int, registrationId: Int, participants: List<Int> = emptyList()): FeeQuote =
+        decodeApi(expect("GET", "/api/portal/$accessId/events/$eventId/registration/$registrationId/cancel/" + cancelQuery(participants)))
+
+    suspend fun substitute(accessId: Int, eventId: Int, registrationId: Int, participantId: Int, payload: JsonObject): MemberRegistration =
+        decodeApi(
+            expect(
+                "POST",
+                "/api/portal/$accessId/events/$eventId/registration/$registrationId/participants/$participantId/",
+                json.encodeToString(JsonObject.serializer(), payload),
+            ),
+        )
 
     suspend fun memberSurveys(accessId: Int): SurveyList =
         decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
