@@ -204,6 +204,10 @@ private fun EventDetailView(
         PlaceSection(occ.location.ifBlank { e.location }, occ.address.ifBlank { e.address }, e)
         if (e.owner.isNotBlank()) Text(e.owner, style = MaterialTheme.typography.bodySmall)
         if (e.description.isNotBlank()) Text(e.description)
+        if (e.programme.isNotBlank()) {
+            Text(tr("Ablauf"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
+            Text(e.programme)
+        }
         if (e.attachments.isNotEmpty()) AttachmentSection(access, e, vm)
 
         if (e.rsvp.enabled) {

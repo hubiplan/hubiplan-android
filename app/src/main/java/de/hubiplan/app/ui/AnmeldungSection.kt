@@ -34,6 +34,9 @@ import de.hubiplan.app.data.MemberRegistration
 import de.hubiplan.app.data.MyRegistration
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.RegistrationChoice
+import de.hubiplan.app.data.RegistrationExtras
+import de.hubiplan.app.data.bookingLine
+import de.hubiplan.app.data.isMinor
 import de.hubiplan.app.data.RegistrationGap
 import de.hubiplan.app.data.RegistrationOffer
 import de.hubiplan.app.data.RegistrationParticipant
@@ -57,6 +60,7 @@ private class GuestRow(name: String = "", priceId: Int? = null) {
     var name by mutableStateOf(name)
     var priceId by mutableStateOf(priceId)
     var birth by mutableStateOf("")
+    var extras by mutableStateOf(RegistrationExtras())
 }
 
 @Composable
@@ -159,6 +163,9 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
     // Auswahl: Mitglied → Tarif; Geburtsdatum nur, wenn ein Alterstarif es braucht
     val chosen = remember(e.id) { mutableStateMapOf<Int, Int?>() }
     val births = remember(e.id) { mutableStateMapOf<Int, String>() }
+    val extras = remember(e.id) { mutableStateMapOf<Int, RegistrationExtras>() }
+    var regExtras by remember(e.id) { mutableStateOf(RegistrationExtras()) }
+    var consent by remember(e.id) { mutableStateOf(false) }
     val guests = remember(e.id) { mutableStateListOf<GuestRow>() }
     var note by remember(e.id) { mutableStateOf("") }
     var terms by remember(e.id) { mutableStateOf(false) }
@@ -176,8 +183,13 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
             Column(Modifier.padding(start = Abstand.gross)) {
                 PriceChoice(memberPrices, chosen[person.membershipId], !busy) { chosen[person.membershipId] = it }
                 val price = memberPrices.firstOrNull { it.id == chosen[person.membershipId] }
-                if (price?.hasAge == true && !person.hasBirthDate) {
+                if ((price?.hasAge == true || offer.minors) && !person.hasBirthDate) {
                     BirthField(births[person.membershipId].orEmpty()) { births[person.membershipId] = it }
+                }
+                val minor = offer.minors &&
+                    (person.minor || isMinor(parseGermanDate(births[person.membershipId].orEmpty()), e.startsAt))
+                ExtrasEditor(offer, "person", extras[person.membershipId] ?: RegistrationExtras(), !busy, minor) {
+                    extras[person.membershipId] = it
                 }
             }
         }
@@ -195,7 +207,10 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
                     modifier = Modifier.fillMaxWidth(),
                 )
                 PriceChoice(guestPrices, g.priceId, !busy) { g.priceId = it }
-                if (guestPrices.firstOrNull { it.id == g.priceId }?.hasAge == true) BirthField(g.birth) { g.birth = it }
+                if (guestPrices.firstOrNull { it.id == g.priceId }?.hasAge == true || offer.minors) BirthField(g.birth) { g.birth = it }
+                ExtrasEditor(offer, "person", g.extras, !busy, offer.minors && isMinor(parseGermanDate(g.birth), e.startsAt)) {
+                    g.extras = it
+                }
                 TextButton(onClick = { guests.removeAt(i) }, enabled = !busy) { Text(tr("Gast entfernen")) }
             }
         }
@@ -205,6 +220,7 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
         ) { Text(tr("Gast hinzufügen")) }
     }
 
+    ExtrasEditor(offer, "registration", regExtras, !busy) { regExtras = it }
     OutlinedTextField(
         value = note,
         onValueChange = { note = it.take(500) },
@@ -220,10 +236,35 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
     }
 
     val persons = chosen.mapNotNull { (id, price) ->
-        price?.let { RegistrationChoice(id, "", it, births[id]?.let(::parseGermanDate)) }
-    } + guests.mapNotNull { g -> g.priceId?.let { RegistrationChoice(null, g.name, it, parseGermanDate(g.birth)) } }
+        price?.let {
+            val birth = births[id]?.let(::parseGermanDate)
+            val person = d.persons.firstOrNull { p -> p.membershipId == id }
+            RegistrationChoice(
+                id,
+                "",
+                it,
+                birth,
+                extras[id] ?: RegistrationExtras(),
+                minor = offer.minors && (person?.minor == true || isMinor(birth, e.startsAt)),
+            )
+        }
+    } + guests.mapNotNull { g ->
+        g.priceId?.let {
+            val birth = parseGermanDate(g.birth)
+            RegistrationChoice(null, g.name, it, birth, g.extras, minor = offer.minors && isMinor(birth, e.startsAt))
+        }
+    }
     val unpriced = chosen.values.any { it == null } || guests.any { it.priceId == null }
-    val sum = registrationSum(offer, persons)
+    val sum = registrationSum(offer, persons, regExtras)
+    val health = offer.asksHealth && persons.any { it.extras.health.isNotBlank() }
+    if (health) {
+        LabeledCheckbox(
+            tr("Ich willige ein, dass der Verein die Angaben zu Allergien und Unverträglichkeiten für die Planung des Essens verarbeitet."),
+            consent,
+            { consent = it },
+            enabled = !busy,
+        )
+    }
     if (persons.isNotEmpty()) Text(tr("Summe: {sum}", "sum" to formatMoney(sum.toPlainString())), style = MaterialTheme.typography.titleSmall)
     offer.closesAt?.let { Text(tr("Abmelden ist bis {when} möglich.", "when" to formatDate(it)), style = MaterialTheme.typography.bodySmall) }
     gap?.let { Text(gapText(it, offer.maxPersons), color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
@@ -233,9 +274,9 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
             val needs = { c: RegistrationChoice ->
                 val price = offer.prices.firstOrNull { it.id == c.priceId }
                 val known = c.membershipId != null && d.persons.any { it.membershipId == c.membershipId && it.hasBirthDate }
-                price?.hasAge == true && !known
+                (price?.hasAge == true || offer.minors) && !known
             }
-            gap = registrationMissing(offer, persons, needs, terms)
+            gap = registrationMissing(offer, persons, needs, terms, regExtras, health && consent)
             if (gap != null || unpriced) return@Button
             val api = vm.api() ?: return@Button
             val done = if (offer.toWaitlist) {
@@ -244,9 +285,16 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
                 tr("Angemeldet. Die Bestätigung kommt per E-Mail.")
             }
             run(done) {
-                api.register(access.id, e.id, registrationPayload(persons, note, terms)).also {
+                api.register(
+                    access.id,
+                    e.id,
+                    registrationPayload(persons, note, terms, regExtras, health && consent, offer.asksHealth),
+                ).also {
                     chosen.clear()
                     births.clear()
+                    extras.clear()
+                    regExtras = RegistrationExtras()
+                    consent = false
                     guests.clear()
                     note = ""
                     terms = false
@@ -271,6 +319,10 @@ private fun gapText(gap: RegistrationGap, max: Int): String = when (gap) {
     RegistrationGap.TOO_MANY -> tr("Höchstens {n} Personen je Anmeldung.", "n" to max)
     RegistrationGap.NAME -> tr("Bitte für jede Person den Namen angeben.")
     RegistrationGap.BIRTH_DATE -> tr("Für diesen Tarif brauchen wir das Geburtsdatum.")
+    RegistrationGap.ADDON -> tr("Bitte bei jeder Pflicht-Zusatzleistung etwas wählen.")
+    RegistrationGap.ANSWER -> tr("Bitte alle Pflichtfragen beantworten.")
+    RegistrationGap.GUARDIAN -> tr("Unter 18: Bitte Name, Telefon und E-Mail einer oder eines Erziehungsberechtigten angeben.")
+    RegistrationGap.CONSENT -> tr("Bitte der Verarbeitung der Angaben zu Allergien zustimmen oder das Feld leer lassen.")
     RegistrationGap.TERMS -> tr("Bitte die Teilnahmebedingungen bestätigen.")
 }
 
@@ -359,12 +411,14 @@ private fun MyRegistrationCard(
             val price = if ((p.amount.toBigDecimalOrNull()?.signum() ?: 0) > 0) "${p.priceName}, ${formatMoney(p.amount)}" else p.priceName
             val mark = if (p.status == "active") "" else " (" + tr("abgemeldet") + ")"
             Text("${p.name}: $price$mark")
+            if (p.bookings.isNotEmpty()) Text(bookingLine(p.bookings, ::formatMoney), style = MaterialTheme.typography.bodySmall)
             if (p.status == "active" && reg.canSubstitute) {
                 TextButton(onClick = { onSubstitute(p) }, enabled = !busy) {
                     Text(tr("Ersatzperson für {name}", "name" to p.name))
                 }
             }
         }
+        if (reg.bookings.isNotEmpty()) Text(bookingLine(reg.bookings, ::formatMoney), style = MaterialTheme.typography.bodySmall)
         reg.invoice?.takeIf { reg.status == "registered" }?.let { inv ->
             Text(
                 tr("Rechnung {number} über {total}, zahlbar bis {due}", "number" to inv.number, "total" to formatMoney(inv.total), "due" to formatDate(inv.dueDate)),

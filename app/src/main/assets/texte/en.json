@@ -1382,5 +1382,20 @@
  "Kostenfrei: Der Termin ist abgesagt.": "Free of charge: the event has been cancelled.",
  "Ersatzperson eintragen": "Enter substitute",
  "Tarif und Preis bleiben, die Rechnung auch: {price}, {amount}": "Rate and price stay, and so does the invoice: {price}, {amount}",
- "Kostenfrei: Die Anmeldung steht auf der Warteliste.": "Free of charge: the registration is on the waiting list."
+ "Kostenfrei: Die Anmeldung steht auf der Warteliste.": "Free of charge: the registration is on the waiting list.",
+ "Ablauf": "Programme",
+ "nicht gewünscht": "not wanted",
+ "ausgebucht": "fully booked",
+ "(optional)": "(optional)",
+ "Nur für die Planung des Essens; sieht nur die Verwaltung, wird 14 Tage nach der Veranstaltung gelöscht.": "Only for planning the food; visible only to the administration and deleted 14 days after the event.",
+ "ja": "yes",
+ "nein": "no",
+ "Erziehungsberechtigte": "Parents or guardians",
+ "Unter 18: Bitte Name, Telefon (während der Veranstaltung erreichbar) und E-Mail angeben; die Anschrift nur, wenn sie abweicht.": "Under 18: please give a name, a phone number (reachable during the event) and an email; the address only if it is different.",
+ "Anschrift (optional)": "Address (optional)",
+ "Ich willige ein, dass der Verein die Angaben zu Allergien und Unverträglichkeiten für die Planung des Essens verarbeitet.": "I consent to the club processing the information on allergies and intolerances for planning the food.",
+ "Bitte bei jeder Pflicht-Zusatzleistung etwas wählen.": "Please choose something for every required extra.",
+ "Bitte alle Pflichtfragen beantworten.": "Please answer all required questions.",
+ "Unter 18: Bitte Name, Telefon und E-Mail einer oder eines Erziehungsberechtigten angeben.": "Under 18: please give the name, phone number and email of a parent or guardian.",
+ "Bitte der Verarbeitung der Angaben zu Allergien zustimmen oder das Feld leer lassen.": "Please consent to the processing of the information on allergies, or leave the field empty."
 }
