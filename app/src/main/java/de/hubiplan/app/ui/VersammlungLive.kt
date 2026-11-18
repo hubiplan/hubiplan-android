@@ -202,17 +202,7 @@ private fun PollCard(poll: Poll, busy: Boolean, onVote: (Map<Int, Int>) -> Unit)
                         Text(voteLabel(v), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
                         Column(Modifier.selectableGroup()) {
                             poll.options.forEach { o ->
-                                Row(
-                                    Modifier.fillMaxWidth().selectable(
-                                        selected = choice[v.attendance] == o.id,
-                                        onClick = { choice[v.attendance] = o.id },
-                                        role = Role.RadioButton,
-                                    ).padding(vertical = Abstand.eng),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    RadioButton(selected = choice[v.attendance] == o.id, onClick = null)
-                                    Text(o.label, Modifier.padding(start = Abstand.klein))
-                                }
+                                LabeledRadio(o.label, choice[v.attendance] == o.id, { choice[v.attendance] = o.id })
                             }
                         }
                     }

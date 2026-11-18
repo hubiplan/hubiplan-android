@@ -4,8 +4,6 @@ import androidx.compose.ui.autofill.ContentType
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.content.Intent
-import android.net.Uri
 import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
@@ -94,6 +92,7 @@ internal fun rememberAdminDraftState(key: String): androidx.compose.runtime.save
 @Composable
 fun AdminPane(main: Screen.Main, vm: AppViewModel) {
     val context = LocalContext.current
+    val actionMessages = LocalActionMessages.current
     val state by vm.admin.collectAsStateWithLifecycle()
     val retainedKey = "${main.account.server}-${main.account.deviceId}"
     val retained = rememberAdminDraftState(retainedKey)
@@ -135,7 +134,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
             !overview.twoFactor && !overview.passkey -> Notice(
                 tr("Für die Verwaltung in der App ist die Zwei-Faktor-Anmeldung nötig. Bitte im Browser unter „Mein Konto › Anmeldung & Sicherheit“ einrichten, danach hier freischalten."),
                 tr("Mein Konto öffnen"),
-            ) { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("${main.account.server}/mein-konto/anmeldung"))) }
+            ) { openInBrowser(context, "${main.account.server}/mein-konto/anmeldung", actionMessages) }
             !screenLock -> Notice(
                 tr("Für die Verwaltung braucht das Gerät eine Bildschirmsperre (PIN, Muster oder Fingerabdruck)."),
                 tr("Bildschirmsperre einrichten"),
@@ -239,19 +238,23 @@ private fun UnlockForm(state: AdminState, vm: AppViewModel, withCode: Boolean, w
  * Bereiche der Verwaltung. Sie stehen untereinander in einer Startliste statt als waagerecht
  * scrollende Filterchips (UX-Audit 05.11. A-03); „Zu erledigen“ hebt sich von „Aufgaben“ ab (Begriff wie auf der Web-Startseite).
  */
-internal enum class Section(val label: String, val hint: String) {
-    TASKS(tr("Zu erledigen"), tr("Datenänderungen, Fotos und Termine, die auf dich warten")),
+// Übersetzt beim Anzeigen (AND-11)
+internal enum class Section(private val labelText: () -> String, private val hintText: () -> String) {
+    TASKS({ tr("Zu erledigen") }, { tr("Datenänderungen, Fotos und Termine, die auf dich warten") }),
     // „Aufgaben verteilen“: der Reiter „Aufgaben“ zeigt die eigenen (UX-Audit 08.11. A-04)
-    TODOS(tr("Aufgaben verteilen"), tr("Aufgaben anlegen, verteilen und erledigen")),
-    MEMBERS(tr("Mitglieder"), tr("Suchen, anrufen, Mitgliedsakte öffnen")),
-    EVENTS(tr("Termine"), tr("Termine anlegen, Zu- und Absagen eintragen")),
-    FINANCE(tr("Kassenbuch"), tr("Buchungen und Quittungen")),
-    BILLING(tr("Rechnungen"), tr("Offene und bezahlte Rechnungen der Mitglieder")),
-    OCCASIONS(tr("Jubiläen und Geburtstage"), tr("Geburtstage und Jubiläen der nächsten Wochen")),
-    COMPETITIONS(tr("Wettbewerbe"), tr("Schießen im Standmodus erfassen, auch ohne Empfang")),
-    PARTNERS(tr("Geschäftspartner"), tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen")),
-    QUALIFICATIONS(tr("Qualifikationen"), tr("Nachweise, die bald ablaufen")),
-    OBLIGATIONS(tr("Fristen"), tr("Vereinspflichten mit Frist und Zuständigkeit")),
+    TODOS({ tr("Aufgaben verteilen") }, { tr("Aufgaben anlegen, verteilen und erledigen") }),
+    MEMBERS({ tr("Mitglieder") }, { tr("Suchen, anrufen, Mitgliedsakte öffnen") }),
+    EVENTS({ tr("Termine") }, { tr("Termine anlegen, Zu- und Absagen eintragen") }),
+    FINANCE({ tr("Kassenbuch") }, { tr("Buchungen und Quittungen") }),
+    BILLING({ tr("Rechnungen") }, { tr("Offene und bezahlte Rechnungen der Mitglieder") }),
+    OCCASIONS({ tr("Jubiläen und Geburtstage") }, { tr("Geburtstage und Jubiläen der nächsten Wochen") }),
+    COMPETITIONS({ tr("Wettbewerbe") }, { tr("Schießen im Standmodus erfassen, auch ohne Empfang") }),
+    PARTNERS({ tr("Geschäftspartner") }, { tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen") }),
+    QUALIFICATIONS({ tr("Qualifikationen") }, { tr("Nachweise, die bald ablaufen") }),
+    OBLIGATIONS({ tr("Fristen") }, { tr("Vereinspflichten mit Frist und Zuständigkeit") });
+
+    val label: String get() = labelText()
+    val hint: String get() = hintText()
 }
 
 /**
@@ -359,8 +362,13 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
         }
         return true
     }
+    var scanProblem by remember { mutableStateOf<String?>(null) }
+    ScanProblemDialog(scanProblem) { scanProblem = null }
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
-        val code = result.contents ?: return@rememberLauncherForActivityResult
+        val code = result.contents ?: run {
+            scanProblem = scanWithoutResult(context)
+            return@rememberLauncherForActivityResult
+        }
         // Stand-QR (auch beim Ausweis prüfen erkannt): Standmodus öffnen
         if (openStandLink(code)) return@rememberLauncherForActivityResult
         scope.launch {
@@ -580,7 +588,9 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                             // Nur Pfade auf der eigenen Instanz (Gesamtaudit 11.11.2026, H-08)
                             else -> when (val url = serverLink(main.account.server, task.link)) {
                                 null -> scope.launch { snackbar.showSnackbar(tr("Dieser Verweis lässt sich nicht öffnen.")) }
-                                else -> context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                else -> if (!openInBrowser(context, url)) {
+                                    scope.launch { snackbar.showSnackbar(tr("Der Browser konnte nicht geöffnet werden. Öffne diese Adresse in einem Browser: {url}", "url" to url)) }
+                                }
                             }
                         }
                     }

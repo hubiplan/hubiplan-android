@@ -69,3 +69,12 @@ fun HelperPlan.canSignup(shift: HelperShift): Boolean =
 /** Darf das Mitglied diesen eigenen Dienst noch selbst absagen (Frist des Plans)? */
 fun HelperOverview.canCancel(assignment: Int): Boolean =
     plans.any { plan -> plan.duties.any { duty -> duty.shifts.any { it.mine == assignment && it.canCancel } } }
+
+/**
+ * Lässt sich ein Dienst nach dem Eintragen noch selbst absagen? Wie der Server: bis
+ * `cancel_days` Tage vor Beginn (UX-Audit 16.11., AND-22). Unlesbarer Beginn: lieber nachfragen.
+ */
+fun HelperPlan.cancellableAfterSignup(shift: HelperShift, now: java.time.Instant = java.time.Instant.now()): Boolean {
+    val start = runCatching { java.time.OffsetDateTime.parse(shift.startsAt).toInstant() }.getOrNull() ?: return false
+    return now.isBefore(start.minus(java.time.Duration.ofDays(cancelDays.toLong())))
+}

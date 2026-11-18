@@ -1,7 +1,5 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,11 +10,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,16 +41,29 @@ import de.hubiplan.app.data.HelperPlan
 import de.hubiplan.app.data.HelperShift
 import de.hubiplan.app.data.MyShift
 import de.hubiplan.app.data.canCancel
+import de.hubiplan.app.data.cancellableAfterSignup
 import de.hubiplan.app.data.canSignup
 import de.hubiplan.app.tr
 import kotlinx.coroutines.launch
 
-/** Umschalter im Reiter „Aufgaben“, wenn der Verein Helferdienste nutzt. */
+/**
+ * Umschalter im Reiter „Aufgaben“, wenn der Verein Helferdienste nutzt: Ansichtswechsel als
+ * Segmentknopf, damit er sich vom Filter „Offen | Erledigt“ (Chips) unterscheidet (AND-24).
+ */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 internal fun TaskSwitch(helpers: Boolean, onChange: (Boolean) -> Unit) {
-    Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-        FilterChip(selected = !helpers, onClick = { onChange(false) }, label = { Text(tr("Aufgaben")) })
-        FilterChip(selected = helpers, onClick = { onChange(true) }, label = { Text(tr("Helferdienste")) })
+    SingleChoiceSegmentedButtonRow(Modifier.padding(horizontal = Abstand.rand).fillMaxWidth()) {
+        SegmentedButton(
+            selected = !helpers,
+            onClick = { onChange(false) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+        ) { Text(tr("Aufgaben")) }
+        SegmentedButton(
+            selected = helpers,
+            onClick = { onChange(true) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+        ) { Text(tr("Helferdienste")) }
     }
 }
 
@@ -79,8 +92,11 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
     var busy by remember { mutableStateOf(false) }
     var reload by remember { mutableIntStateOf(0) }
     var cancel by remember { mutableStateOf<MyShift?>(null) }
+    // Eintragen, das sich danach nicht selbst absagen lässt: vorher nachfragen (AND-22)
+    var confirmSignup by remember { mutableStateOf<Pair<HelperDuty, HelperShift>?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val actionMessages = LocalActionMessages.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     DisposableEffect(lifecycle) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) reload++ }
@@ -129,6 +145,26 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
             dismissButton = { TextButton(onClick = { cancel = null }) { Text(tr("Abbrechen")) } },
         )
     }
+    confirmSignup?.let { (duty, shift) ->
+        AlertDialog(
+            onDismissRequest = { confirmSignup = null },
+            title = { Text(tr("Verbindlich eintragen?")) },
+            text = {
+                Text(tr(
+                    "Für {dienst}, {zeit} eintragen? Absagen geht danach nur über die Verwaltung.",
+                    "dienst" to duty.name,
+                    "zeit" to formatWhen(shift.startsAt, shift.endsAt, false),
+                ))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmSignup = null
+                    act(tr("Du bist eingetragen.")) { api.signupShift(access, shift.id) }
+                }) { Text(tr("Mich eintragen")) }
+            },
+            dismissButton = { TextButton(onClick = { confirmSignup = null }) { Text(tr("Abbrechen")) } },
+        )
+    }
     val current = data
     // Ziehen zum Aktualisieren (UX-Audit 08.11. A-02)
     Refreshable(refreshing, onRefresh = { refreshing = true; reload++ }) {
@@ -138,13 +174,13 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
             switch()
             Row(Modifier.padding(horizontal = Abstand.rand), horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 TextButton(onClick = {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$server/mein-bereich/helferdienste?zugang=$access")))
+                    openInBrowser(context, "$server/mein-bereich/helferdienste?zugang=$access", actionMessages)
                 }) { Text(tr("Im Browser öffnen")) }
             }
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand))
             error?.let { ProblemNotice(it, onRetry = { refreshing = true; reload++ }, since = loadedAt.takeIf { current != null }) }
             if (error == null) loadedAt?.let { FreshnessLine(it) { refreshing = true; reload++ } }
-            notice?.let { StatusNotice(it, Modifier.padding(horizontal = Abstand.rand)) }
+            ActionNotice(notice, Modifier.padding(horizontal = Abstand.rand)) { notice = null }
             if (current == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth().padding(Abstand.rand))
         }
         if (current != null) {
@@ -164,8 +200,12 @@ internal fun MemberHelpers(api: Api, access: Int, server: String, vm: AppViewMod
                 if (plans.isEmpty()) Text(tr("Zurzeit gibt es keine offenen Dienstpläne."), modifier = Modifier.padding(Abstand.rand))
             }
             items(plans, key = { "p${it.id}" }) { plan ->
-                PlanCard(plan, busy) { shift ->
-                    act(tr("Du bist eingetragen.")) { api.signupShift(access, shift.id) }
+                PlanCard(plan, busy) { duty, shift ->
+                    if (plan.cancellableAfterSignup(shift)) {
+                        act(tr("Du bist eingetragen.")) { api.signupShift(access, shift.id) }
+                    } else {
+                        confirmSignup = duty to shift
+                    }
                 }
                 HorizontalDivider()
             }
@@ -192,7 +232,7 @@ private fun MyShiftRow(shift: MyShift, canCancel: Boolean, busy: Boolean, onCanc
 }
 
 @Composable
-private fun PlanCard(plan: HelperPlan, busy: Boolean, onSignup: (HelperShift) -> Unit) {
+private fun PlanCard(plan: HelperPlan, busy: Boolean, onSignup: (HelperDuty, HelperShift) -> Unit) {
     Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
         Text(plan.title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
         val info = listOf(plan.unit, plan.eventTitle).filter { it.isNotBlank() }
@@ -215,7 +255,7 @@ private fun PlanCard(plan: HelperPlan, busy: Boolean, onSignup: (HelperShift) ->
                     if (shift.names.isNotEmpty()) Text(shift.names.joinToString(", "), style = MaterialTheme.typography.bodySmall)
                     when {
                         shift.mine != null -> Text(tr("Du bist eingetragen."), color = MaterialTheme.colorScheme.primary)
-                        plan.canSignup(shift) -> Button(onClick = { onSignup(shift) }, enabled = !busy) { Text(tr("Mich eintragen")) }
+                        plan.canSignup(shift) -> Button(onClick = { onSignup(duty, shift) }, enabled = !busy) { Text(tr("Mich eintragen")) }
                     }
                 }
             }

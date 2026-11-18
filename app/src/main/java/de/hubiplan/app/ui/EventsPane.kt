@@ -28,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -67,6 +68,7 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
         events.load(vm::deviceRevoked) {
             val today = LocalDate.now()
             api.events(access.id, today.toString(), today.plusDays(DAYS_AHEAD).toString())
+                .also { vm.eventsLoaded(access.id, it) }
         }
     }
 
@@ -94,11 +96,12 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel) {
     )
 }
 
+/** Zeile eines Termins; ohne [onClick] nur zum Lesen (gespeicherter Stand ohne Netz, AND-07). */
 @Composable
-private fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: () -> Unit) {
+internal fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: (() -> Unit)?) {
     ListItem(
         // Gewählter Termin (Tablet) nicht nur farbig: TalkBack sagt „ausgewählt“ (A-06)
-        modifier = Modifier.openRow(onClick = onClick).semantics { if (isSelected) selected = true }
+        modifier = (if (onClick != null) Modifier.openRow(onClick = onClick) else Modifier).semantics { if (isSelected) selected = true }
             .selectedRowMark(isSelected, MaterialTheme.colorScheme.onPrimaryContainer),
         colors = selectedRowColors(isSelected),
         leadingContent = { DatumKaestchen(occ.startsAt, gedaempft = occ.isCancelled) },
@@ -186,9 +189,10 @@ private fun EventDetailView(
             if (error == null) Loading()
             return@Column
         }
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         // Datum, Ort und Absage des gewählten Einzeltermins, nicht des ersten der Serie (A05)
-        Text(e.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
+        // Voller Titel sichtbar; TalkBack liest ihn nur einmal, aus der Kopfleiste (AND-26)
+        Text(e.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.clearAndSetSemantics {})
         Text(formatWhen(occ.startsAt, occ.endsAt, occ.allDay), style = MaterialTheme.typography.titleMedium)
         if (series) Text(tr("Termin einer Serie"), style = MaterialTheme.typography.bodySmall)
         if (occ.isCancelled || (!series && e.isCancelled)) {
@@ -245,20 +249,25 @@ private fun RsvpSection(e: EventDetail, busy: Boolean, onRespond: (String?, Int,
         return
     }
     if (rsvp.guestsAllowed) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
             AssistChip(
                 onClick = { if (guests > 0) guests-- },
                 label = { Text("−") },
-                enabled = !busy,
+                enabled = !busy && guests > 0,
                 modifier = Modifier.semantics { contentDescription = tr("Begleitperson entfernen") },
             )
-            Text(tr("Begleitpersonen: {guests}", "guests" to guests), Modifier.padding(top = Abstand.rand))
+            // Neue Zahl wird angesagt (AND-26)
+            Text(tr("Begleitpersonen: {guests}", "guests" to guests), Modifier.weight(1f, fill = false).announce())
             AssistChip(
                 onClick = { if (guests < rsvp.maxGuests) guests++ },
                 label = { Text("+") },
-                enabled = !busy,
+                // Am Höchstwert gesperrt, mit Hinweis darunter (AND-22)
+                enabled = !busy && guests < rsvp.maxGuests,
                 modifier = Modifier.semantics { contentDescription = tr("Begleitperson hinzufügen") },
             )
+        }
+        if (guests >= rsvp.maxGuests) {
+            Text(tr("Höchstens {n} Begleitpersonen.", "n" to rsvp.maxGuests), style = MaterialTheme.typography.bodySmall)
         }
     }
     if (rsvp.noteAllowed) {

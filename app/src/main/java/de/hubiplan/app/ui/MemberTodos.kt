@@ -1,7 +1,5 @@
 package de.hubiplan.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -148,6 +146,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
     var reload by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val actionMessages = LocalActionMessages.current
     LaunchedEffect(api, access, id, reloadKey, reload) {
         task = null
         error = null
@@ -160,6 +159,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         }
     }
     var notice by remember(api, access, id) { mutableStateOf<String?>(null) }
+    val viewer = rememberViewer(vm)
     fun change(action: String) {
         val current = task ?: return
         if (busy) return
@@ -178,10 +178,15 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
                 }
                 onChanged()
             } catch (e: ApiException) {
-                task = null
-                if (e.status == 401) vm.deviceRevoked(e) else {
-                    val problem = e.problem()
-                    error = problem; onInvalidated(problem)
+                when (e.status) {
+                    401 -> { task = null; vm.deviceRevoked(e) }
+                    // Aufgabe weg oder inzwischen geändert: neu laden
+                    404, 409, 410 -> { task = null; val problem = e.problem(); error = problem; onInvalidated(problem) }
+                    // Sonst (Funkloch, Serverfehler): Aufgabe bleibt stehen, Hinweis unten (AND-24)
+                    else -> {
+                        val text = e.problem().text
+                        if (actionMessages != null) actionMessages.show(text, error = true) else notice = text
+                    }
                 }
             } finally { busy = false }
         }
@@ -190,7 +195,7 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
         BackHead(enabled = !busy, onBack = onBack)
         error?.let { ProblemNotice(it, onRetry = if (busy) null else ({ reload++ }), inset = false) }
         if (task == null && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         task?.let { current ->
             Text(current.title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
             Text(if (current.status == "done") tr("Erledigt") else tr("Offen"))
@@ -202,8 +207,20 @@ private fun MemberTaskDetail(api: Api, access: Int, id: Int, server: String, rel
             if (current.canComplete) Button(onClick = { change("status") }, enabled = !busy) { Text(if (current.status == "done") tr("Wieder öffnen") else tr("Erledigen")) }
             if (current.attachments.isNotEmpty()) {
                 Text(tr("Anhänge"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
-                current.attachments.forEach { Text(it.name) }
-                TextButton(onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("$server/mein-bereich/aufgaben?zugang=$access&aufgabe=$id"))) }) {
+                // In der App öffnen, wo der Server die Datei bereithält (AND-15)
+                current.attachments.forEach { file ->
+                    if (file.available) {
+                        TextButton(
+                            onClick = { viewer.open(file.name, mimeOf(file.name)) { it.todoAttachment(access, id, file.id) } },
+                            enabled = !viewer.busy,
+                        ) { Text(file.name) }
+                    } else {
+                        Text(file.name)
+                    }
+                }
+                if (viewer.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+                viewer.message?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
+                TextButton(onClick = { openInBrowser(context, "$server/mein-bereich/aufgaben?zugang=$access&aufgabe=$id", actionMessages) }) {
                     Text(tr("Mit Anhängen im Browser öffnen"))
                 }
             }

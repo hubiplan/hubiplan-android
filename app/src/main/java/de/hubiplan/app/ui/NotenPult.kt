@@ -477,16 +477,19 @@ fun NotenPult(session: PultSession, vm: AppViewModel, onClose: () -> Unit) {
                 Icon(
                     Icons.Filled.Lock,
                     contentDescription = tr("Gesperrt"),
-                    tint = Color(0x99888888),
-                    modifier = Modifier.align(Alignment.TopEnd).padding(Abstand.klein).size(20.dp),
+                    // Kontrast wie die Seitenzahl: helles Symbol auf dunkler Plakette (AND-26)
+                    tint = Color.White,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(Abstand.klein)
+                        .background(Color(0xCC333333), MaterialTheme.shapes.small).padding(Abstand.eng).size(20.dp),
                 )
             }
             if (liveOk == false && !menu) {
                 Text(
                     tr("Live getrennt"),
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color(0x99888888),
-                    modifier = Modifier.align(Alignment.TopStart).padding(Abstand.klein),
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.TopStart).padding(Abstand.klein)
+                        .background(Color(0xCC333333), MaterialTheme.shapes.small).padding(horizontal = Abstand.klein, vertical = Abstand.eng),
                 )
             }
             hint?.let { text ->

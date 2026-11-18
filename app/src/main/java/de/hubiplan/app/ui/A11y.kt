@@ -1,5 +1,7 @@
 package de.hubiplan.app.ui
 
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.RadioButton
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Intent
@@ -120,6 +122,30 @@ fun LabeledCheckbox(
     ) {
         Checkbox(checked = checked, onCheckedChange = null, enabled = enabled, modifier = Modifier.padding(end = Abstand.mittel))
         Text(label, style = style ?: MaterialTheme.typography.bodyLarge)
+    }
+}
+
+/**
+ * Auswahlknopf mit Beschriftung: die ganze Zeile ist antippbar und mindestens 48 dp hoch
+ * (UX-Audit 16.11. AND-14). Für Abstimmung, Sprache und Umfragen.
+ */
+@Composable
+fun LabeledRadio(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null, enabled = enabled, modifier = Modifier.padding(end = Abstand.mittel))
+        Text(label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 

@@ -221,7 +221,7 @@ private fun FeeYearCard(access: PortalAccess, vm: AppViewModel, st: FeeYearState
                 color = if (st.state == "missing" || st.state == "question") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             )
             Text(feeStateSentence(st))
-            notice?.let { StatusNotice(it) }
+            ActionNotice(notice) { notice = null }
             if (st.canSubmit) {
                 if (st.kinds.isNotEmpty()) {
                     Text(tr("Art des Nachweises"), style = MaterialTheme.typography.labelLarge)

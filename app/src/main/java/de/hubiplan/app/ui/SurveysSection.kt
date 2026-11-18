@@ -135,7 +135,7 @@ internal fun SurveysSection(access: PortalAccess, vm: AppViewModel) {
     }
     SectionColumn {
         error?.let { ProblemNotice(it, onRetry = { attempt++ }, inset = false) }
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
         val l = list
         if (l == null) {
             if (error == null) Loading()
@@ -256,13 +256,7 @@ private fun Choice(label: String, selected: Boolean, radio: Boolean, onClick: ()
         LabeledCheckbox(label, selected, { onClick() })
         return
     }
-    Row(
-        Modifier.heightIn(min = 48.dp).selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null, modifier = Modifier.padding(end = Abstand.klein))
-        Text(label, modifier = Modifier.padding(end = Abstand.mittel))
-    }
+    LabeledRadio(label, selected, onClick)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -399,7 +393,8 @@ private fun ResultBlock(q: ResultQuestion, total: Int) {
 private fun ResultLine(label: String, count: Int, total: Int, names: List<String>, best: Boolean, countText: String = count.toString()) {
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(if (best) "★ $label" else label, modifier = Modifier.weight(1f))
+            // Stern mit Text, nicht nur als Zeichen (AND-26)
+            Text(if (best) "★ $label · ${tr("Meiste Zusagen")}" else label, modifier = Modifier.weight(1f))
             Text(countText, style = MaterialTheme.typography.labelLarge)
         }
         LinearProgressIndicator(

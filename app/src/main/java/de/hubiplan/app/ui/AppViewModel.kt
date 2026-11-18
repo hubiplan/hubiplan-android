@@ -58,7 +58,11 @@ import de.hubiplan.app.trn
 sealed interface Screen {
     data object Loading : Screen
     data object Connect : Screen
-    data class Main(val account: Account, val me: Me?, val access: PortalAccess?, val offline: Boolean) : Screen
+    /**
+     * [problem]: warum [offline] gilt (keine Verbindung, Zeitüberschreitung, Serverfehler), damit
+     * der Hinweis HUBIplan nennt und nicht das Internet, wenn der Server streikt (AND-07).
+     */
+    data class Main(val account: Account, val me: Me?, val access: PortalAccess?, val offline: Boolean, val problem: Problem? = null) : Screen
 }
 
 /** Schritte beim Verbinden (QR-Code oder Passwort mit 2FA). */
@@ -188,6 +192,54 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val logo: StateFlow<Bitmap?> = _logo
 
     /** Angebot „Verein auf den Startbildschirm legen“ für den gewählten Zugang zeigen? */
+    /**
+     * Ein Konto wurde vom Server abgemeldet, während ein anderes übrig blieb: einmal erklären,
+     * statt still zum anderen Verein zu wechseln (UX-Audit 16.11. AND-16).
+     */
+    data class SignedOut(val dropped: String, val now: String)
+
+    private val _signedOut = MutableStateFlow<SignedOut?>(null)
+    val signedOut: StateFlow<SignedOut?> = _signedOut
+
+    fun signedOutSeen() {
+        _signedOut.value = null
+    }
+
+    // --- Ohne Netz lesen und ungelesene Mitteilungen (UX-Audit 16.11. AND-07, AND-15) ---
+
+    private fun accountKey(): String? =
+        (screen.value as? Screen.Main)?.account?.let { LocalAccountData.key(it.server, it.deviceId) }
+
+    /** Zuletzt geladene Termine und Mitteilungen dieses Kontos. */
+    fun offlineStore(): de.hubiplan.app.data.OfflineStore? =
+        accountKey()?.let { de.hubiplan.app.data.OfflineStore(context, it) }
+
+    private val _unreadCirculars = MutableStateFlow<Set<Int>>(emptySet())
+    /** Nummern ungelesener Mitteilungen des gewählten Zugangs (Plakette an der Leiste). */
+    val unreadCirculars: StateFlow<Set<Int>> = _unreadCirculars
+
+    /** Nach dem Laden der Mitteilungen: für ohne Netz speichern, Ungelesenes zählen. */
+    suspend fun circularsLoaded(accessId: Int, items: List<de.hubiplan.app.data.CircularItem>) {
+        val key = accountKey() ?: return
+        _unreadCirculars.value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            de.hubiplan.app.data.OfflineStore(context, key).saveCirculars(accessId, items)
+            de.hubiplan.app.data.ReadStore(context, key).unread(accessId, items.map { it.id })
+        }
+    }
+
+    /** Mitteilung geöffnet: gilt auf diesem Gerät als gelesen. */
+    fun circularOpened(accessId: Int, id: Int) {
+        val key = accountKey() ?: return
+        _unreadCirculars.value = _unreadCirculars.value - id
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) { de.hubiplan.app.data.ReadStore(context, key).markRead(accessId, id) }
+    }
+
+    /** Nach dem Laden der Termine: für ohne Netz speichern. */
+    suspend fun eventsLoaded(accessId: Int, items: List<de.hubiplan.app.data.Occurrence>) {
+        val store = offlineStore() ?: return
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { store.saveEvents(accessId, items) }
+    }
+
     private val _shortcutOffer = MutableStateFlow(false)
     val shortcutOffer: StateFlow<Boolean> = _shortcutOffer
 
@@ -637,6 +689,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun switchTo(slot: Int) {
         accounts.setActive(slot)
         _canSend.value = false
+        _unreadCirculars.value = emptySet()
         resetAdmin()
         _theme.value = store.cachedTheme.first()
         _logo.value = null
@@ -712,6 +765,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         val next = accounts.list().firstOrNull()
         if (next != null) {
+            // Vom Server abgemeldet (nicht selbst): sagen, warum jetzt ein anderes Konto zu sehen ist
+            if (error != null) _signedOut.value = SignedOut(accountLabel(current), accountLabel(next.second))
             switchTo(next.first)
         } else {
             SyncWorker.cancel(context)
@@ -723,6 +778,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _screen.value = Screen.Connect
         }
     }
+
+    private fun accountLabel(a: Account): String =
+        "${a.display.ifBlank { a.email }} · ${a.server.removePrefix("https://")}"
 
     fun api(): Api? = (screen.value as? Screen.Main)?.account?.let { Api(it.server, it.token) }
 
@@ -757,6 +815,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             updateLogos(account, me.portal, target)
             if (!current()) return
             target.ifCurrent(account) { access?.let { showLogo(account, it) } }
+            // Ungelesene Mitteilungen für die Leiste, ohne den Reiter zu öffnen (AND-15)
+            access?.let { a ->
+                runCatching { Api(account.server, account.token).circulars(a.id) }.getOrNull()
+                    ?.let { if (current()) circularsLoaded(a.id, it) }
+            }
+            if (!current()) return
             SyncWorker.schedule(context)
             SyncWorker.now(context)
             syncLanguage()
@@ -773,7 +837,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 // dieses Konto entfernen, nie ein inzwischen gewähltes anderes.
                 if (current()) dropSlot(target.slot, account, e.message)
             } else if (current()) {
-                _screen.value = Screen.Main(account, null, null, offline = true)
+                _screen.value = Screen.Main(account, null, null, offline = true, problem = e.problem())
             }
         }
     }

@@ -70,25 +70,28 @@ import androidx.compose.ui.window.DialogProperties
  * Bereiche unter „Ich“ in der Reihenfolge der Liste (Konzept app-ich, S-06/X-03). Begriffe wie
  * unter „Mein Bereich“ im Browser. „Helferdienste“ führt in den Reiter „Aufgaben“.
  */
-internal enum class IchBereich(val label: String) {
-    DATEN(tr("Meine Daten")),
-    RECHNUNGEN(tr("Rechnungen")),
+// Übersetzt beim Anzeigen (AND-11)
+internal enum class IchBereich(private val labelText: () -> String) {
+    DATEN({ tr("Meine Daten") }),
+    RECHNUNGEN({ tr("Rechnungen") }),
     // Nachweis für einen ermäßigten Beitrag (z. B. Studienbescheinigung)
-    NACHWEISE(tr("Beitragsnachweise")),
-    VERSAMMLUNGEN(tr("Versammlungen")),
-    UMFRAGEN(tr("Umfragen")),
+    NACHWEISE({ tr("Beitragsnachweise") }),
+    VERSAMMLUNGEN({ tr("Versammlungen") }),
+    UMFRAGEN({ tr("Umfragen") }),
     // Selbst bezahlte Ausgaben mit Foto des Belegs melden
-    AUSLAGEN(tr("Auslagen")),
+    AUSLAGEN({ tr("Auslagen") }),
     // Meldungen und Ergebnisse auf einer Seite wie im Browser
-    ERGEBNISSE(tr("Wettbewerbe")),
+    ERGEBNISSE({ tr("Wettbewerbe") }),
     // Musik: Abwesenheiten melden
-    ABWESENHEITEN(tr("Abwesenheiten")),
-    HELFERDIENSTE(tr("Helferdienste")),
+    ABWESENHEITEN({ tr("Abwesenheiten") }),
+    HELFERDIENSTE({ tr("Helferdienste") }),
     // Vereinsheim, Räume oder Material anfragen
-    BELEGUNG(tr("Belegung")),
-    DOKUMENTE(tr("Dokumente")),
+    BELEGUNG({ tr("Belegung") }),
+    DOKUMENTE({ tr("Dokumente") }),
     // Ansprechpartner einer Firma, die für Mitarbeiter zahlt (wie Mein Bereich › Mitarbeiter)
-    MITARBEITER(tr("Mitarbeiter")),
+    MITARBEITER({ tr("Mitarbeiter") });
+
+    val label: String get() = labelText()
 }
 
 /** Nur Bereiche, deren Modul an ist (gleiche Regeln wie `portalSections` im Browser). */
@@ -246,18 +249,19 @@ private fun IchRow(label: String, summary: String, count: Int, onClick: () -> Un
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Abstand.klein),
     ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge)
-        if (count > 0) {
-            val spoken = trn("1 offen", "{n} offen", count)
-            Badge(Modifier.semantics { contentDescription = spoken }) { Text(count.toString()) }
+        // Name oben, Kurzstand darunter: bei großer Schrift bleibt beiden die volle Breite (AND-13)
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                Text(label, style = MaterialTheme.typography.bodyLarge)
+                if (count > 0) {
+                    val spoken = trn("1 offen", "{n} offen", count)
+                    Badge(Modifier.semantics { contentDescription = spoken }) { Text(count.toString()) }
+                }
+            }
+            if (summary.isNotBlank()) {
+                Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
-        Text(
-            summary,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-            textAlign = androidx.compose.ui.text.style.TextAlign.End,
-        )
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
     }
 }
@@ -289,25 +293,46 @@ internal fun openForViewing(context: Context, file: File, mime: String): String?
 internal fun rememberViewer(vm: AppViewModel): Viewer {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    return remember(vm) { Viewer(context, scope, vm) }
+    val messages = LocalActionMessages.current
+    return remember(vm, messages) { Viewer(context, scope, vm, messages) }
 }
 
-internal class Viewer(val context: Context, val scope: kotlinx.coroutines.CoroutineScope, val vm: AppViewModel) {
+/** Dateityp aus der Endung, für Anhänge ohne Angabe des Servers. */
+internal fun mimeOf(name: String): String =
+    android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(name.substringAfterLast('.', "").lowercase())
+        ?: "application/octet-stream"
+
+internal class Viewer(
+    val context: Context,
+    val scope: kotlinx.coroutines.CoroutineScope,
+    val vm: AppViewModel,
+    private val messages: ActionMessages? = null,
+) {
     var busy by mutableStateOf(false)
+    // Fehler; mit Hinweisleiste erscheinen sie dort statt am Seitenanfang (AND-08)
     var message by mutableStateOf<String?>(null)
+        private set
+
+    private fun fail(text: String?) {
+        if (text == null) return
+        if (messages != null) messages.show(text, error = true) else message = text
+    }
 
     fun open(name: String, mime: String = "application/pdf", load: suspend (Api) -> ByteArray) {
         if (busy) return
         val api = vm.api() ?: return
         busy = true
         message = null
+        // Rückmeldung sofort im sichtbaren Bereich, auch weit unten in der Liste (AND-08)
+        messages?.show(tr("„{name}“ wird geladen …", "name" to name))
         scope.launch {
             try {
                 val bytes = load(api)
                 val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Ansicht.store(context, name, bytes) }
-                message = openForViewing(context, file, mime)
+                messages?.host?.currentSnackbarData?.dismiss()
+                fail(openForViewing(context, file, mime))
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e) else message = e.userText()
+                if (e.status == 401) vm.deviceRevoked(e) else fail(e.userText())
             } finally {
                 busy = false
             }
@@ -467,6 +492,8 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
     var error by remember(access.id) { mutableStateOf<Problem?>(null) }
     var attempt by remember(access.id) { mutableIntStateOf(0) }
     var notice by remember(access.id) { mutableStateOf<String?>(null) }
+    // Fehler beim Zurückziehen in Fehlerfarbe, nicht als Erfolg (UX-Audit 16.11. AND-08)
+    var actionError by remember(access.id) { mutableStateOf<String?>(null) }
     var motionFor by remember { mutableStateOf<UpcomingMeeting?>(null) }
     var withdraw by remember { mutableStateOf<OwnMotion?>(null) }
     var sending by remember { mutableStateOf(false) }
@@ -495,7 +522,8 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
     }
     SectionColumn {
         error?.let { ProblemNotice(it, onRetry = { attempt++ }, inset = false) }
-        notice?.let { StatusNotice(it) }
+        ActionNotice(notice) { notice = null }
+        ActionNotice(actionError, error = true) { actionError = null }
         viewer.message?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         val l = list
         if (l == null) {
@@ -574,7 +602,7 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
                             notice = tr("Antrag zurückgezogen.")
                             attempt++
                         } catch (e: ApiException) {
-                            if (e.status == 401) vm.deviceRevoked(e) else notice = e.userText()
+                            if (e.status == 401) vm.deviceRevoked(e) else actionError = e.userText()
                         }
                     }
                 }) { Text(tr("Zurückziehen")) }

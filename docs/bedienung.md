@@ -218,7 +218,12 @@ in Alltagssprache („HUBIplan antwortet gerade nicht.“); den Statuscode des S
 „Details“.
 
 Den Vorschlag „Auf den Startbildschirm legen?“ zeigt die App nur in der Terminliste und nur
-beim ersten Mal; später geht es über „Mein Konto“.
+beim ersten Mal; später geht es über „Mein Konto › Konto“.
+
+„Mein Konto“ zeigt oben Name, Adresse und Verein und darunter drei Unterseiten: **Konto**
+(weitere Konten, Startbildschirm, Abmelden, Konto und Daten löschen), **Einstellungen** (Sprache,
+Gerätekalender, Mitteilungen, Hinweise) und **Über und Rechtliches** (Hilfe, Datenschutz,
+Impressum, Lizenzen, Quellcode, Version). Jede Einstellung ist so in zwei Tipps erreichbar.
 
 Hat das Telefon keine Bildschirmsperre, führt in der Verwaltung der Knopf „Bildschirmsperre
 einrichten“ direkt in die Systemeinstellung. Danach prüft die App beim Zurückkehren von selbst
