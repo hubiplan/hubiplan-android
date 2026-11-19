@@ -1,0 +1,5 @@
+• Registration with participation fee: rates, register family and guests, waiting list, cancel with fee preview, substitute, extras and extra questions.
+• Open admission tickets with QR code in the app.
+• Admission for the club: scan tickets, admit people by hand, box office; also works briefly offline.
+• "Board only" events are marked.
+• Clearer wording in several texts.
