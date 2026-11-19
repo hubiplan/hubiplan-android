@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.SecureFlagPolicy
 import androidx.core.content.FileProvider
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -353,7 +354,12 @@ private fun BigCardDialog(stored: StoredCard, onClose: () -> Unit) {
         }
     }
     val qr = rememberQr(stored.card.url.orEmpty(), 800)
-    Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    // Den Ausweis will man vorzeigen und abfotografieren: hier kein Sichtschutz
+    SichtschutzAusnahme()
+    Dialog(
+        onDismissRequest = onClose,
+        properties = DialogProperties(usePlatformDefaultWidth = false, securePolicy = SecureFlagPolicy.SecureOff),
+    ) {
         Box(Modifier.fillMaxSize().background(Color.White).clickable(onClickLabel = tr("Schließen"), onClick = onClose), contentAlignment = Alignment.Center) {
             Column(
                 Modifier.padding(Abstand.gross),

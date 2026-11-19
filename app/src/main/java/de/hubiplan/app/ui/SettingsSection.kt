@@ -142,6 +142,19 @@ fun SettingsSection(vm: AppViewModel) {
             tr("Aus: Auf dem gesperrten Gerät steht nur „Neue Mitteilung“, Absender und Text erst nach dem Entsperren."),
             style = MaterialTheme.typography.bodySmall,
         )
+        Text(tr("Sichtschutz"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
+        var screenshots by remember { mutableStateOf(Sichtschutz.screenshotsAllowed(context)) }
+        SwitchRow(
+            label = tr("Bildschirmfotos erlauben"),
+            checked = screenshots,
+        ) { on ->
+            Sichtschutz.setScreenshotsAllowed(context.findActivity(), context, on)
+            screenshots = on
+        }
+        Text(
+            tr("Aus: keine Bildschirmfotos und keine Vorschau in der App-Übersicht. Der groß gezeigte Ausweis lässt sich immer fotografieren, der Verwaltungsbereich nie."),
+            style = MaterialTheme.typography.bodySmall,
+        )
         settings.lastSync?.let {
             Text(
                 tr("Stand: ") + formatStamp(it),

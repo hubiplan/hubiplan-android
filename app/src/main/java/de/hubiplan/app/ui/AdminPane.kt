@@ -4,7 +4,6 @@ import androidx.compose.ui.autofill.ContentType
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.view.WindowManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -98,11 +97,7 @@ fun AdminPane(main: Screen.Main, vm: AppViewModel) {
     val retainedKey = "${main.account.server}-${main.account.deviceId}"
     val retained = rememberAdminDraftState(retainedKey)
     // Im Verwaltungsbereich keine Bildschirmfotos und keine Vorschau im App-Wechsler
-    DisposableEffect(Unit) {
-        val window = context.findActivity()?.window
-        window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
-    }
+    SichtschutzErzwingen()
     // Beim Öffnen und nach Rückkehr in die App: nach 5 Minuten Pause neu entsperren
     val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
     var resumed by remember { mutableIntStateOf(0) }

@@ -759,6 +759,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (!removed) return
         runCatching { pushCleanup?.invoke() }
+        // Speicher der eingebetteten Webansicht (Standmodus) nicht über die Abmeldung hinaus
+        // behalten (Gesamtaudit 19.11.2026, S-09)
+        val rest = accounts.list().map { it.second }
+        Sichtschutz.clearWebData(server, othersOnServer = rest.any { it.server == server }, anyLeft = rest.isNotEmpty())
         if (!wasActive) {
             loadAccounts()
             return
