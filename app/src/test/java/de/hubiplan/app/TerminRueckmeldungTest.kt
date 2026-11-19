@@ -1,6 +1,7 @@
 package de.hubiplan.app
 
 import de.hubiplan.app.data.EventDetail
+import de.hubiplan.app.data.Occurrence
 import de.hubiplan.app.data.json
 import de.hubiplan.app.push.PushMessage
 import org.junit.Assert.assertEquals
@@ -31,6 +32,28 @@ class TerminRueckmeldungTest {
         assertEquals(51.17123, e.latitude!!, 0.000001)
         assertNull(e.mapLinks.google)
         assertEquals("Plan.pdf", e.attachments.single().name)
+    }
+
+    @Test fun vorstandsterminIstGekennzeichnet() {
+        val occ = json.decodeFromString(
+            Occurrence.serializer(),
+            """
+            {"key":"7","event_id":7,"title":"Vorstandssitzung","starts_at":"2099-03-05T19:30:00+01:00",
+             "ends_at":"2099-03-05T21:30:00+01:00","visibility":"board"}
+            """.trimIndent(),
+        )
+        assertTrue(occ.nurVorstand)
+        // Ältere Server ohne Angabe: kein Hinweis
+        val alt = json.decodeFromString(
+            Occurrence.serializer(),
+            """{"key":"8","event_id":8,"title":"Sommerfest","starts_at":"2099-06-13T14:00:00+02:00","ends_at":"2099-06-13T18:00:00+02:00"}""",
+        )
+        assertFalse(alt.nurVorstand)
+        val e = json.decodeFromString(
+            EventDetail.serializer(),
+            """{"id":7,"title":"Vorstandssitzung","starts_at":"2099-03-05T19:30:00+01:00","ends_at":"2099-03-05T21:30:00+01:00","visibility":"board"}""",
+        )
+        assertTrue(e.nurVorstand)
     }
 
     @Test fun verknuepftesDokumentAusDerAblage() {

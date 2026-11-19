@@ -117,6 +117,7 @@ internal fun EventRow(occ: Occurrence, isSelected: Boolean, onClick: (() -> Unit
                 val place = listOf(occ.location, occ.owner).filter { it.isNotBlank() }.joinToString(" · ")
                 if (place.isNotBlank()) Text(place, style = MaterialTheme.typography.bodySmall)
                 if (occ.isCancelled) Abzeichen(tr("Abgesagt"), Zustand.FEHLER, Modifier.padding(top = Abstand.eng))
+                else if (occ.nurVorstand) Abzeichen(tr("nur Vorstand"), Zustand.HINWEIS, Modifier.padding(top = Abstand.eng))
             }
         },
         trailingContent = {
@@ -203,6 +204,7 @@ private fun EventDetailView(
         }
         PlaceSection(occ.location.ifBlank { e.location }, occ.address.ifBlank { e.address }, e)
         if (e.owner.isNotBlank()) Text(e.owner, style = MaterialTheme.typography.bodySmall)
+        if (e.nurVorstand) Abzeichen(tr("nur Vorstand"), Zustand.HINWEIS)
         if (e.description.isNotBlank()) Text(e.description)
         if (e.programme.isNotBlank()) {
             Text(tr("Ablauf"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
