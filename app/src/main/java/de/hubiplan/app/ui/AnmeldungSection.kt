@@ -321,7 +321,7 @@ private fun gapText(gap: RegistrationGap, max: Int): String = when (gap) {
     RegistrationGap.BIRTH_DATE -> tr("Für diesen Tarif brauchen wir das Geburtsdatum.")
     RegistrationGap.ADDON -> tr("Bitte bei jeder Pflicht-Zusatzleistung etwas wählen.")
     RegistrationGap.ANSWER -> tr("Bitte alle Pflichtfragen beantworten.")
-    RegistrationGap.GUARDIAN -> tr("Unter 18: Bitte Name, Telefon und E-Mail einer oder eines Erziehungsberechtigten angeben.")
+    RegistrationGap.GUARDIAN -> tr("Unter 18: Bitte Name, Telefonnummer und E-Mail einer oder eines Erziehungsberechtigten angeben.")
     RegistrationGap.CONSENT -> tr("Bitte der Verarbeitung der Angaben zu Allergien zustimmen oder das Feld leer lassen.")
     RegistrationGap.TERMS -> tr("Bitte die Teilnahmebedingungen bestätigen.")
 }

@@ -112,7 +112,7 @@ internal fun ExtrasEditor(
 private fun GuardianFields(g: Guardian, enabled: Boolean, onChange: (Guardian) -> Unit) {
     Text(tr("Erziehungsberechtigte"), style = MaterialTheme.typography.titleSmall)
     Text(
-        tr("Unter 18: Bitte Name, Telefon (während der Veranstaltung erreichbar) und E-Mail angeben; die Anschrift nur, wenn sie abweicht."),
+        tr("Unter 18: Bitte Name, Telefonnummer (während der Veranstaltung erreichbar) und E-Mail angeben; die Anschrift nur, wenn sie abweicht."),
         style = MaterialTheme.typography.bodySmall,
     )
     OutlinedTextField(
