@@ -172,6 +172,7 @@ fun CheckInScreen(
             onValueChange = { query = it },
             label = { Text(tr("Name suchen")) },
             singleLine = true,
+            keyboardOptions = SUCHE,
             modifier = Modifier.fillMaxWidth(),
         )
         HorizontalDivider()
