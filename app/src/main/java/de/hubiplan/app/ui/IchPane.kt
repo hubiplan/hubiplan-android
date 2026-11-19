@@ -576,7 +576,7 @@ private fun MeetingsSection(access: PortalAccess, vm: AppViewModel) {
                     try {
                         api.submitMotion(access.id, meeting.id, title, text)
                         motionFor = null
-                        notice = tr("Antrag eingereicht. Der Vorstand entscheidet, ob er auf die Tagesordnung kommt.")
+                        notice = tr("Antrag eingereicht. Dein Verein entscheidet, ob er auf die Tagesordnung kommt.")
                         attempt++
                     } catch (e: ApiException) {
                         if (e.status == 401) vm.deviceRevoked(e) else formError = e.generalError ?: e.userText()

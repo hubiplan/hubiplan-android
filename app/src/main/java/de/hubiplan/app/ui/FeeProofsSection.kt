@@ -61,9 +61,9 @@ internal fun feeStateLabel(state: String): String = when (state) {
 
 internal fun feeStateSentence(st: FeeYearState): String = when (st.state) {
     "accepted" -> st.proof?.validUntil?.let { tr("Anerkannt, gültig bis {day}.", "day" to formatPlainDate(it)) } ?: tr("Anerkannt.")
-    "pending" -> tr("Eingegangen, der Vorstand prüft ihn noch. Bis dahin gilt die Ermäßigung.")
-    "question" -> st.proof?.note?.takeIf { it.isNotBlank() }?.let { tr("Rückfrage des Vorstands: {note}", "note" to it) }
-        ?: tr("Der Vorstand hat eine Rückfrage.")
+    "pending" -> tr("Eingegangen, dein Verein prüft ihn noch. Bis dahin gilt die Ermäßigung.")
+    "question" -> st.proof?.note?.takeIf { it.isNotBlank() }?.let { tr("Rückfrage deines Vereins: {note}", "note" to it) }
+        ?: tr("Dein Verein hat eine Rückfrage.")
     "missing" -> tr("Bis {day} ist kein Nachweis eingegangen; für dieses Jahr gilt der normale Beitrag.", "day" to formatPlainDate(st.final))
     else -> if (st.final != st.due) {
         tr("Bitte bis {due} einreichen (spätestens {final}).", "due" to formatPlainDate(st.due), "final" to formatPlainDate(st.final))

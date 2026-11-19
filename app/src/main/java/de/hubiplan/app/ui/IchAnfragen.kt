@@ -559,7 +559,7 @@ internal fun CancellationBlock(access: PortalAccess, vm: AppViewModel, info: Can
     }
     pending?.let { p ->
         Text(
-            tr("Deine Kündigung zum {date} vom {sent} wartet auf den Vorstand.", "date" to formatPlainDate(p.exitDate), "sent" to formatDayTime(p.createdAt)),
+            tr("Deine Kündigung zum {date} vom {sent} wartet auf Bearbeitung durch deinen Verein.", "date" to formatPlainDate(p.exitDate), "sent" to formatDayTime(p.createdAt)),
         )
         OutlinedButton(enabled = !busy, onClick = { withdraw = p }) { Text(tr("Zurücknehmen")) }
     }
@@ -588,14 +588,14 @@ internal fun CancellationBlock(access: PortalAccess, vm: AppViewModel, info: Can
                 tr("Kündigung zum {date}, gesendet {sent}", "date" to formatPlainDate(c.exitDate), "sent" to formatDayTime(c.createdAt)),
                 style = MaterialTheme.typography.bodySmall,
             )
-            if (c.response.isNotBlank()) Text(tr("Antwort des Vorstands: {text}", "text" to c.response), style = MaterialTheme.typography.bodySmall)
+            if (c.response.isNotBlank()) Text(tr("Antwort deines Vereins: {text}", "text" to c.response), style = MaterialTheme.typography.bodySmall)
         }
     }
     if (confirm && chosen != null) {
         AlertDialog(
             onDismissRequest = { confirm = false },
             title = { Text(tr("Mitgliedschaft wirklich kündigen?")) },
-            text = { Text(tr("Du trittst zum {date} aus. Der Vorstand bestätigt die Kündigung per Mail.", "date" to formatPlainDate(chosen))) },
+            text = { Text(tr("Du trittst zum {date} aus. Dein Verein bestätigt die Kündigung per Mail.", "date" to formatPlainDate(chosen))) },
             confirmButton = {
                 TextButton(onClick = {
                     confirm = false

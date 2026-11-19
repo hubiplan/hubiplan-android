@@ -46,7 +46,7 @@ internal data class LiveTarget(val meetingId: Int, val code: String?)
 /** Ergebnis eines Scans prüfen: eigene Instanz, eigener Verein, gültiger Code. */
 internal fun meetingTarget(text: String, server: String, access: PortalAccess): Pair<LiveTarget?, String?> {
     val link = MeetingLink.parse(text) ?: return null to tr("Das ist kein QR-Code zum Anmelden in einer Versammlung.")
-    if (link.server != server) return null to tr("Der QR-Code gehört zu einer anderen HUBIplan-Instanz.")
+    if (link.server != server) return null to tr("Der QR-Code gehört zu einer anderen HUBIplan-Adresse.")
     if (access.clubId != 0 && link.clubId != access.clubId) {
         return null to tr("Der QR-Code gehört zu einem anderen Verein. Wähle oben den passenden Zugang.")
     }

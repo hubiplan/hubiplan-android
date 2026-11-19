@@ -114,7 +114,7 @@ fun CompetitionsSection(
         item {
             Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                 Text(
-                    tr("Im Standmodus erfasst du Punkte, tippst Treffer auf der Scheibe an oder lässt ein Foto auswerten, auch ohne Empfang. Neue Wettbewerbe legst du im Browser an."),
+                    tr("Im Standmodus erfasst du Ergebnisse direkt vor Ort, auch ohne Empfang, und kannst ein Foto auswerten lassen. Neue Wettbewerbe legst du im Browser an."),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedButton(onClick = onScan, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(tr("Stand-QR scannen")) }
