@@ -354,6 +354,8 @@ data class EventDetail(
     val owner: String = "",
     val rsvp: Rsvp = Rsvp(),
     val directions: String = "",
+    /** Ablauf oder Programm (Stufe A5); ältere Server ohne Angabe */
+    val programme: String = "",
     val latitude: Double? = null,
     val longitude: Double? = null,
     @SerialName("map_links") val mapLinks: MapLinks = MapLinks(),
