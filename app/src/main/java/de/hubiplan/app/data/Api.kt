@@ -711,6 +711,10 @@ class Api(
     suspend fun invoicePdf(accessId: Int, invoiceId: Int, cancellation: Boolean = false): ByteArray =
         file("/api/portal/$accessId/invoices/$invoiceId/pdf/" + if (cancellation) "?storno=1" else "")
 
+    /** Eintrittskarten einer Anmeldung als PDF, eine Karte mit QR-Code je Person (A6). */
+    suspend fun registrationTickets(accessId: Int, eventId: Int, registrationId: Int): ByteArray =
+        file("/api/portal/$accessId/events/$eventId/registration/$registrationId/tickets/")
+
     /** Freigegebenes Protokoll einer Versammlung als PDF. */
     /** Anhang eines Termins (nur zum Ansehen, die App speichert ihn nicht dauerhaft). */
     suspend fun eventAttachment(accessId: Int, eventId: Int, attachmentId: Int): ByteArray =

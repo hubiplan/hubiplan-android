@@ -248,6 +248,8 @@ data class MyRegistration(
     /** Ältere Server ohne Angabe: dann gilt `can_cancel` des Angebots */
     @SerialName("can_cancel") val canCancel: Boolean? = null,
     @SerialName("can_substitute") val canSubstitute: Boolean = false,
+    /** Eintrittskarten mit QR-Code als PDF (A6; ältere Server: keine) */
+    @SerialName("has_tickets") val hasTickets: Boolean = false,
     /** Zusatzleistungen je Anmeldung */
     val bookings: List<Booking> = emptyList(),
 ) {
