@@ -519,7 +519,7 @@ class Api(
     suspend fun reportChange(accessId: Int, values: Map<String, String>, message: String): Boolean {
         val body = JsonObject((values + ("message" to message)).mapValues { JsonPrimitive(it.value) })
         val text = expect("POST", "/api/portal/$accessId/change-requests/", json.encodeToString(JsonObject.serializer(), body))
-        // true: wartet auf den Vorstand · false: sofort übernommen
+        // true: wartet auf Bestätigung durch den Verein · false: sofort übernommen
         val root = try {
             json.parseToJsonElement(text) as? JsonObject
         } catch (e: IllegalArgumentException) {
