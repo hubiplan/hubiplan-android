@@ -50,6 +50,8 @@ class MainActivity : FragmentActivity() {
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
         enableEdgeToEdge()
+        // Keine Bildschirmfotos und keine Vorschau im App-Wechsler, außer das Mitglied erlaubt es
+        de.hubiplan.app.ui.Sichtschutz.apply(this)
         openFrom(intent)
         setContent {
             val theme by vm.theme.collectAsStateWithLifecycle()

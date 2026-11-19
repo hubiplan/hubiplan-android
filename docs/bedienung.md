@@ -270,7 +270,10 @@ laden. Bei einem Versionskonflikt wird keine Änderung erzwungen.
 Push-Hinweise für Verwaltungsaufgaben öffnen die konkrete Aufgabe im zugehörigen Konto und
 Bereich nach der Verwaltungsentsperrung. Die App lädt Inhalt und Rechte neu; alte Hinweise oder
 entzogene Freigaben geben keinen Zugriff. Auf dem Sperrbildschirm steht standardmäßig nur ein
-neutraler Hinweis. Titel und Versandkanäle kannst du unter „Mein Konto › Benachrichtigungen“
+neutraler Hinweis. Bildschirmfotos und die Vorschau in der App-Übersicht sind in der ganzen App
+gesperrt; unter „Mein Konto“ lässt sich das mit „Bildschirmfotos erlauben“ abschalten. Der groß
+gezeigte Ausweis lässt sich immer fotografieren, der Verwaltungsbereich nie. Beim Abmelden
+löscht die App auch den Speicher der eingebetteten Webansicht (Standmodus). Titel und Versandkanäle kannst du unter „Mein Konto › Benachrichtigungen“
 in HUBIplan einstellen, den Android-Kanal „Aufgaben“ in den Systemeinstellungen. Ohne Push
 werden Aufgaben beim Öffnen oder Aktualisieren der Liste geladen. Aufgabeninhalte und Entwürfe
 werden nicht lokal gespeichert. Vor dem Verlassen eines Formulars fragt die App nach; eine
