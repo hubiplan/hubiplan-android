@@ -323,6 +323,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var admitting by rememberSaveable(unit.key) { mutableStateOf(false) }
     var eventId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var eventStart by rememberSaveable(unit.key) { mutableStateOf<String?>(null) }
+    var checkInOpen by rememberSaveable(unit.key, eventId) { mutableStateOf(false) }
     var creatingEvent by rememberSaveable(unit.key) { mutableStateOf<Boolean?>(null) }
     var bookingId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var newBooking by rememberSaveable(unit.key) { mutableStateOf(false) }
@@ -398,6 +399,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                 newBooking -> newBooking = false
                 bookingId != null -> bookingId = null
                 creatingEvent != null -> creatingEvent = null
+                checkInOpen && eventId != null -> checkInOpen = false
                 eventId != null -> { eventId = null; eventStart = null }
                 admitting -> admitting = false
                 member != null -> member = null
@@ -508,10 +510,13 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         eventStart = null
                         onChanged(text, changeSet)
                     }
+                    openEvent != null && checkInOpen -> CheckInScreen(client, openEvent, errors, onBack = { checkInOpen = false }) {
+                        invoiceId = it
+                    }
                     openEvent != null -> EventScreen(client, openEvent, eventStart, errors, onBack = {
                         eventId = null
                         eventStart = null
-                    }, onChanged = onChanged, reload = reload)
+                    }, onChanged = onChanged, reload = reload, onCheckIn = { checkInOpen = true })
                     admitting -> AdmitScreen(client, errors, onBack = { requestLeave { admitting = false } }) { id, text ->
                         admitting = false
                         member = id

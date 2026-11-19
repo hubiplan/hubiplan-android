@@ -210,6 +210,21 @@ class AdminClient(
         return Changed(Unit, r.changeSet.takeIf { r.undoable }, r.label)
     }
 
+    // --- Einlass bei Terminen mit Anmeldung (A6/A7) ---
+
+    suspend fun checkIns(eventId: Int): CheckInList = decodeApi(get("events/$eventId/registration/checkin/"))
+
+    /** Karte ([code]) oder Person ([participant]) einlassen, mit [undo] zurücknehmen. */
+    suspend fun checkIn(eventId: Int, code: String? = null, participant: Int? = null, undo: Boolean = false): CheckInResult {
+        val body = buildMap<String, Any?> {
+            if (code != null) put("code", code.trim().take(500))
+            if (participant != null) put("participant", participant)
+            if (undo) put("undo", true)
+        }
+        val r = use().admin("POST", "${base}events/$eventId/registration/checkin/", obj(*body.toList().toTypedArray()).toString())
+        return decodeApi(r.text)
+    }
+
     // --- B4: Kasse ---
 
     suspend fun accounts(): List<FinanceAccount> =

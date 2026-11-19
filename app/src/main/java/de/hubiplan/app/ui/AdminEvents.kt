@@ -141,9 +141,11 @@ fun EventScreen(
     onBack: () -> Unit,
     onChanged: OnChanged,
     reload: Int,
+    onCheckIn: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
     var event by remember(id) { mutableStateOf<AdminEvent?>(null) }
+    var checkIns by remember(id) { mutableStateOf<de.hubiplan.app.data.CheckInList?>(null) }
     var responses by remember(id) { mutableStateOf<AdminResponses?>(null) }
     var error by remember(id) { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
@@ -158,6 +160,11 @@ fun EventScreen(
             error = null
         } catch (ex: ApiException) {
             error = errors.message(ex)
+        }
+        // Termine mit verbindlicher Anmeldung haben keine Zu- und Absagen, dafür den Einlass (A6/A7)
+        val e = event
+        if (onCheckIn != null && e != null && !e.rsvp.enabled) {
+            checkIns = try { client.checkIns(id) } catch (_: ApiException) { null }
         }
     }
 
@@ -242,6 +249,16 @@ fun EventScreen(
             }
         }
         responses?.let { r -> ResponseLists(r, canEnter = rsvp.canEnter && e.canEdit) { dialog = it } }
+        val c = checkIns
+        if (c != null && onCheckIn != null) {
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
+                    Text(tr("Einlass"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
+                    Text(tr("{n} von {count} eingelassen", "n" to c.checkedIn, "count" to c.participants.size))
+                    Button(onClick = onCheckIn) { Text(tr("Teilnehmende einlassen")) }
+                }
+            }
+        }
     }
 
     val e = event
