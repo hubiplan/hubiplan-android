@@ -298,7 +298,11 @@ data class Occurrence(
     @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = false,
     @SerialName("my_response") val myResponse: String? = null,
     @SerialName("rsvp_deadline") val rsvpDeadline: String? = null,
-)
+    /** "members", "board" oder "public"; Termine „nur Vorstand“ sehen nur Vorstandsmitglieder */
+    val visibility: String = "",
+) {
+    val nurVorstand: Boolean get() = visibility == "board"
+}
 
 @Serializable
 data class EventList(val items: List<Occurrence>)
@@ -362,7 +366,11 @@ data class EventDetail(
     val attachments: List<EventFile> = emptyList(),
     /** Verbindliche Anmeldung (Modul „Anmeldungen“); ohne Modul oder bei älteren Servern null */
     val registration: RegistrationBrief? = null,
-)
+    /** "members", "board" oder "public" */
+    val visibility: String = "",
+) {
+    val nurVorstand: Boolean get() = visibility == "board"
+}
 
 @Serializable
 data class CircularItem(
