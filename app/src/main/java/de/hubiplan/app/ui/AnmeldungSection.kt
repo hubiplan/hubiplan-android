@@ -24,9 +24,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import de.hubiplan.app.Texte
+import de.hubiplan.app.data.Ansicht
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.EventDetail
 import de.hubiplan.app.data.FeeQuote
@@ -48,7 +50,9 @@ import de.hubiplan.app.data.registrationSum
 import de.hubiplan.app.data.substitutePayload
 import de.hubiplan.app.tr
 import de.hubiplan.app.trk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // Verbindliche Anmeldung mit Teilnahmegebühr am Termin, wie im Mitgliederbereich (HUBIplan A1–A3):
 // Warteliste, Abmelden einzelner Personen mit Vorschau der Stornogebühr, Ersatzperson.
@@ -75,6 +79,7 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
     var cancelling by remember { mutableStateOf<MyRegistration?>(null) }
     var replacing by remember { mutableStateOf<Pair<MyRegistration, RegistrationParticipant>?>(null) }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     LaunchedEffect(access.id, e.id, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
@@ -105,6 +110,26 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
         }
     }
 
+    /** Eintrittskarten laden und im PDF-Betrachter öffnen (nur zum Ansehen, nicht gespeichert). */
+    fun tickets(reg: MyRegistration) {
+        if (busy) return
+        val api = vm.api() ?: return
+        busy = true
+        error = null
+        notice = null
+        scope.launch {
+            try {
+                val bytes = api.registrationTickets(access.id, e.id, reg.id)
+                val file = withContext(Dispatchers.IO) { Ansicht.store(context, "eintrittskarten-${reg.number}.pdf", bytes) }
+                openForViewing(context, file, "application/pdf")?.let { notice = it }
+            } catch (x: ApiException) {
+                if (x.status == 401) vm.deviceRevoked(x) else error = x.problem()
+            } finally {
+                busy = false
+            }
+        }
+    }
+
     HorizontalDivider()
     Text(tr("Anmeldung"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
     error?.let { ProblemNotice(it, onRetry = if (data == null) ({ attempt++ }) else null, inset = false) }
@@ -127,6 +152,7 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
             busy = busy,
             onCancel = { cancelling = reg },
             onSubstitute = { p -> replacing = reg to p },
+            onTickets = { tickets(reg) },
         )
     }
     cancelling?.let { reg ->
@@ -388,6 +414,7 @@ private fun MyRegistrationCard(
     busy: Boolean,
     onCancel: () -> Unit,
     onSubstitute: (RegistrationParticipant) -> Unit,
+    onTickets: () -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
         Text(tr("Deine Anmeldung {number}", "number" to reg.number), style = MaterialTheme.typography.titleSmall)
@@ -431,6 +458,10 @@ private fun MyRegistrationCard(
                 " · " + tr("Rechnung {number} über {total}, zahlbar bis {due}", "number" to it.number, "total" to formatMoney(it.total), "due" to formatDate(it.dueDate))
             }.orEmpty()
             Text(line + invoice, style = MaterialTheme.typography.bodySmall)
+        }
+        if (reg.hasTickets) {
+            OutlinedButton(onClick = onTickets, enabled = !busy) { Text(tr("Eintrittskarten (PDF)")) }
+            Text(tr("Bitte beim Einlass zeigen, auf dem Handy oder ausgedruckt."), style = MaterialTheme.typography.bodySmall)
         }
         if (canCancel) TextButton(onClick = onCancel, enabled = !busy) { Text(trk("anmeldung", "Abmelden")) }
     }

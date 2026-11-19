@@ -245,4 +245,14 @@ class AnmeldungenTest {
         )
         assertEquals("14:00 Begrüßung", e.programme)
     }
+
+    @Test fun eintrittskartenNurMitAngabeDesServers() {
+        val alt = json.decodeFromString(MemberRegistration.serializer(), antwort)
+        assertFalse(alt.mine.single().hasTickets)
+        val neu = json.decodeFromString(
+            MemberRegistration.serializer(),
+            antwort.replaceFirst("\"paid_state\"", "\"has_tickets\":true,\"paid_state\""),
+        )
+        assertTrue(neu.mine.single().hasTickets)
+    }
 }
