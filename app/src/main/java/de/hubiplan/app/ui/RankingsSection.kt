@@ -112,7 +112,7 @@ private fun RankingDetailView(access: PortalAccess, id: String, vm: AppViewModel
         }
         d.titles.forEach { Text("${it.title}: ${it.name}", fontWeight = FontWeight.Bold) }
         if (d.prizes.isNotEmpty()) {
-            Text(tr("Pfänder"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
+            Text(tr("Preise"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
             d.prizes.forEach { Text(prizeLine(it)) }
         }
         d.scorings.forEach { s ->

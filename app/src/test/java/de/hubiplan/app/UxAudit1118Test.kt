@@ -59,6 +59,13 @@ class UxAudit1118Test {
         assertFalse("Rundschreiben des Vorstands" in texte)
         assertFalse("tr(\"Einheit wählen\")" in texte)
         assertTrue("tr(\"Verein oder Gruppe wählen\")" in texte)
+        // UX-Audit 16.11., IOS-19 (gleich in der iOS-App): Mitgliedertexte nennen den Verein,
+        // Wettbewerbe ohne Schützenwörter
+        for (alt in listOf("Antwort des Vorstands", "Rückfrage des Vorstands", "Der Vorstand hat eine Rückfrage",
+            "wartet auf den Vorstand", "Der Vorstand bestätigt", "Der Vorstand entscheidet", "tr(\"Pfänder\")",
+            "Schießen im Standmodus", "Treffer auf der Scheibe")) {
+            assertFalse(alt, alt in texte)
+        }
     }
 
     /** AND-19: Neutrale Flächen wie in der Weboberfläche, lesbar, Vereinsfarben auf allen Flächen lesbar. */

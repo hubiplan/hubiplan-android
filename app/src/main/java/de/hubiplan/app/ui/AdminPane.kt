@@ -249,7 +249,7 @@ internal enum class Section(private val labelText: () -> String, private val hin
     FINANCE({ tr("Kassenbuch") }, { tr("Buchungen und Quittungen") }),
     BILLING({ tr("Rechnungen") }, { tr("Offene und bezahlte Rechnungen der Mitglieder") }),
     OCCASIONS({ tr("Jubiläen und Geburtstage") }, { tr("Geburtstage und Jubiläen der nächsten Wochen") }),
-    COMPETITIONS({ tr("Wettbewerbe") }, { tr("Schießen im Standmodus erfassen, auch ohne Empfang") }),
+    COMPETITIONS({ tr("Wettbewerbe") }, { tr("Ergebnisse am Stand erfassen, auch ohne Empfang") }),
     PARTNERS({ tr("Geschäftspartner") }, { tr("Lieferanten, Sponsoren und Ansprechpartner nachschlagen") }),
     QUALIFICATIONS({ tr("Qualifikationen") }, { tr("Nachweise, die bald ablaufen") }),
     OBLIGATIONS({ tr("Fristen") }, { tr("Vereinspflichten mit Frist und Zuständigkeit") });
@@ -357,7 +357,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     fun openStandLink(code: String): Boolean {
         val link = de.hubiplan.app.data.StandLink.parse(code) ?: return false
         if (link.server != main.account.server) {
-            cardError = tr("Der QR-Code gehört zu einer anderen HUBIplan-Instanz.")
+            cardError = tr("Der QR-Code gehört zu einer anderen HUBIplan-Adresse.")
         } else {
             vm.openStand(StandSession(link.url, link.server, tr("Standmodus")))
         }
