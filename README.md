@@ -13,7 +13,7 @@ nur mit der HUBIplan-Instanz des eigenen Vereins, nie mit einem fremden Dienst. 
 > English; the developer documentation is in German. Issues and security reports in English
 > are welcome.
 
-Paketname `de.hubiplan.app`, Version 1.6.0, ab Android 9, für Telefon und Tablet. Für iPhone und
+Paketname `de.hubiplan.app`, Version 1.8.0, ab Android 9, für Telefon und Tablet. Für iPhone und
 iPad entsteht [hubiplan-ios](https://github.com/hubiplan/hubiplan-ios) mit demselben Umfang.
 
 ## Inhalt
@@ -38,7 +38,11 @@ die App.
 
 - Termine der eigenen Einheiten (Verein, Untereinheit, weitergegebene Termine des
   Dachverbands), Zu- und Absage (auf Wunsch des Vereins auch „Vielleicht“) mit einem
-  Fingertipp, Bemerkung, Anhänge, Anfahrt mit Navigation und Push zur Einladung
+  Fingertipp, Bemerkung, Anhänge, Anfahrt mit Navigation und Push zur Einladung; Termine
+  „nur Vorstand“ sind für Vorstandsmitglieder gekennzeichnet
+- Anmeldung mit Teilnahmegebühr am Termin: Tarif, Zusatzleistungen und Zusatzfragen,
+  Warteliste, Abmelden mit Vorschau der Gebühr, Ersatzperson; Eintrittskarte mit QR-Code
+  in der App
 - Termine im Gerätekalender mit Erinnerungen und Hinweis „Rückmeldung fehlt“
 - Mitteilungen des Vereins lesen, Anhänge im Browser öffnen
 - Aufgaben: zugewiesene Aufgaben und offene Angebote übernehmen, erledigen oder zurückgeben;
@@ -49,7 +53,8 @@ die App.
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
   und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Wettbewerbe mit
   Meldungen, Ergebnissen und Ranglisten, Abwesenheiten für Musiker, Belegung anfragen, Kündigung,
-  Helferdienste, Dokumente und für
+  Helferdienste, Dokumente, Auslagen (selbst Bezahltes mit Belegfoto melden),
+  Beitragsnachweise (Nachweis für den ermäßigten Beitrag einreichen) und für
   Ansprechpartner einer Firma „Mitarbeiter“ (für wen die Firma zahlt, neue Mitarbeiter melden)
 - Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
   zeigen“), auch ohne Netz (verschlüsselt gespeichert);
@@ -72,12 +77,12 @@ die App.
 
 ## Für Vorstand, Untereinheiten und Kasse
 
-Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird einmal mit
-Passwort und Zwei-Faktor-Code freigeschaltet, danach mit Fingerabdruck oder PIN geöffnet;
-Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was möchtest du
-tun?“: oben „Ausweis prüfen“, darunter „Zu erledigen“ mit Anzahl und die Bereiche
-Aufgaben, Mitglieder, Termine, Wettbewerbe, Geschäftspartner, Kassenbuch, Rechnungen,
-Jubiläen und Geburtstage, Qualifikationen und Fristen, je nach Rechten.
+Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird einmal mit Passwort
+und Zwei-Faktor-Code oder mit Passkey freigeschaltet, danach mit Fingerabdruck oder PIN
+geöffnet; Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was
+möchtest du tun?“: oben „Ausweis prüfen“, darunter „Zu erledigen“ mit Anzahl und die Bereiche
+Aufgaben, Mitglieder, Termine, Wettbewerbe, Geschäftspartner, Kassenbuch, Rechnungen, Jubiläen
+und Geburtstage, Qualifikationen und Fristen, je nach Rechten.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
@@ -94,11 +99,14 @@ Jubiläen und Geburtstage, Qualifikationen und Fristen, je nach Rechten.
 - Änderungsmeldungen und Fotos freigeben, Mitgliedsausweis per QR-Code prüfen
 - Termine mit Zu- und Absagen, Rückmeldung für Mitglieder eintragen, einfache Termine
   anlegen und absagen
+- Einlass bei Veranstaltungen mit Anmeldung: Eintrittskarten mit der Kamera scannen, von Hand
+  einlassen, Abendkasse
 - Wettbewerbe: Standmodus eingebettet in der App, auch ohne Empfang, mit QR-Code für weitere
   Geräte
 - Geschäftspartner nachschlagen (Suche, Akte, anrufen, mailen; nur lesen)
 - Haushalt und Firma in der Akte, Qualifikationen (was bald abläuft) und Fristenkalender (nur lesen)
-- Kassenbuch mit Belegfoto (ohne Netz als verschlüsselter Entwurf)
+- Kassenbuch mit Belegfoto (ohne Netz als verschlüsselter Entwurf; meldet der Server das Gerät
+  ab, kommen nicht gesendete Entwürfe in eine Quarantäne und nach erneuter Anmeldung zurück)
 - offene Rechnungen suchen, Barzahlung verbuchen, Quittung als PDF teilen
 - Quittung mit Unterschrift auf dem Display (Gegenseite im Vollbild, ohne Netz speicherbar,
   Belegnummer aus dem Kassenbuch)
@@ -108,13 +116,15 @@ Einzelnen verhalten (mit englischer Kurzfassung): [docs/bedienung.md](docs/bedie
 
 ## Verbinden
 
-Im Browser unter **Mein Konto › App & andere Instanzen › App auf dem Telefon** auf
-„App verbinden“ tippen und den QR-Code in der App scannen; im Browser des Telefons selbst
-führt „In der HUBIplan-App öffnen“ direkt in die App. Alternativ mit E-Mail, Passwort und ggf.
-Zwei-Faktor-Code anmelden. Die App erhält einen eigenen Geräteschlüssel, der nur
-für den Mitgliederbereich gilt und sich jederzeit unter „Mein Konto“ abmelden lässt.
-Passwort vergessen: Adresse des Vereins eintragen, dann „Passwort vergessen? Im Browser
-zurücksetzen“ ([Einzelheiten](docs/bedienung.md#passwort-vergessen)).
+Im Browser unter **Mein Konto › App & andere Instanzen › App auf dem Telefon** auf „App
+verbinden“ tippen und den QR-Code in der App scannen; im Browser des Telefons selbst führt „In
+der HUBIplan-App öffnen“ direkt in die App. Alternativ mit E-Mail, Passwort und ggf.
+Zwei-Faktor-Code oder mit einem Passkey (Credential Manager von Android) anmelden. Vor dem
+Verbinden prüft die App, ob die Instanz HUBIplan ist und welche App-Fassung sie mindestens
+verlangt. Die App erhält einen eigenen Geräteschlüssel, der nur für den Mitgliederbereich gilt
+und sich jederzeit unter „Mein Konto“ abmelden lässt. Passwort vergessen: Adresse des Vereins
+eintragen, dann „Passwort vergessen? Im Browser zurücksetzen“
+([Einzelheiten](docs/bedienung.md#passwort-vergessen)).
 
 ## Varianten
 
