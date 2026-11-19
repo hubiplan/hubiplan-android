@@ -355,7 +355,7 @@ private fun QuestionInput(q: SurveyQuestion, row: SurveyAnswerRow, set: (SurveyA
 internal fun SurveyResults(r: SurveyResult) {
     if (r.hidden) {
         Text(
-            tr("Das Ergebnis erscheint ab drei Antworten, damit niemand zurückrechnen kann.") + " " +
+            tr("Das Ergebnis erscheint ab fünf Antworten, damit niemand zurückrechnen kann.") + " " +
                 trn("Bisher {n} Antwort.", "Bisher {n} Antworten.", r.participants),
             style = MaterialTheme.typography.bodySmall,
         )

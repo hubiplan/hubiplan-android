@@ -74,7 +74,7 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
 - **Umfragen**: Umfragen und Meinungsbilder des Vereins, offene zuerst, mit der Zahl der Umfragen,
   die noch auf deine Antwort warten. Antworten (Auswahl, Ja/Nein/Enthaltung, Terminfindung,
   Mengen wie die Essenswahl, Freitext), ändern oder zurückziehen bis zum Ende, Ergebnis je nach
-  Einstellung, bei anonymen Umfragen erst ab drei Antworten. Ist aus einer Terminfindung ein
+  Einstellung, bei anonymen Umfragen erst ab fünf Antworten. Ist aus einer Terminfindung ein
   Termin entstanden, übernimmt „Zusage übernehmen“ die Zusage. Neue Umfragen und Erinnerungen
   kommen als Hinweis (HUBIplan ab Umfragen U1).
 - **Auslagen** (wenn der Verein das Modul Auslagen erstatten nutzt, nur mit Amt oder Rolle im
