@@ -183,7 +183,7 @@ internal val ExpenseDraftSaver = listSaver<ExpenseDraft, String>(
 
 /** Fotos des Belegs: Kamera oder Galerie, verkleinert als JPEG im Speicher. */
 @Composable
-private fun rememberReceiptPhotos(onPhoto: (ByteArray) -> Unit, onFail: (String) -> Unit): Pair<() -> Unit, () -> Unit> {
+internal fun rememberReceiptPhotos(onPhoto: (ByteArray) -> Unit, onFail: (String) -> Unit): Pair<() -> Unit, () -> Unit> {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var photoUri by remember { mutableStateOf<Uri?>(null) }
