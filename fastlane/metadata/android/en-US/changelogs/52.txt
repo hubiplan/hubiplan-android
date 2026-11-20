@@ -1,0 +1,3 @@
+• Pinboard under "Me": read short club news, post with photos, pin and delete; counter for new posts.
+• Video room on events: "Open video room" and password to copy.
+• Share invitations from your calendar or mail app (.ics) with the app: "New event" is pre-filled.

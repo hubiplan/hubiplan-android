@@ -1,0 +1,3 @@
+• Pinnwand unter „Ich“: kurze Neuigkeiten des Vereins lesen, mit Fotos schreiben, anheften und löschen; Zähler für neue Beiträge.
+• Videoraum am Termin: „Videoraum öffnen“ und Passwort zum Kopieren.
+• Einladungen aus dem Kalender oder Mailprogramm (.ics) mit der App teilen: „Neuer Termin“ wird vorausgefüllt.
