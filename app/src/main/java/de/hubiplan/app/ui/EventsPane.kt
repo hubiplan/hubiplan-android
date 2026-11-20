@@ -27,7 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -38,6 +41,7 @@ import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.EventDetail
 import de.hubiplan.app.data.Occurrence
 import de.hubiplan.app.data.PortalAccess
+import de.hubiplan.app.data.VideoRoom
 import java.time.LocalDate
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
@@ -203,6 +207,7 @@ private fun EventDetailView(
             Text(occ.note)
         }
         PlaceSection(occ.location.ifBlank { e.location }, occ.address.ifBlank { e.address }, e)
+        if (!occ.isCancelled && !e.isCancelled) (e.video ?: occ.video)?.let { VideoSection(it) }
         if (e.owner.isNotBlank()) Text(e.owner, style = MaterialTheme.typography.bodySmall)
         if (e.nurVorstand) Abzeichen(tr("nur Vorstand"), Zustand.HINWEIS)
         if (e.description.isNotBlank()) Text(e.description)
@@ -335,6 +340,27 @@ private fun PlaceSection(location: String, address: String, e: EventDetail) {
         }
         e.mapLinks.osm?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in OpenStreetMap")) } }
         e.mapLinks.google?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in Google Maps")) } }
+    }
+}
+
+/** Videoraum (Nextcloud Talk): Link öffnet Browser oder Talk-App, Passwort zum Kopieren. */
+@Composable
+private fun VideoSection(video: VideoRoom) {
+    if (!video.openable) return
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
+    Text(tr("Videoraum"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
+    OutlinedButton(
+        onClick = { runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(video.url))) } },
+        modifier = Modifier.fillMaxWidth(),
+    ) { Text(tr("Videoraum öffnen")) }
+    if (video.password.isNotBlank()) {
+        SelectionContainer { Text(tr("Passwort: {password}", "password" to video.password)) }
+        TextButton(onClick = {
+            clipboard.setText(AnnotatedString(video.password))
+            copied = true
+        }) { Text(if (copied) tr("Passwort kopiert") else tr("Passwort kopieren")) }
     }
 }
 

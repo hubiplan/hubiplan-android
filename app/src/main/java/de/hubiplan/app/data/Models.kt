@@ -304,6 +304,8 @@ data class Occurrence(
     @SerialName("rsvp_enabled") val rsvpEnabled: Boolean = false,
     @SerialName("my_response") val myResponse: String? = null,
     @SerialName("rsvp_deadline") val rsvpDeadline: String? = null,
+    /** Videoraum (Nextcloud Talk) oder null */
+    val video: VideoRoom? = null,
     /** "members", "board" oder "public"; Termine „nur Vorstand“ sehen nur Vorstandsmitglieder */
     val visibility: String = "",
 ) {
@@ -332,6 +334,13 @@ data class Rsvp(
     @SerialName("note_allowed") val noteAllowed: Boolean = false,
     @SerialName("note_question") val noteQuestion: String = "",
 )
+
+/** Videoraum (Nextcloud Talk) am Termin: Link und Passwort; ältere Server ohne Angabe. */
+@Serializable
+data class VideoRoom(val url: String = "", val password: String = "") {
+    /** Nur https-Links öffnen (der Server liefert nie etwas anderes) */
+    val openable: Boolean get() = url.startsWith("https://")
+}
 
 /** Routenlinks zum Ort (OpenStreetMap, Google Maps). */
 @Serializable
@@ -372,6 +381,8 @@ data class EventDetail(
     val attachments: List<EventFile> = emptyList(),
     /** Verbindliche Anmeldung (Modul „Anmeldungen“); ohne Modul oder bei älteren Servern null */
     val registration: RegistrationBrief? = null,
+    /** Videoraum (Nextcloud Talk) oder null */
+    val video: VideoRoom? = null,
     /** "members", "board" oder "public" */
     val visibility: String = "",
 ) {
