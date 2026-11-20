@@ -1,0 +1,3 @@
+• Sichtschutz in der ganzen App: keine Bildschirmfotos und keine Vorschau in der App-Übersicht, abschaltbar unter „Mein Konto“. Der Ausweis bleibt fotografierbar.
+• Beim Abmelden werden auch gespeicherte Daten der Webansicht gelöscht.
+• Umfragen: Hinweis, dass anonyme Ergebnisse erst ab fünf Antworten erscheinen.

@@ -1,0 +1,3 @@
+• Privacy screen throughout the app: no screenshots and no preview in recent apps, can be switched off under "My account". The member card can still be captured.
+• Signing out also clears data stored by the web view.
+• Surveys: note that anonymous results appear only from five responses.
