@@ -458,16 +458,27 @@ private val DAY_INPUT: DateTimeFormatter get() = DAY_INPUT_FORMAT
 
 /** Einfachen Termin anlegen: einmalig, Titel, Tag, Zeit, Ort, Sichtbarkeit, Zu-/Absagen. */
 @Composable
-fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boolean, onBack: () -> Unit, onDone: (Int, String, String?) -> Unit) {
+fun EventCreateScreen(
+    client: AdminClient,
+    errors: AdminErrors,
+    rsvpAllowed: Boolean,
+    /** Vorlage aus einer geteilten Kalenderdatei (.ics), sonst leer. */
+    initial: de.hubiplan.app.data.IcsTermin? = null,
+    onBack: () -> Unit,
+    onDone: (Int, String, String?) -> Unit,
+) {
     val scope = rememberCoroutineScope()
+    val hhmm = java.time.format.DateTimeFormatter.ofPattern("HH:mm")
     // Eingaben überstehen Drehen und kurze Unterbrechungen (UX-Audit 31.10. A02)
-    var title by rememberSaveable { mutableStateOf("") }
-    var date by rememberSaveable { mutableStateOf(LocalDate.now().plusDays(7).format(DAY_INPUT)) }
-    var start by rememberSaveable { mutableStateOf("19:00") }
-    var end by rememberSaveable { mutableStateOf("") }
-    var allDay by rememberSaveable { mutableStateOf(false) }
-    var location by rememberSaveable { mutableStateOf("") }
-    var description by rememberSaveable { mutableStateOf("") }
+    var title by rememberSaveable { mutableStateOf(initial?.title ?: "") }
+    var date by rememberSaveable { mutableStateOf((initial?.day ?: LocalDate.now().plusDays(7)).format(DAY_INPUT)) }
+    var start by rememberSaveable { mutableStateOf(initial?.start?.format(hhmm) ?: "19:00") }
+    var end by rememberSaveable { mutableStateOf(initial?.end?.format(hhmm) ?: "") }
+    var allDay by rememberSaveable { mutableStateOf(initial?.allDay ?: false) }
+    var location by rememberSaveable { mutableStateOf(initial?.location ?: "") }
+    var description by rememberSaveable { mutableStateOf(initial?.description ?: "") }
+    // Videolink nur aus einer Einladung (Teams, Zoom, Talk …); HUBIplan zeigt ihn am Termin
+    var videoUrl by rememberSaveable { mutableStateOf(initial?.videoUrl ?: "") }
     var visibility by rememberSaveable { mutableStateOf("members") }
     var rsvp by rememberSaveable { mutableStateOf(false) }
     var guests by rememberSaveable { mutableStateOf(false) }
@@ -476,7 +487,7 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val fields = rememberServerFields()
-    val saved = rememberFormDraft(title, date, start, end, allDay, location, description, visibility, rsvp, guests, deadline, notify, busy = busy)
+    val saved = rememberFormDraft(title, date, start, end, allDay, location, description, videoUrl, visibility, rsvp, guests, deadline, notify, busy = busy)
     val times = eventTimes(date, start, end, allDay)
     val deadlineIso = deadline.takeIf { it.isNotBlank() }?.let { parseGermanDate(it) }
     val deadlineOk = deadline.isBlank() || deadlineIso != null
@@ -487,6 +498,10 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
         BackHead(enabled = !busy, onBack = onBack)
         Text(tr("Neuer Termin"), style = MaterialTheme.typography.headlineSmall, modifier = Modifier.asHeading())
         Text(tr("Einmaliger Termin. Serien, Anhänge und Weitergabe an andere Einheiten im Browser."), style = MaterialTheme.typography.bodySmall)
+        if (initial != null) {
+            Text(tr("Aus der Kalenderdatei übernommen. Bitte prüfen und dann anlegen."), style = MaterialTheme.typography.bodySmall)
+            if (initial.repeats) Text(tr("Die Einladung wiederholt sich. Die App legt nur den ersten Termin an; Serien im Browser."), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+        }
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
         error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.announce(urgent = true)) }
         ServerTextField(field = "title", errors = fields, enabled = !busy, value = title, onValueChange = { title = it.take(200) }, label = { Text(tr("Titel")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -523,6 +538,9 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
         if (times == null) Text(tr("Bitte Tag als TT.MM.JJJJ und Zeit als HH:MM eingeben."), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall, modifier = Modifier.announce(urgent = true))
         ServerTextField(field = "location", errors = fields, enabled = !busy, value = location, onValueChange = { location = it.take(200) }, label = { Text(tr("Ort (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
         ServerTextField(field = "description", errors = fields, enabled = !busy, value = description, onValueChange = { description = it }, label = { Text(tr("Beschreibung (optional)")) }, minLines = 2, modifier = Modifier.fillMaxWidth())
+        if (initial?.videoUrl?.isNotBlank() == true) {
+            ServerTextField(field = "video_url", errors = fields, enabled = !busy, value = videoUrl, onValueChange = { videoUrl = it.take(500) }, label = { Text(tr("Videolink (optional)")) }, singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth())
+        }
         ChoicePicker(tr("Wer sieht den Termin?"), VISIBILITIES, visibility, { v -> VISIBILITIES.first { it.first == v }.second }) { visibility = it }
         if (canRsvp) {
             LabeledSwitch(tr("Zu- und Absagen"), rsvp, { rsvp = it })
@@ -552,6 +570,7 @@ fun EventCreateScreen(client: AdminClient, errors: AdminErrors, rsvpAllowed: Boo
                     put("all_day", allDay)
                     put("location", location.trim())
                     put("description", description.trim())
+                    if (videoUrl.isNotBlank()) put("video_url", videoUrl.trim())
                     put("visibility", visibility)
                     put("rsvp_enabled", rsvp && canRsvp)
                     if (rsvp && canRsvp) {

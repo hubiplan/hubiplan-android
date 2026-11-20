@@ -1453,5 +1453,10 @@
  "Videoraum öffnen": "Open video room",
  "Passwort: {password}": "Password: {password}",
  "Passwort kopiert": "Password copied",
- "Passwort kopieren": "Copy password"
+ "Passwort kopieren": "Copy password",
+ "In der Datei ist kein Termin, den HUBIplan übernehmen kann.": "The file contains no event that HUBIplan can use.",
+ "Termine anlegen können nur Konten mit Verwaltungsrechten.": "Only accounts with management rights can create events.",
+ "Aus der Kalenderdatei übernommen. Bitte prüfen und dann anlegen.": "Taken from the calendar file. Please check, then create.",
+ "Die Einladung wiederholt sich. Die App legt nur den ersten Termin an; Serien im Browser.": "The invitation repeats. The app only creates the first event; series in the browser.",
+ "Videolink (optional)": "Video link (optional)"
 }

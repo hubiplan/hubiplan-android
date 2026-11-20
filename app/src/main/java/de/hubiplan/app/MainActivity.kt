@@ -18,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import de.hubiplan.app.ui.AppViewModel
 import de.hubiplan.app.ui.ConnectScreen
 import de.hubiplan.app.ui.HubiplanTheme
@@ -109,6 +111,35 @@ class MainActivity : FragmentActivity() {
         openFrom(intent)
     }
 
+    private fun isCalendar(intent: Intent?): Boolean {
+        val action = intent?.action
+        if (action != Intent.ACTION_SEND && action != Intent.ACTION_VIEW) return false
+        val type = intent.type ?: intent.data?.let { contentResolver.getType(it) }
+        val name = intent.data?.lastPathSegment.orEmpty()
+        return type?.startsWith("text/calendar") == true || type == "application/ics" || name.endsWith(".ics", ignoreCase = true)
+    }
+
+    /** Kalenderdatei lesen, höchstens [IcsLeser.MAX_BYTES]; Fehler → null. */
+    private suspend fun readCalendar(uri: android.net.Uri): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        runCatching {
+            contentResolver.openInputStream(uri)?.use { input ->
+                val bytes = input.readNBytesCompat(de.hubiplan.app.data.IcsLeser.MAX_BYTES + 1)
+                if (bytes.size > de.hubiplan.app.data.IcsLeser.MAX_BYTES) null else bytes.toString(Charsets.UTF_8)
+            }
+        }.getOrNull()
+    }
+
+    private fun java.io.InputStream.readNBytesCompat(limit: Int): ByteArray {
+        val out = java.io.ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (out.size() < limit) {
+            val n = read(buffer, 0, minOf(buffer.size, limit - out.size()))
+            if (n < 0) break
+            out.write(buffer, 0, n)
+        }
+        return out.toByteArray()
+    }
+
     /** Aus einer Benachrichtigung oder Verknüpfung: Mitteilung öffnen bzw. zum passenden Konto wechseln. */
     private fun openFrom(intent: Intent?) {
         // Verbinden-Link aus dem Browser (X-04); danach entfernen, damit er beim Drehen nicht erneut greift
@@ -116,6 +147,23 @@ class MainActivity : FragmentActivity() {
             vm.openPairingLink(intent.dataString.orEmpty())
             intent.data = null
             intent.action = null
+            return
+        }
+        // Kalenderdatei (.ics) aus Mailprogramm oder Kalender geteilt oder geöffnet (W4)
+        if (isCalendar(intent)) {
+            val uri = if (intent?.action == Intent.ACTION_SEND) {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra<android.net.Uri>(Intent.EXTRA_STREAM)
+            } else {
+                intent?.data
+            }
+            val inline = intent?.getStringExtra(Intent.EXTRA_TEXT)
+            intent?.action = null
+            intent?.data = null
+            lifecycleScope.launch {
+                val text = inline?.takeIf { "BEGIN:VEVENT" in it } ?: uri?.let { readCalendar(it) }
+                vm.openSharedEvent(text)
+            }
             return
         }
         // App-Verknüpfung „Ausweis zeigen“ (lange auf das App-Symbol drücken)

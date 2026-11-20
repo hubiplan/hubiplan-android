@@ -54,6 +54,21 @@
                 <!-- Ohne Code: App fordert ihn selbst mit Prüfwert an (Gesamtaudit 15.11., APP-01) -->
                 <data android:scheme="hubiplan" android:host="anmelden" />
             </intent-filter>
+            <!-- Termin aus dem Mailprogramm oder Kalender teilen bzw. öffnen (.ics): füllt in der
+                 Verwaltung „Neuer Termin“ vor (hubiplan konzepte/termine-aus-dem-mailprogramm.md, W4) -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/calendar" />
+                <data android:mimeType="application/ics" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="text/calendar" />
+                <data android:mimeType="application/ics" />
+            </intent-filter>
         </activity>
 
         <receiver
