@@ -72,6 +72,8 @@ import androidx.compose.ui.window.DialogProperties
  */
 // Übersetzt beim Anzeigen (AND-11)
 internal enum class IchBereich(private val labelText: () -> String) {
+    // Kurze Neuigkeiten des Vereins oben, damit Neues gleich auffällt
+    PINNWAND({ tr("Pinnwand") }),
     DATEN({ tr("Meine Daten") }),
     RECHNUNGEN({ tr("Rechnungen") }),
     // Nachweis für einen ermäßigten Beitrag (z. B. Studienbescheinigung)
@@ -97,6 +99,7 @@ internal enum class IchBereich(private val labelText: () -> String) {
 /** Nur Bereiche, deren Modul an ist (gleiche Regeln wie `portalSections` im Browser). */
 internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.entries.filter {
     when (it) {
+        IchBereich.PINNWAND -> access.hasPinboard
         IchBereich.DATEN -> true
         IchBereich.RECHNUNGEN -> access.hasInvoices
         IchBereich.NACHWEISE -> access.hasFeeProofs
@@ -165,6 +168,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
         Box(Modifier.fillMaxSize()) {
             BackHead(open.label, onBack = back)
             when (open) {
+                IchBereich.PINNWAND -> PinnwandSection(access, vm)
                 IchBereich.DATEN -> ProfilePane(access, main, vm)
                 IchBereich.RECHNUNGEN -> InvoicesSection(access, vm)
                 IchBereich.NACHWEISE -> FeeProofsSection(access, vm)
@@ -197,6 +201,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
     var meetings by remember(access.id) { mutableStateOf<MyMeetings?>(null) }
     var documents by remember(access.id) { mutableStateOf<MyDocuments?>(null) }
     var surveys by remember(access.id) { mutableStateOf<de.hubiplan.app.data.SurveyList?>(null) }
+    var pinboard by remember(access.id) { mutableStateOf<de.hubiplan.app.data.PinboardList?>(null) }
     var expenses by remember(access.id) { mutableStateOf<de.hubiplan.app.data.ExpenseOverview?>(null) }
     // Kurzstand nur nebenbei: Fehler zeigen erst die Unterseiten
     LaunchedEffect(access.id) {
@@ -205,6 +210,8 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
         if (IchBereich.VERSAMMLUNGEN in bereiche) meetings = quietly(vm) { api.myMeetings(access.id) }
         if (IchBereich.DOKUMENTE in bereiche) documents = quietly(vm) { api.myDocuments(access.id) }
         if (IchBereich.UMFRAGEN in bereiche) surveys = quietly(vm) { api.memberSurveys(access.id) }
+        // Nur ansehen: der Zähler „neu“ bleibt, bis die Pinnwand geöffnet wird
+        if (IchBereich.PINNWAND in bereiche) pinboard = quietly(vm) { api.memberPinboard(access.id, seen = false) }
         if (IchBereich.AUSLAGEN in bereiche) expenses = quietly(vm) { api.memberExpenses(access.id) }
     }
     Column(
@@ -219,6 +226,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
             bereiche.forEachIndexed { i, b ->
                 if (i > 0) HorizontalDivider()
                 val (summary, count) = when (b) {
+                    IchBereich.PINNWAND -> (pinboard?.let(::pinboardSummary) ?: "") to (pinboard?.newCount ?: access.pinboardNew)
                     IchBereich.DATEN -> (if (access.isContact) tr("Anschrift, Kontakt, Logo") else tr("Anschrift, Telefon, Foto")) to 0
                     IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
                     IchBereich.NACHWEISE -> feeProofSummary(access.feeProofsDue) to access.feeProofsDue

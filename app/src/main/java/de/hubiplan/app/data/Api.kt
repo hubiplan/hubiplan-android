@@ -860,6 +860,52 @@ class Api(
             ),
         )
 
+    // --- Pinnwand (HUBIplan docs/app.md) ---
+
+    /** Beiträge; [seen] = false lässt den Zähler „neu“ stehen (Kurzstand unter „Ich“). */
+    suspend fun memberPinboard(accessId: Int, seen: Boolean = true): PinboardList =
+        decodeApi(expect("GET", "/api/portal/$accessId/pinboard/" + if (seen) "" else "?seen=0"))
+
+    /** Neuer Beitrag mit Fotos in einem Schritt; [key] verhindert Doppelte nach einem Abbruch. */
+    suspend fun createPinNotice(
+        accessId: Int,
+        text: String,
+        department: Int?,
+        pinned: Boolean,
+        push: Boolean,
+        photos: List<ByteArray>,
+        key: String,
+    ): PinNotice {
+        val form = MultipartBody.Builder().setType(MultipartBody.FORM).apply {
+            addFormDataPart("text", text)
+            department?.let { addFormDataPart("department", it.toString()) }
+            addFormDataPart("pinned", if (pinned) "1" else "0")
+            addFormDataPart("push", if (push) "1" else "0")
+            photos.forEachIndexed { i, jpeg ->
+                addFormDataPart("photos", "foto-${i + 1}.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            }
+        }.build()
+        val resp = send("POST", "/api/portal/$accessId/pinboard/", form, mapOf(SignedFormat.IDEMPOTENCY_HEADER to key))
+        if (resp.code !in 200..299) throw ApiException(resp.code, errorMessage(resp.code, resp.text), body = resp.text, origin = apiOrigin(server, token))
+        return decodeApi(PinNotice.serializer(), resp.text)
+    }
+
+    suspend fun pinPinNotice(accessId: Int, notice: PinNotice, pinned: Boolean): PinNotice =
+        decodeApi(
+            expect(
+                "PATCH",
+                "/api/portal/$accessId/pinboard/${notice.id}/",
+                json.encodeToString(
+                    JsonObject.serializer(),
+                    JsonObject(mapOf("pinned" to JsonPrimitive(pinned), "version" to JsonPrimitive(notice.version))),
+                ),
+            ),
+        )
+
+    suspend fun deletePinNotice(accessId: Int, id: Int) {
+        expect("DELETE", "/api/portal/$accessId/pinboard/$id/")
+    }
+
     suspend fun memberSurveys(accessId: Int): SurveyList =
         decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
 

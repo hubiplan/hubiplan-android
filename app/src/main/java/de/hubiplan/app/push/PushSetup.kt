@@ -282,6 +282,14 @@ object PushSetup {
                 }
                 SyncWorker.now(context)
             }
+            // Neuer Beitrag an der Pinnwand: Hinweis mit Text, Antippen öffnet die App (Ich › Pinnwand)
+            "pinboard" -> {
+                val access = message.access ?: return
+                val logo = ClubLogo.load(context, account, access)
+                store.ifCurrent(account) {
+                    Notifications.showInfo(context, store.slot, accountId, access, message.title, message.text, logo)
+                }
+            }
             // Neue Umfrage oder Erinnerung: Hinweis, Antippen öffnet die App (Ich › Umfragen)
             "survey" -> {
                 val access = message.access ?: return
