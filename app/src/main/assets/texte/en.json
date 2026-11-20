@@ -1448,5 +1448,10 @@
  "{name} einlassen": "Admit {name}",
  "Warten auf Netz: {n}": "Waiting for network: {n}",
  "{n} von {count} eingelassen": "{n} of {count} admitted",
- "Teilnehmende einlassen": "Admit participants"
+ "Teilnehmende einlassen": "Admit participants",
+ "Videoraum": "Video room",
+ "Videoraum öffnen": "Open video room",
+ "Passwort: {password}": "Password: {password}",
+ "Passwort kopiert": "Password copied",
+ "Passwort kopieren": "Copy password"
 }
