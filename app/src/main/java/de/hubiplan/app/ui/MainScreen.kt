@@ -243,6 +243,23 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     val snackbar = remember { androidx.compose.material3.SnackbarHostState() }
     val messageScope = androidx.compose.runtime.rememberCoroutineScope()
     val actionMessages = remember(snackbar, messageScope) { ActionMessages(snackbar, messageScope) }
+    // Geteilte Kalenderdatei (W4): in der Verwaltung „Neuer Termin“ vorausgefüllt öffnen
+    val sharedEvent by vm.sharedEvent.collectAsStateWithLifecycle()
+    LaunchedEffect(sharedEvent, admin.visible, leave.busy) {
+        if (sharedEvent == null || tab == Tab.VERWALTUNG) return@LaunchedEffect
+        if (admin.visible) {
+            leave.request(action = { tab = Tab.VERWALTUNG }, onStay = vm::sharedEventHandled)
+        } else if (admin.overview != null || admin.error != null) {
+            vm.sharedEventHandled()
+            snackbar.showSnackbar(tr("Termine anlegen können nur Konten mit Verwaltungsrechten."))
+        }
+    }
+    val sharedEventError by vm.sharedEventError.collectAsStateWithLifecycle()
+    LaunchedEffect(sharedEventError) {
+        val message = sharedEventError ?: return@LaunchedEffect
+        vm.sharedEventErrorShown()
+        snackbar.showSnackbar(message)
+    }
     CompositionLocalProvider(LocalBackHost provides backHost, LocalActionMessages provides actionMessages) {
     // Ein gemeinsamer Faktor für alle Beschriftungen der Leiste: keine sichtbar kleiner als die
     // anderen (UX-Audit 16.11., AND-29)

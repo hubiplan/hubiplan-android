@@ -320,6 +320,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var eventStart by rememberSaveable(unit.key) { mutableStateOf<String?>(null) }
     var checkInOpen by rememberSaveable(unit.key, eventId) { mutableStateOf(false) }
     var creatingEvent by rememberSaveable(unit.key) { mutableStateOf<Boolean?>(null) }
+    // Vorlage aus einer geteilten Kalenderdatei für „Neuer Termin“
+    var sharedDraft by remember { mutableStateOf<de.hubiplan.app.data.IcsTermin?>(null) }
     var bookingId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var newBooking by rememberSaveable(unit.key) { mutableStateOf(false) }
     var newReceipt by rememberSaveable(unit.key) { mutableStateOf(false) }
@@ -422,6 +424,39 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             if (leave == null) navigate() else leave.request(action = navigate, onStay = vm::todoHandled)
         }
     }
+    // Geteilte Kalenderdatei (W4): erste Einheit mit Terminrecht, aktuelle zuerst
+    val sharedEvent by vm.sharedEvent.collectAsStateWithLifecycle()
+    var pendingCreate by remember { mutableStateOf<Triple<String, de.hubiplan.app.data.IcsTermin, Boolean>?>(null) }
+    LaunchedEffect(sharedEvent) {
+        val termin = sharedEvent ?: return@LaunchedEffect
+        vm.sharedEventHandled()
+        val today = java.time.LocalDate.now()
+        val candidates = (listOf(unit) + units.filter { it.key != unit.key }).filter { showsEvents(it) }
+        for (candidate in candidates) {
+            val api = vm.adminApi() ?: break
+            val probe = AdminClient(api, candidate.id, vm::useAdmin, candidate.scope, accountKey)
+            val list = runCatching { probe.events(today.toString(), today.toString()) }.getOrNull() ?: continue
+            if (!list.canManage) continue
+            val open = {
+                member = null; requests = false; admitting = false; eventId = null; eventStart = null
+                bookingId = null; newBooking = false; newReceipt = false; invoiceId = null; creatingTodo = false
+                pendingCreate = Triple(candidate.key, termin, list.rsvpAllowed)
+                unitKey = candidate.key
+            }
+            if (leave == null) open() else leave.request(action = open)
+            return@LaunchedEffect
+        }
+        snackbar.showSnackbar(tr("Termine anlegen können nur Konten mit Verwaltungsrechten."))
+    }
+    // Erst wenn die Einheit gewechselt ist: deren Bereich „Termine“ und das Formular öffnen
+    LaunchedEffect(pendingCreate, unit.key) {
+        val (key, termin, rsvp) = pendingCreate ?: return@LaunchedEffect
+        if (key != unit.key) return@LaunchedEffect
+        pendingCreate = null
+        section = Section.EVENTS
+        sharedDraft = termin
+        creatingEvent = rsvp
+    }
     val selectedTodo by vm.selectedTodo.collectAsStateWithLifecycle()
     LaunchedEffect(selectedTodo, unit.key, leave?.busy) {
         val target = selectedTodo ?: return@LaunchedEffect
@@ -499,8 +534,9 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         onChanged(text, null)
                     }
                     openBooking != null -> BookingScreen(client, openBooking, FINANCE_EDIT in unit.permissions, errors, onBack = { bookingId = null }, onChanged = onChanged)
-                    rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, onBack = { requestLeave { creatingEvent = null } }) { id, text, changeSet ->
+                    rsvpAllowed != null -> EventCreateScreen(client, errors, rsvpAllowed, initial = sharedDraft, onBack = { requestLeave { creatingEvent = null; sharedDraft = null } }) { id, text, changeSet ->
                         creatingEvent = null
+                        sharedDraft = null
                         eventId = id
                         eventStart = null
                         onChanged(text, changeSet)

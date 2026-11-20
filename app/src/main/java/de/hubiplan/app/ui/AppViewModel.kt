@@ -617,6 +617,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         _openCard.value = false
     }
 
+    /** Geteilte Kalenderdatei (.ics): „Neuer Termin“ in der Verwaltung vorausfüllen (W4). */
+    private val _sharedEvent = MutableStateFlow<de.hubiplan.app.data.IcsTermin?>(null)
+    val sharedEvent: StateFlow<de.hubiplan.app.data.IcsTermin?> = _sharedEvent
+
+    /** Meldung, wenn die geteilte Datei keinen Termin enthält. */
+    private val _sharedEventError = MutableStateFlow<String?>(null)
+    val sharedEventError: StateFlow<String?> = _sharedEventError
+
+    fun openSharedEvent(text: String?) {
+        val termin = text?.let { de.hubiplan.app.data.IcsLeser.lesen(it) }
+        if (termin == null) {
+            _sharedEventError.value = tr("In der Datei ist kein Termin, den HUBIplan übernehmen kann.")
+        } else {
+            _sharedEvent.value = termin
+        }
+    }
+
+    fun sharedEventHandled() {
+        _sharedEvent.value = null
+    }
+
+    fun sharedEventErrorShown() {
+        _sharedEventError.value = null
+    }
+
     /** Push über eine UnifiedPush-App oder Google einschalten oder (null) abschalten. */
     fun setPushDistributor(pkg: String?) {
         viewModelScope.launch {
