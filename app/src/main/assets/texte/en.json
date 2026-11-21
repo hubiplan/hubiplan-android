@@ -1561,5 +1561,11 @@
  "{name} ist als anwesend eingetragen.": "{name} is marked as present.",
  "{name} ist aufgenommen": "{name} has been accepted",
  "{name} ist eingetragen.": "{name} has been added.",
- "{present} von {voters} Stimmberechtigten anwesend, {represented} vertreten, {guests} Gäste": "{present} of {voters} voting members present, {represented} represented, {guests} guests"
+ "{present} von {voters} Stimmberechtigten anwesend, {represented} vertreten, {guests} Gäste": "{present} of {voters} voting members present, {represented} represented, {guests} guests",
+ "immer": "always",
+ "nie": "never",
+ "bei Anlass": "when relevant",
+ "Kacheln einblenden": "Show tiles",
+ "Kacheln anpassen": "Customise tiles",
+ "„Bei Anlass“ zeigt eine Kachel nur, wenn gerade etwas ansteht. Die Auswahl gilt auch für die Startseite im Browser.": "“When relevant” shows a tile only when something is coming up. The choice also applies to the start page in the browser."
 }

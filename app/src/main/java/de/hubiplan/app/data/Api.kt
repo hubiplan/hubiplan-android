@@ -448,6 +448,16 @@ class Api(
     suspend fun adminTasks(unitId: Int): AdminTasks =
         decodeApi(expect("GET", "/api/app/v1/admin/u/$unitId/tasks/"))
 
+    /** Kacheln der Übersicht in der Verwaltung (Vorstandsschlüssel, wie die Startseite im Browser). */
+    suspend fun adminTiles(unitId: Int): HomeTiles =
+        decodeApi(expect("GET", "/api/app/v1/admin/u/$unitId/home-tiles/"))
+
+    suspend fun setAdminTile(unitId: Int, key: String, state: String): HomeTiles =
+        decodeApi(expect("PUT", "/api/app/v1/admin/u/$unitId/home-tiles/", tileStateBody(key, state)))
+
+    private fun tileStateBody(key: String, state: String): String =
+        json.encodeToString(JsonObject.serializer(), jsonObjectOf("key" to key, "state" to state))
+
     /**
      * Anfrage der Verwaltung (Schritt B2) unter `/api/app/v1/admin/u/<Einheit>/`. Liefert den
      * Text und das Änderungspaket für „Rückgängig“ (Kopfzeile `X-Change-Set`).
@@ -861,6 +871,14 @@ class Api(
         )
 
     // --- Pinnwand (HUBIplan docs/app.md) ---
+
+    /** Kacheln der Übersicht im Mitgliederbereich (wie die Startseite im Browser). */
+    suspend fun memberTiles(accessId: Int): HomeTiles =
+        decodeApi(expect("GET", "/api/portal/$accessId/home-tiles/"))
+
+    /** Auswahl einer Kachel: [TileState.AUTO], [TileState.ON] oder [TileState.OFF]. */
+    suspend fun setMemberTile(accessId: Int, key: String, state: String): HomeTiles =
+        decodeApi(expect("PUT", "/api/portal/$accessId/home-tiles/", tileStateBody(key, state)))
 
     /** Beiträge; [seen] = false lässt den Zähler „neu“ stehen (Kurzstand unter „Ich“). */
     suspend fun memberPinboard(accessId: Int, seen: Boolean = true): PinboardList =
