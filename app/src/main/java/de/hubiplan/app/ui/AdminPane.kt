@@ -240,6 +240,9 @@ internal enum class Section(private val labelText: () -> String, private val hin
     // „Aufgaben verteilen“: der Reiter „Aufgaben“ zeigt die eigenen (UX-Audit 08.11. A-04)
     TODOS({ tr("Aufgaben verteilen") }, { tr("Aufgaben anlegen, verteilen und erledigen") }),
     MEMBERS({ tr("Mitglieder") }, { tr("Suchen, anrufen, Mitgliedsakte öffnen") }),
+    APPLICATIONS({ tr("Beitrittsanträge") }, { tr("Anträge prüfen, zustimmen, aufnehmen oder ablehnen") }),
+    BOOKINGS({ tr("Belegung freigeben") }, { tr("Anfragen für Räume, Stand und Material bestätigen") }),
+    MEETINGS({ tr("Versammlung leiten") }, { tr("Anwesenheit, Anmeldung per QR-Code und Abstimmungen") }),
     EVENTS({ tr("Termine") }, { tr("Termine anlegen, Zu- und Absagen eintragen") }),
     FINANCE({ tr("Kassenbuch") }, { tr("Buchungen und Quittungen") }),
     BILLING({ tr("Rechnungen") }, { tr("Offene und bezahlte Rechnungen der Mitglieder") }),
@@ -265,6 +268,8 @@ internal fun sectionsFor(unit: AdminUnit): List<Section> {
             Section.EVENTS.takeIf { showsEvents(unit) },
             Section.TODOS.takeIf { showsTodos(unit) },
             Section.MEMBERS.takeIf { showsMembers(unit) },
+            Section.MEETINGS.takeIf { showsMeetings(unit) },
+            Section.BOOKINGS.takeIf { showsBookings(unit) },
         )
     }
     val members = showsMembers(unit)
@@ -276,9 +281,12 @@ internal fun sectionsFor(unit: AdminUnit): List<Section> {
         Section.OBLIGATIONS.takeIf { showsObligations(unit) },
         // Verein
         Section.MEMBERS.takeIf { members },
+        Section.APPLICATIONS.takeIf { showsApplications(unit) },
         Section.OCCASIONS.takeIf { members },
         Section.QUALIFICATIONS.takeIf { showsQualifications(unit) },
         // Vereinsleben
+        Section.MEETINGS.takeIf { showsMeetings(unit) },
+        Section.BOOKINGS.takeIf { showsBookings(unit) },
         Section.COMPETITIONS.takeIf { showsCompetitions(unit) },
         // Verwaltung: Geschäftspartner gleich nach Kasse und Rechnungen
         Section.FINANCE.takeIf { FINANCE_VIEW in p || FINANCE_EDIT in p },
@@ -315,6 +323,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     var creatingTodo by remember(unit.key) { mutableStateOf(false) }
     var member by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var requests by rememberSaveable(unit.key) { mutableStateOf(false) }
+    var applicationId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
+    var meetingId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var admitting by rememberSaveable(unit.key) { mutableStateOf(false) }
     var eventId by rememberSaveable(unit.key) { mutableStateOf<Int?>(null) }
     var eventStart by rememberSaveable(unit.key) { mutableStateOf<String?>(null) }
@@ -384,7 +394,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
     val leave = LocalFormLeaveGuard.current
     fun requestLeave(action: () -> Unit) { if (leave == null) action() else leave.request(action) }
     val inForm = newBooking || newReceipt || admitting || creatingEvent != null || creatingTodo
-    val nested = inForm || invoiceId != null || bookingId != null || eventId != null || member != null || requests || todoId != null
+    val nested = inForm || invoiceId != null || bookingId != null || eventId != null || member != null || requests || todoId != null ||
+        applicationId != null || meetingId != null
     // Aus einem Bereich führt Zurück zur Startliste, erst von dort zum Startreiter (A-03/A-04).
     androidx.activity.compose.BackHandler(enabled = nested || section != null) {
         requestLeave {
@@ -401,6 +412,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                 admitting -> admitting = false
                 member != null -> member = null
                 requests -> requests = false
+                applicationId != null -> { applicationId = null; reload++ }
+                meetingId != null -> meetingId = null
                 else -> section = null
             }
         }
@@ -438,7 +451,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
             val list = runCatching { probe.events(today.toString(), today.toString()) }.getOrNull() ?: continue
             if (!list.canManage) continue
             val open = {
-                member = null; requests = false; admitting = false; eventId = null; eventStart = null
+                member = null; requests = false; applicationId = null; meetingId = null; admitting = false; eventId = null; eventStart = null
                 bookingId = null; newBooking = false; newReceipt = false; invoiceId = null; creatingTodo = false
                 pendingCreate = Triple(candidate.key, termin, list.rsvpAllowed)
                 unitKey = candidate.key
@@ -462,7 +475,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
         val target = selectedTodo ?: return@LaunchedEffect
         if (target.unitKey == unit.key) {
             val navigate = {
-                member = null; requests = false; admitting = false; eventId = null; eventStart = null; creatingEvent = null
+                member = null; requests = false; applicationId = null; meetingId = null; admitting = false; eventId = null; eventStart = null; creatingEvent = null
                 bookingId = null; newBooking = false; newReceipt = false; invoiceId = null; creatingTodo = false
                 section = Section.TODOS; todoId = target.todoId; vm.selectTodo(null)
             }
@@ -559,6 +572,19 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         qualifications = showsQualifications(unit),
                         onOpenMember = { member = it },
                     )
+                    applicationId != null -> ApplicationScreen(client, applicationId!!, errors, onBack = { applicationId = null; reload++ }, onChanged = onChanged)
+                    meetingId != null -> MeetingLeadScreen(
+                        client,
+                        meetingId!!,
+                        server = main.account.server,
+                        canScanCards = !unit.isDepartment && showsMembers(unit),
+                        canAttendance = canMeetingAttendance(unit),
+                        errors = errors,
+                        onBack = { meetingId = null },
+                    )
+                    section == Section.APPLICATIONS && section in sections -> ApplicationsSection(client, errors, reload) { applicationId = it }
+                    section == Section.BOOKINGS && section in sections -> BookingRequestsSection(client, errors, reload, onChanged)
+                    section == Section.MEETINGS && section in sections -> MeetingsSection(client, errors, reload) { meetingId = it }
                     requests -> ChangeRequestsScreen(client, errors, onBack = { requests = false }, onOpen = {
                         requests = false
                         member = it
@@ -615,6 +641,8 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     else -> TaskList(client, errors, until, vm, reload) { task ->
                         when {
                             task.kind == "change_request" -> requests = true
+                            task.kind == "application" && task.ref != null && showsApplications(unit) -> applicationId = task.ref
+                            task.kind == "booking" && showsBookings(unit) -> section = Section.BOOKINGS
                             task.kind == "todo" -> { if (showsTodos(unit)) todoId = task.ref }
                             task.kind == "photo" && task.membership != null -> member = task.membership
                             task.kind == "event" && task.ref != null -> {

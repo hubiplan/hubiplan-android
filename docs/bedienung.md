@@ -304,6 +304,38 @@ record shows the partner's roles, phone, e-mail and address and its contact pers
 the phone or e-mail calls or opens the mail program. Creating and changing is only possible in
 the browser. Needs a HUBIplan version with business partners (November 2026).
 
+## Beitrittsanträge, Belegung und Versammlung leiten
+
+Wer Mitglieder lesen darf, findet in der Verwaltung „Beitrittsanträge“: offene Online-Anträge
+mit Stand und dem, was noch fehlt. Im Antrag stehen die Angaben, mögliche Treffer (schon oder
+früher Mitglied, anderswo aktiv) und die bisherigen Zustimmungen. Zustimmende tippen „Zustimmen“
+oder „Nicht zustimmen“; wer Mitglieder bearbeiten darf, nimmt mit Eintrittsdatum auf, lehnt ab
+(auf Wunsch mit Absage per Mail) oder stellt eine Rückfrage. Offene Anträge erscheinen auch unter
+„Zu erledigen“.
+
+Mit dem Recht „Belegung bearbeiten“ zeigt „Belegung freigeben“ die offenen Anfragen für
+Schützenhaus, Stand oder Material mit Zeitraum und Anfragendem; „Freigeben“ oder „Ablehnen“
+entscheidet, die Anfragenden bekommen wie im Browser Bescheid. Wurde die Anfrage inzwischen
+geändert, lädt die Liste neu.
+
+Mit dem Recht „Versammlungen bearbeiten“ öffnet „Versammlung leiten“ eine laufende oder kommende
+Versammlung: Anmeldung per App öffnen und den wechselnden QR-Code zeigen (auch groß; der
+Bildschirm bleibt dabei an), Teilnahme aus der Ferne erlauben, Abstimmungen zu Beschlüssen und
+Wahlen anlegen, starten, beenden und als Beschluss übernehmen. Wer auch Mitglieder lesen darf,
+führt die Anwesenheit: Haken setzen, Gäste eintragen und am Eingang Mitgliedsausweise scannen.
+Vorbereiten, Einladen, Vollmachten und Protokoll bleiben im Browser. Braucht HUBIplan ab der
+Fassung vom 21.11.2026.
+
+**English:** With the right to view members, Admin shows “Membership applications”: open online
+applications with status and what is still missing. An application shows the details, possible
+matches and earlier approvals. Approvers tap “Approve” or “Do not approve”; whoever may edit
+members accepts with a joining date, rejects (optionally with an email) or asks a question.
+“Approve bookings” lists open requests for the clubhouse, range or equipment to approve or reject.
+“Run meeting” opens app check-in with the changing QR code, allows remote participation and
+creates, starts, closes and applies votes; with the right to view members also attendance, guests
+and scanning membership cards at the entrance. Preparing, inviting, proxies and minutes stay in
+the browser. Needs HUBIplan from 21 November 2026.
+
 ## Haushalte, Qualifikationen und Fristen
 
 In der Mitgliedsakte steht unter „Haushalt und Firma“, zu welchem Haushalt oder welcher Firma
