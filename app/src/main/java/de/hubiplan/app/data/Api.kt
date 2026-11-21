@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
@@ -859,6 +860,72 @@ class Api(
                 json.encodeToString(JsonObject.serializer(), payload),
             ),
         )
+
+    // --- Training und Schießbuch (HUBIplan docs/app.md, docs/training.md) ---
+
+    suspend fun memberTraining(accessId: Int): MemberTraining =
+        decodeApi(expect("GET", "/api/portal/$accessId/training/"))
+
+    /** Einchecken mit dem Code aus dem QR-Code der Übungsleitung. */
+    suspend fun trainingCheckin(accessId: Int, sessionId: Int, code: String): MemberTraining =
+        decodeApi(expect("POST", "/api/portal/$accessId/training/$sessionId/checkin/",
+            json.encodeToString(JsonObject.serializer(), jsonObjectOf("code" to code))))
+
+    /** Schießtermin melden; [key] verhindert Doppelte nach einem Abbruch. */
+    suspend fun reportShooting(accessId: Int, draft: ShootingDraft, key: String): MemberTraining {
+        val body = JsonObject(
+            mapOf(
+                "date" to JsonPrimitive(draft.date),
+                "discipline" to JsonPrimitive(draft.discipline),
+                "weapon_class" to JsonPrimitive(draft.weaponClass),
+                "caliber" to JsonPrimitive(draft.caliber),
+                "permit_required" to JsonPrimitive(draft.permitRequired),
+                "competition" to JsonPrimitive(draft.competition),
+                "place" to JsonPrimitive(draft.place),
+                "external" to JsonPrimitive(draft.external),
+                "note" to JsonPrimitive(draft.note),
+            ),
+        )
+        return decodeApi(expect("POST", "/api/portal/$accessId/training/shooting/",
+            json.encodeToString(JsonObject.serializer(), body), mapOf(SignedFormat.IDEMPOTENCY_HEADER to key)))
+    }
+
+    /** Gemeldeten, noch nicht bestätigten Schießtermin zurückziehen. */
+    suspend fun withdrawShooting(accessId: Int, entryId: Int): MemberTraining =
+        decodeApi(expect("DELETE", "/api/portal/$accessId/training/shooting/$entryId/"))
+
+    suspend fun manageTrainings(accessId: Int): ManageTrainings =
+        decodeApi(expect("GET", "/api/portal/$accessId/training/manage/"))
+
+    suspend fun manageTraining(accessId: Int, sessionId: Int): TrainingDetail =
+        decodeApi(expect("GET", "/api/portal/$accessId/training/manage/$sessionId/"))
+
+    /** Training anlegen (heute, Verein oder Untereinheit); [key] verhindert Doppelte. */
+    suspend fun createTraining(accessId: Int, department: Int?, date: String, title: String, kind: String, key: String): TrainingDetail {
+        val body = JsonObject(
+            buildMap {
+                put("department", department?.let { JsonPrimitive(it) } ?: JsonNull)
+                put("date", JsonPrimitive(date))
+                put("title", JsonPrimitive(title))
+                put("kind", JsonPrimitive(kind))
+            },
+        )
+        return decodeApi(expect("POST", "/api/portal/$accessId/training/manage/",
+            json.encodeToString(JsonObject.serializer(), body), mapOf(SignedFormat.IDEMPOTENCY_HEADER to key)))
+    }
+
+    suspend fun setTrainingPresent(accessId: Int, sessionId: Int, membership: Int, present: Boolean): TrainingDetail {
+        val body = JsonObject(mapOf("membership" to JsonPrimitive(membership), "present" to JsonPrimitive(present)))
+        return decodeApi(expect("POST", "/api/portal/$accessId/training/manage/$sessionId/attendance/",
+            json.encodeToString(JsonObject.serializer(), body)))
+    }
+
+    suspend fun trainingCode(accessId: Int, sessionId: Int): TrainingCode =
+        decodeApi(expect("GET", "/api/portal/$accessId/training/manage/$sessionId/checkin/"))
+
+    suspend fun openTrainingCheckin(accessId: Int, sessionId: Int, open: Boolean): TrainingDetail =
+        decodeApi(expect("POST", "/api/portal/$accessId/training/manage/$sessionId/checkin/",
+            json.encodeToString(JsonObject.serializer(), JsonObject(mapOf("open" to JsonPrimitive(open))))))
 
     // --- Pinnwand (HUBIplan docs/app.md) ---
 

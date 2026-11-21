@@ -182,6 +182,10 @@ data class PortalAccess(
     @SerialName("fee_proofs_due") val feeProofsDue: Int = 0,
     /** Ansprechpartner einer Firma, die für Mitarbeiter zahlt (Mein Bereich › Mitarbeiter; ältere Stände: fehlt) */
     val company: Boolean = false,
+    /** Modul Training an, Schießbuch sichtbar und Zahl offener Einchecken (ältere Stände: fehlt) */
+    @SerialName("training_enabled") val trainingEnabled: Boolean = false,
+    @SerialName("shooting_log_enabled") val shootingLogEnabled: Boolean = false,
+    @SerialName("training_checkin") val trainingCheckin: Int = 0,
 ) {
     val title: String get() = clubDisplayName.ifBlank { clubName }
 
@@ -226,6 +230,9 @@ data class PortalAccess(
 
     /** „Bestellungen“ unter „Ich“ (ältere Server ohne Modul: aus) */
     val hasOrders: Boolean get() = ordersEnabled
+
+    /** „Training“ unter „Ich“ (Anwesenheit, Einchecken, Schießbuch; Ansprechpartner nicht) */
+    val hasTraining: Boolean get() = trainingEnabled && !isContact
 
     /** „Umfragen“ unter „Ich“ */
     val hasSurveys: Boolean get() = moduleOn("surveys", surveysEnabled)

@@ -53,7 +53,8 @@ die App.
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
   und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Wettbewerbe mit
   Meldungen, Ergebnissen und Ranglisten, Abwesenheiten für Musiker, Belegung anfragen, Kündigung,
-  Helferdienste, Dokumente, Auslagen (selbst Bezahltes mit Belegfoto melden),
+  Helferdienste, Dokumente, Auslagen (selbst Bezahltes mit Belegfoto melden), Training
+  (Einchecken per QR-Code, Anwesenheit, Schießbuch mit Stand nach § 14 WaffG, Trainings leiten),
   Beitragsnachweise (Nachweis für den ermäßigten Beitrag einreichen) und für
   Ansprechpartner einer Firma „Mitarbeiter“ (für wen die Firma zahlt, neue Mitarbeiter melden)
 - Mitgliedsausweis mit QR-Code oben unter „Ich“ (langes Drücken auf das App-Symbol: „Ausweis
