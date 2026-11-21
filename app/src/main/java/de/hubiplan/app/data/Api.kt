@@ -991,6 +991,38 @@ class Api(
         expect("DELETE", "/api/portal/$accessId/pinboard/$id/")
     }
 
+    // --- Sammelbestellungen (HUBIplan docs/app.md) ---
+
+    suspend fun memberOrders(accessId: Int): OrderCampaignList =
+        decodeApi(expect("GET", "/api/portal/$accessId/orders/"))
+
+    suspend fun memberOrderCampaign(accessId: Int, id: Int): OrderCampaign =
+        decodeApi(expect("GET", "/api/portal/$accessId/orders/$id/"))
+
+    /** Bestellung ersetzen; leere [lines] ziehen sie zurück. */
+    suspend fun placeOrder(accessId: Int, id: Int, lines: List<OrderInput>, note: String): OrderCampaign {
+        val body = JsonObject(
+            mapOf(
+                "lines" to kotlinx.serialization.json.JsonArray(
+                    lines.map {
+                        JsonObject(
+                            mapOf(
+                                "article" to JsonPrimitive(it.article),
+                                "variant" to JsonPrimitive(it.variant),
+                                "quantity" to JsonPrimitive(it.quantity),
+                            ),
+                        )
+                    },
+                ),
+                "note" to JsonPrimitive(note),
+            ),
+        )
+        return decodeApi(expect("PUT", "/api/portal/$accessId/orders/$id/order/", json.encodeToString(JsonObject.serializer(), body)))
+    }
+
+    suspend fun withdrawOrder(accessId: Int, id: Int): OrderCampaign =
+        decodeApi(expect("DELETE", "/api/portal/$accessId/orders/$id/order/"))
+
     suspend fun memberSurveys(accessId: Int): SurveyList =
         decodeApi(expect("GET", "/api/portal/$accessId/surveys/"))
 
