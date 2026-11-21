@@ -242,7 +242,7 @@ private fun OrderFormCard(
         Text(c.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.asHeading())
         if (c.text.isNotBlank()) Text(c.text)
         if (!c.canOrder) {
-            Text(tr("Die Bestellung lässt sich nicht mehr ändern. Bitte wende dich an den Vorstand."))
+            Text(tr("Die Bestellung lässt sich nicht mehr ändern. Bitte wende dich an deinen Verein."))
             OutlinedButton(onClick = onCancel) { Text(tr("Zurück")) }
             return@Column
         }
@@ -284,6 +284,7 @@ private fun OrderFormCard(
             onValueChange = { note = it.take(500) },
             label = { Text(tr("Bemerkung (optional)")) },
             placeholder = { Text(tr("z. B. Name zum Besticken")) },
+            keyboardOptions = FREITEXT,
             modifier = Modifier.fillMaxWidth(),
         )
         val inputs = orderInputs(c.articles, values)
