@@ -200,7 +200,7 @@ data class ManageTrainings(
 )
 
 @Serializable
-data class AttendanceRow(
+data class TrainingRow(
     val membership: Int,
     val name: String = "",
     val present: Boolean = false,
@@ -223,7 +223,7 @@ data class TrainingDetail(
     val discipline: String = "",
     @SerialName("checkin_open") val checkinOpen: Boolean = false,
     @SerialName("checkin_possible") val checkinPossible: Boolean = false,
-    val attendance: List<AttendanceRow> = emptyList(),
+    val attendance: List<TrainingRow> = emptyList(),
     val version: Int = 1,
 ) {
     val presentCount: Int get() = attendance.count { it.present }
