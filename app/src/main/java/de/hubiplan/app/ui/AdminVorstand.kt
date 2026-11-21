@@ -237,6 +237,7 @@ fun ApplicationScreen(client: AdminClient, id: Int, errors: AdminErrors, onBack:
                         value = note,
                         onValueChange = { note = it.take(500) },
                         label = { Text(tr("Vermerk (freiwillig)")) },
+                        keyboardOptions = FREITEXT,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
@@ -301,12 +302,14 @@ private fun AcceptDialog(d: ApplicationDetail, busy: Boolean, onDismiss: () -> U
                     label = { Text(tr("Eintritt (JJJJ-MM-TT)")) },
                     isError = !valid,
                     singleLine = true,
+                    keyboardOptions = WEITER,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it.take(500) },
                     label = { Text(tr("Vermerk (z. B. Beschluss)")) },
+                    keyboardOptions = FREITEXT,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Row(
@@ -336,6 +339,7 @@ private fun RejectDialog(busy: Boolean, onDismiss: () -> Unit, onReject: (String
                     value = note,
                     onValueChange = { note = it.take(500) },
                     label = { Text(tr("Vermerk (nur intern)")) },
+                    keyboardOptions = FREITEXT,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Row(
@@ -363,6 +367,7 @@ private fun AskDialog(busy: Boolean, onDismiss: () -> Unit, onAsk: (String) -> U
                 value = text,
                 onValueChange = { text = it.take(2000) },
                 label = { Text(tr("Frage an die antragstellende Person")) },
+                keyboardOptions = FREITEXT,
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
             )
@@ -735,6 +740,7 @@ fun MeetingLeadScreen(
                                 onValueChange = { guest = it.take(200) },
                                 label = { Text(tr("Gast eintragen")) },
                                 singleLine = true,
+                                keyboardOptions = TITELZEILE,
                                 modifier = Modifier.widthIn(min = 200.dp),
                             )
                             OutlinedButton(onClick = {
@@ -920,6 +926,7 @@ private fun PollForm(
                     value = question,
                     onValueChange = { question = it.take(2000) },
                     label = { Text(if (election) tr("Frage (freiwillig)") else tr("Frage, über die abgestimmt wird")) },
+                    keyboardOptions = FREITEXT,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (election) {
@@ -928,6 +935,7 @@ private fun PollForm(
                         onValueChange = { office = it.take(200) },
                         label = { Text(tr("Amt")) },
                         singleLine = true,
+                        keyboardOptions = TITELZEILE,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
@@ -935,6 +943,7 @@ private fun PollForm(
                         onValueChange = { candidates = it },
                         label = { Text(tr("Kandidaten (je Zeile ein Name)")) },
                         minLines = 3,
+                        keyboardOptions = FREITEXT,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }

@@ -812,6 +812,9 @@ internal fun sectionIcon(s: Section) = when (s) {
     Section.TASKS -> Symbole.ZuErledigen
     Section.TODOS -> Icons.Filled.CheckCircle
     Section.MEMBERS -> Icons.Filled.Person
+    Section.APPLICATIONS -> Icons.Filled.AccountBox
+    Section.BOOKINGS -> Icons.Filled.LocationOn
+    Section.MEETINGS -> Icons.Filled.Star
     Section.EVENTS -> Icons.Filled.DateRange
     Section.FINANCE -> Symbole.Kassenbuch
     Section.BILLING -> Symbole.Rechnungen
