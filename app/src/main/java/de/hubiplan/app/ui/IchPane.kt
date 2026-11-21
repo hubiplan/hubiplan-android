@@ -80,6 +80,8 @@ internal enum class IchBereich(private val labelText: () -> String) {
     NACHWEISE({ tr("Beitragsnachweise") }),
     VERSAMMLUNGEN({ tr("Versammlungen") }),
     UMFRAGEN({ tr("Umfragen") }),
+    // Sammelbestellungen: Vereinskleidung, Festschrift, Größenabfragen
+    BESTELLUNGEN({ tr("Bestellungen") }),
     // Selbst bezahlte Ausgaben mit Foto des Belegs melden
     AUSLAGEN({ tr("Auslagen") }),
     // Meldungen und Ergebnisse auf einer Seite wie im Browser
@@ -100,6 +102,7 @@ internal enum class IchBereich(private val labelText: () -> String) {
 internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.entries.filter {
     when (it) {
         IchBereich.PINNWAND -> access.hasPinboard
+        IchBereich.BESTELLUNGEN -> access.hasOrders
         IchBereich.DATEN -> true
         IchBereich.RECHNUNGEN -> access.hasInvoices
         IchBereich.NACHWEISE -> access.hasFeeProofs
@@ -169,6 +172,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
             BackHead(open.label, onBack = back)
             when (open) {
                 IchBereich.PINNWAND -> PinnwandSection(access, vm)
+                IchBereich.BESTELLUNGEN -> BestellungenSection(access, vm)
                 IchBereich.DATEN -> ProfilePane(access, main, vm)
                 IchBereich.RECHNUNGEN -> InvoicesSection(access, vm)
                 IchBereich.NACHWEISE -> FeeProofsSection(access, vm)
@@ -202,6 +206,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
     var documents by remember(access.id) { mutableStateOf<MyDocuments?>(null) }
     var surveys by remember(access.id) { mutableStateOf<de.hubiplan.app.data.SurveyList?>(null) }
     var pinboard by remember(access.id) { mutableStateOf<de.hubiplan.app.data.PinboardList?>(null) }
+    var orders by remember(access.id) { mutableStateOf<de.hubiplan.app.data.OrderCampaignList?>(null) }
     var expenses by remember(access.id) { mutableStateOf<de.hubiplan.app.data.ExpenseOverview?>(null) }
     // Kurzstand nur nebenbei: Fehler zeigen erst die Unterseiten
     LaunchedEffect(access.id) {
@@ -213,6 +218,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
         // Nur ansehen: der Zähler „neu“ bleibt, bis die Pinnwand geöffnet wird
         if (IchBereich.PINNWAND in bereiche) pinboard = quietly(vm) { api.memberPinboard(access.id, seen = false) }
         if (IchBereich.AUSLAGEN in bereiche) expenses = quietly(vm) { api.memberExpenses(access.id) }
+        if (IchBereich.BESTELLUNGEN in bereiche) orders = quietly(vm) { api.memberOrders(access.id) }
     }
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
@@ -232,6 +238,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.NACHWEISE -> feeProofSummary(access.feeProofsDue) to access.feeProofsDue
                     IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
                     IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
+                    IchBereich.BESTELLUNGEN -> (orders?.let(::ordersSummary) ?: "") to (orders?.openCount ?: access.ordersOpen)
                     IchBereich.AUSLAGEN -> (expenses?.let(::expenseSummary) ?: tr("Ausgaben für den Verein erstattet bekommen")) to (expenses?.claims?.count { it.asksMe } ?: access.expensesQuestions)
                     IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
                     IchBereich.ABWESENHEITEN -> tr("Wann du nicht mitspielen kannst") to 0

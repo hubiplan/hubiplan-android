@@ -282,8 +282,9 @@ object PushSetup {
                 }
                 SyncWorker.now(context)
             }
-            // Neuer Beitrag an der Pinnwand: Hinweis mit Text, Antippen öffnet die App (Ich › Pinnwand)
-            "pinboard" -> {
+            // Neuer Beitrag an der Pinnwand oder neue Sammelbestellung: Hinweis mit Text, Antippen
+            // öffnet die App (Ich › Pinnwand bzw. Ich › Bestellungen)
+            "pinboard", "order" -> {
                 val access = message.access ?: return
                 val logo = ClubLogo.load(context, account, access)
                 store.ifCurrent(account) {

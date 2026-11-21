@@ -169,6 +169,9 @@ data class PortalAccess(
     /** Modul Pinnwand an und Beiträge seit dem letzten Lesen (ältere Stände: fehlt) */
     @SerialName("pinboard_enabled") val pinboardEnabled: Boolean = false,
     @SerialName("pinboard_new") val pinboardNew: Int = 0,
+    /** Modul Bestellungen an und offene Sammelbestellungen ohne eigene Bestellung (ältere Stände: fehlt) */
+    @SerialName("orders_enabled") val ordersEnabled: Boolean = false,
+    @SerialName("orders_open") val ordersOpen: Int = 0,
     /** Modul Auslagen erstatten an und offene Rückfragen der Kasse (ältere Stände: fehlt) */
     @SerialName("expenses_enabled") val expensesEnabled: Boolean = false,
     @SerialName("expenses_questions") val expensesQuestions: Int = 0,
@@ -218,6 +221,9 @@ data class PortalAccess(
 
     /** „Pinnwand“ unter „Ich“ (ältere Server ohne Modul: aus) */
     val hasPinboard: Boolean get() = pinboardEnabled
+
+    /** „Bestellungen“ unter „Ich“ (ältere Server ohne Modul: aus) */
+    val hasOrders: Boolean get() = ordersEnabled
 
     /** „Umfragen“ unter „Ich“ */
     val hasSurveys: Boolean get() = moduleOn("surveys", surveysEnabled)
