@@ -222,14 +222,14 @@ private fun ShootingReportForm(busy: Boolean, onCancel: () -> Unit, onSend: (Sho
                 singleLine = true,
                 isError = iso == null,
                 trailingIcon = { DatePickButton(date) { date = it } },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = androidx.compose.ui.text.input.ImeAction.Next),
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(discipline, { discipline = it.take(100) }, label = { Text(tr("Disziplin")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(discipline, { discipline = it.take(100) }, label = { Text(tr("Disziplin")) }, singleLine = true, keyboardOptions = WEITER, modifier = Modifier.fillMaxWidth())
             LabeledRadio(tr("Kurzwaffe"), selected = !long, onClick = { long = false })
             LabeledRadio(tr("Langwaffe"), selected = long, onClick = { long = true })
-            OutlinedTextField(caliber, { caliber = it.take(40) }, label = { Text(tr("Kaliber (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(place, { place = it.take(200) }, label = { Text(tr("Schießstand (optional)")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(caliber, { caliber = it.take(40) }, label = { Text(tr("Kaliber (optional)")) }, singleLine = true, keyboardOptions = WEITER, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(place, { place = it.take(200) }, label = { Text(tr("Schießstand (optional)")) }, singleLine = true, keyboardOptions = WEITER, modifier = Modifier.fillMaxWidth())
             LabeledCheckbox(tr("erlaubnispflichtige Waffe"), permit, { permit = it })
             LabeledCheckbox(tr("Wettkampf"), competition, { competition = it })
             LabeledCheckbox(tr("in einem anderen Verein"), external, { external = it })
