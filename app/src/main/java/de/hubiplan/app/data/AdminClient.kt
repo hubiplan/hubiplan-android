@@ -385,6 +385,10 @@ class AdminClient(
 
     private suspend fun get(path: String): String = use().admin("GET", base + path).text
 
+    /** Anfrage unter dem Verwaltungspfad für Bereiche in eigenen Dateien (z. B. AdminVorstand.kt). */
+    internal suspend fun send(method: String, path: String, body: JsonObject? = null): String =
+        use().admin(method, base + path, body?.toString()).text
+
     // --- Wettbewerbe und Standzugang (konzepte/schiessen-android.md) ---
 
     suspend fun competitions(): List<AdminCompetition> = decodeApi(get("competitions/"))
