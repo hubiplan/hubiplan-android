@@ -71,6 +71,13 @@ gespeicherten. Lange auf das App-Symbol drücken bietet „Ausweis zeigen“, da
 - **Belegung** (wenn der Verein Objekte zum Anfragen freigibt): belegte Zeiten je Woche, eine
   Anfrage für Vereinsheim, Räume oder Material stellen (Zweck, Zeit oder ganztägig, Notiz) und
   eigene Anfragen oder Buchungen stornieren. Die Verwaltung bestätigt oder lehnt per Mail ab.
+- **Training** (wenn der Verein das Modul Training nutzt): „QR-Code scannen und einchecken“ liest
+  den QR-Code der Übungsleitung und trägt dich als anwesend ein; darunter, wie oft du dieses Jahr
+  da warst. Mit Schießsport auch das eigene Schießbuch mit dem Stand nach § 14 WaffG (Erwerb und
+  Besitz) und „Schießtermin melden“ für Termine in anderen Vereinen oder bei Wettkämpfen; noch
+  nicht bestätigte Meldungen lassen sich zurückziehen. Wer Trainings leiten darf, legt unter
+  „Trainings leiten“ einen Übungsabend für heute an, hakt die Anwesenden ab und zeigt den QR-Code
+  zum Einchecken, auch bildschirmfüllend (HUBIplan ab Training B1).
 - **Umfragen**: Umfragen und Meinungsbilder des Vereins, offene zuerst, mit der Zahl der Umfragen,
   die noch auf deine Antwort warten. Antworten (Auswahl, Ja/Nein/Enthaltung, Terminfindung,
   Mengen wie die Essenswahl, Freitext), ändern oder zurückziehen bis zum Ende, Ergebnis je nach
