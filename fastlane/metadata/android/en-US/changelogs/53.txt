@@ -1,0 +1,4 @@
+• Training under "Me": check in by QR code, attendance, shooting log, lead sessions.
+• Group orders under "Me": place orders and see your own.
+• Overview with the same tiles as the home page in the browser, customisable.
+• Administration: handle membership applications, approve bookings, run meetings.

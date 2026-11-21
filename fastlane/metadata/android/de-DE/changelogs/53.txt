@@ -1,0 +1,4 @@
+• Training unter „Ich“: per QR-Code einchecken, Anwesenheit, Schießbuch, Trainings leiten.
+• Sammelbestellungen unter „Ich“: bestellen und eigene Bestellungen sehen.
+• Übersicht mit denselben Kacheln wie die Startseite im Browser, anpassbar.
+• Verwaltung: Beitrittsanträge bearbeiten, Belegungen freigeben, Versammlung leiten.
