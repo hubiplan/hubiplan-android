@@ -55,7 +55,7 @@ internal fun meetingTarget(text: String, server: String, access: PortalAccess): 
 
 /** QR-Code der Leitung scannen; [onResult] bekommt den gelesenen Text. */
 @Composable
-internal fun rememberMeetingScanner(onResult: (String) -> Unit): () -> Unit {
+internal fun rememberMeetingScanner(prompt: String? = null, onResult: (String) -> Unit): () -> Unit {
     val launcher = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let(onResult)
     }
@@ -63,7 +63,7 @@ internal fun rememberMeetingScanner(onResult: (String) -> Unit): () -> Unit {
         launcher.launch(
             ScanOptions()
                 .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                .setPrompt(tr("QR-Code der Versammlung scannen"))
+                .setPrompt(prompt ?: tr("QR-Code der Versammlung scannen"))
                 .setBeepEnabled(false)
                 .setOrientationLocked(false),
         )

@@ -79,6 +79,8 @@ internal enum class IchBereich(private val labelText: () -> String) {
     // Nachweis für einen ermäßigten Beitrag (z. B. Studienbescheinigung)
     NACHWEISE({ tr("Beitragsnachweise") }),
     VERSAMMLUNGEN({ tr("Versammlungen") }),
+    // Anwesenheit, Einchecken per QR-Code und Schießbuch
+    TRAINING({ tr("Training") }),
     UMFRAGEN({ tr("Umfragen") }),
     // Selbst bezahlte Ausgaben mit Foto des Belegs melden
     AUSLAGEN({ tr("Auslagen") }),
@@ -104,6 +106,7 @@ internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.en
         IchBereich.RECHNUNGEN -> access.hasInvoices
         IchBereich.NACHWEISE -> access.hasFeeProofs
         IchBereich.VERSAMMLUNGEN -> access.hasMeetings
+        IchBereich.TRAINING -> access.hasTraining
         IchBereich.UMFRAGEN -> access.hasSurveys
         IchBereich.AUSLAGEN -> access.hasExpenses
         IchBereich.ERGEBNISSE -> access.hasResults || access.hasEntries
@@ -173,6 +176,7 @@ fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers
                 IchBereich.RECHNUNGEN -> InvoicesSection(access, vm)
                 IchBereich.NACHWEISE -> FeeProofsSection(access, vm)
                 IchBereich.VERSAMMLUNGEN -> MeetingsSection(access, vm)
+                IchBereich.TRAINING -> TrainingSection(access, vm)
                 IchBereich.UMFRAGEN -> SurveysSection(access, vm)
                 IchBereich.AUSLAGEN -> ExpensesSection(access, vm)
                 IchBereich.ERGEBNISSE -> ResultsSection(access, vm)
@@ -238,6 +242,11 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
                     IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
                     IchBereich.NACHWEISE -> feeProofSummary(access.feeProofsDue) to access.feeProofsDue
                     IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
+                    IchBereich.TRAINING -> (
+                        if (access.trainingCheckin > 0) tr("Einchecken ist offen")
+                        else if (access.shootingLogEnabled) tr("Anwesenheit und Schießbuch")
+                        else tr("Deine Anwesenheit bei Übungsabenden")
+                        ) to access.trainingCheckin
                     IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
                     IchBereich.AUSLAGEN -> (expenses?.let(::expenseSummary) ?: tr("Ausgaben für den Verein erstattet bekommen")) to (expenses?.claims?.count { it.asksMe } ?: access.expensesQuestions)
                     IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
