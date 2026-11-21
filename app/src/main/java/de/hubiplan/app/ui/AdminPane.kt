@@ -516,6 +516,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                     openTodo != null && showsTodos(unit) -> TodoScreen(client, openTodo, errors, reload, onBack = { todoId = null; reload++ }, onChanged = onChanged)
                     current == null && !nested -> AdminStart(
                         client = client,
+                        server = main.account.server,
                         sections = sections,
                         until = until,
                         vm = vm,
@@ -753,6 +754,7 @@ private fun TaskList(
 @Composable
 private fun AdminStart(
     client: AdminClient,
+    server: String,
     sections: List<Section>,
     until: String?,
     vm: AppViewModel,
@@ -777,6 +779,21 @@ private fun AdminStart(
                 ) {
                     Icon(Icons.Filled.AccountBox, contentDescription = null, modifier = Modifier.padding(end = Abstand.klein))
                     Text(tr("Ausweis prüfen"))
+                }
+            }
+        }
+        // Kacheln wie auf der Startseite im Browser (nur für die Einheit selbst, nicht Untereinheiten)
+        if (client.scope != "d") {
+            item {
+                Box(Modifier.padding(horizontal = Abstand.rand, vertical = Abstand.klein)) {
+                    TilesOverview(
+                        server = server,
+                        reloadKey = Pair(client, reload + reloadKey),
+                        load = { vm.adminApi()?.let { api -> try { api.adminTiles(client.unitId) } catch (_: ApiException) { null } } },
+                        save = { key, state ->
+                            vm.adminApi()?.let { api -> try { api.setAdminTile(client.unitId, key, state) } catch (_: ApiException) { null } }
+                        },
+                    )
                 }
             }
         }
