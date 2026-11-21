@@ -60,3 +60,16 @@ private val OBLIGATION_RIGHTS = setOf("obligations.view", "obligations.edit")
 /** Bereich „Fristen“ (Fristenkalender): Modul an und Recht zum Lesen, nur Verein oder Dachverband. */
 fun showsObligations(unit: AdminUnit): Boolean =
     !unit.isDepartment && "obligations" in unit.modules && unit.permissions.any { it in OBLIGATION_RIGHTS }
+
+/** Bereich „Beitrittsanträge“: Verein mit Mitgliederverwaltung und Recht zum Lesen der Mitglieder. */
+fun showsApplications(unit: AdminUnit): Boolean =
+    !unit.isDepartment && "members" in unit.modules && unit.permissions.any { it.startsWith("members.") }
+
+/** Bereich „Belegung freigeben“: Modul Belegung an und Recht zum Freigeben. */
+fun showsBookings(unit: AdminUnit): Boolean = "bookings" in unit.modules && "bookings.edit" in unit.permissions
+
+/** Bereich „Versammlung leiten“: Modul Versammlungen an und Recht zum Bearbeiten. */
+fun showsMeetings(unit: AdminUnit): Boolean = "meetings" in unit.modules && "meetings.edit" in unit.permissions
+
+/** Anwesenheit und Einlass brauchen zusätzlich das Recht, Mitglieder zu lesen. */
+fun canMeetingAttendance(unit: AdminUnit): Boolean = unit.permissions.any { it.startsWith("members.") || it.startsWith("dept.members.") }

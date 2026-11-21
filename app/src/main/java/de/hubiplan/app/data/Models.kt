@@ -53,8 +53,10 @@ data class AdminDepartment(
     val events: Boolean = true,
     val permissions: List<String> = emptyList(),
     val stufen: Boolean = false,
+    /** Module des Vereins (Server ab 21.11.2026; ältere: leer) */
+    val modules: List<String> = emptyList(),
 ) {
-    fun asUnit(): AdminUnit = AdminUnit(id, name, "department", permissions, "d", stufen)
+    fun asUnit(): AdminUnit = AdminUnit(id, name, "department", permissions, "d", stufen, modules)
 }
 
 @Serializable
