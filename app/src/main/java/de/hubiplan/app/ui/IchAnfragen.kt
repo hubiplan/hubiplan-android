@@ -246,6 +246,8 @@ private fun BookingForm(access: PortalAccess, vm: AppViewModel, week: BookingWee
     var busy by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    rememberFormDraft(title, from, start, until, end, note, busy = busy, retainOnDispose = false)
     val item = week.items.firstOrNull { it.id == itemId } ?: week.items.first()
     val fromDay = parseGermanDate(from)?.let(LocalDate::parse)
     val untilDay = parseGermanDate(until)?.let(LocalDate::parse)
@@ -477,6 +479,8 @@ private fun AbsenceForm(access: PortalAccess, vm: AppViewModel, row: MusicAbsenc
     var failure by remember { mutableStateOf<String?>(null) }
     // Gleicher Schlüssel beim Wiederholen derselben Eingabe; neue Eingabe, neuer Schlüssel
     val values = listOf(fromDay, fromTime, untilDay, untilTime)
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    androidx.compose.runtime.key(row.id) { rememberFormDraft(fromDay, fromTime, untilDay, untilTime, busy = busy, retainOnDispose = false) }
     val key = remember(row.id, values) { UUID.randomUUID().toString() }
     val zone = ZoneId.systemDefault()
     val fmt = DateTimeFormatter.ISO_OFFSET_DATE_TIME

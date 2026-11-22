@@ -68,3 +68,8 @@ Buchung, Termin, Aufgabe je nach Rechten, `neuAktionen`), darunter „Zu erledig
 Kacheln der Startseite und die Bereiche in den Gruppen des Hauptmenüs im Browser (Planen, Verein,
 Vereinsleben, Verwaltung; `sectionGroups`). Die Suche schränkt die Bereiche nach Name und
 Beschreibung ein (`sectionSearch`).
+
+Formulare schützen angefangene Eingaben überall (`rememberFormDraft`): Zurück und ein Wechsel des
+Reiters fragen nach, bevor etwas verloren geht; `FormulareTest` prüft, dass kein Formular des
+Mitgliederbereichs ohne diesen Schutz ist. Datum und Uhrzeit kommen aus der Auswahl des Systems
+(`DatePickButton`, `TimePickButton`), die Felder nehmen dafür nur Ziffern.

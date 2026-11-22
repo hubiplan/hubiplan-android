@@ -196,6 +196,14 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
     var note by remember(e.id) { mutableStateOf("") }
     var terms by remember(e.id) { mutableStateOf(false) }
     var gap by remember(e.id) { mutableStateOf<RegistrationGap?>(null) }
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    androidx.compose.runtime.key(e.id) {
+        rememberFormDraft(
+            chosen.toMap().toString(), births.toMap().toString(), extras.toMap().toString(), regExtras, consent,
+            guests.toList().toString(), note, terms,
+            busy = busy, retainOnDispose = false,
+        )
+    }
     val memberPrices = offer.pricesFor(member = true)
     val guestPrices = offer.pricesFor(member = false)
 

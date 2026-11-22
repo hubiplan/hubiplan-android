@@ -214,7 +214,7 @@ fun DatePickButton(value: String, onPick: (String) -> Unit) {
             current.dayOfMonth,
         ).show()
     }) {
-        Icon(Icons.Filled.DateRange, contentDescription = tr("Datum im Kalender wählen"))
+        Icon(strichsymbol(Strich.TERMINE), contentDescription = tr("Datum im Kalender wählen"))
     }
 }
 
@@ -232,7 +232,7 @@ fun TimePickButton(value: String, onPick: (String) -> Unit) {
             true,
         ).show()
     }) {
-        Icon(Icons.Filled.Edit, contentDescription = tr("Uhrzeit auswählen"))
+        Icon(strichsymbol(Strich.UHR), contentDescription = tr("Uhrzeit auswählen"))
     }
 }
 

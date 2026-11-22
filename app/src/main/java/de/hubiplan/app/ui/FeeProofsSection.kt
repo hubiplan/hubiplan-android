@@ -148,6 +148,8 @@ private fun FeeYearCard(access: PortalAccess, vm: AppViewModel, st: FeeYearState
     var message by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
     var photoUri by remember { mutableStateOf<Uri?>(null) }
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    androidx.compose.runtime.key(st.discount, st.year) { rememberFormDraft(file != null, note, busy = busy, retainOnDispose = false) }
 
     fun takePhoto(uri: Uri?) {
         if (uri == null) return

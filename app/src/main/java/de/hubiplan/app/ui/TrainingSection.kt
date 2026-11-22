@@ -207,6 +207,8 @@ private fun ShootingReportForm(busy: Boolean, onCancel: () -> Unit, onSend: (Sho
     var permit by rememberSaveable { mutableStateOf(true) }
     var competition by rememberSaveable { mutableStateOf(false) }
     var external by rememberSaveable { mutableStateOf(true) }
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    rememberFormDraft(date, discipline, long, caliber, place, permit, competition, external, busy = busy, retainOnDispose = false)
     val iso = parseGermanDate(date)
     OutlinedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(Abstand.mittel), verticalArrangement = Arrangement.spacedBy(Abstand.eng)) {
