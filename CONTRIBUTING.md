@@ -44,6 +44,10 @@ Hinweise zum Stil:
   Jede neue Bibliothek braucht einen Eintrag in der Lizenzzuordnung, sonst bricht der Bau ab;
   siehe [docs/lizenzen.md](docs/lizenzen.md). Neue oder geänderte Abhängigkeiten brauchen
   außerdem ihre Prüfsummen in `gradle/verification-metadata.xml` (`scripts/pruefsummen.sh`).
+- Gestaltung „Frisch mobil“: neue Bildschirme aus den Bausteinen in `Bausteine.kt`; Farben,
+  Abstände und Symbole stehen in `app/src/main/assets/design/` und sind mit der iOS-App
+  gemeinsam (`DesignWerteTest`), siehe [docs/gestaltung.md](docs/gestaltung.md). Formulare
+  schützen angefangene Eingaben (`rememberFormDraft`, geprüft von `FormulareTest`).
 - Jeder neue Text in der App gleich auch auf Englisch: `tr(…)`/`trn(…)` und ein Eintrag in
   `app/src/main/assets/texte/en.json`; `TexteTest` schlägt sonst fehl.
 - Es gibt keine automatische CI; vor dem Merge testet der Betreuer jeden Pull Request lokal
