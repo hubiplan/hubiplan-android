@@ -1,0 +1,154 @@
+{
+ "abstand": {
+  "eng": 4,
+  "gross": 24,
+  "klein": 8,
+  "mittel": 12,
+  "rand": 16,
+  "zeile": 2
+ },
+ "hinweis": "Gemeinsame Gestaltungswerte der HUBIplan-Apps (Android und iOS). Beide Repos enthalten dieselbe Datei; ein Test in jeder App vergleicht die Werte im Code damit.",
+ "marke": {
+  "akzent": "#f2b33d",
+  "getoent": 0.11,
+  "primaer": "#0e7c66"
+ },
+ "neutral": {
+  "dunkel": {
+   "bright": "#353d39",
+   "container": "#1a201d",
+   "containerHigh": "#242b27",
+   "containerHighest": "#2f3833",
+   "containerLow": "#161b19",
+   "containerLowest": "#0c100e",
+   "dim": "#111614",
+   "inverseOnSurface": "#1a201d",
+   "inverseSurface": "#dfe5e2",
+   "onSurface": "#dfe5e2",
+   "onSurfaceVariant": "#a3ada8",
+   "outline": "#838d88",
+   "outlineVariant": "#2f3833",
+   "surface": "#111614"
+  },
+  "hell": {
+   "bright": "#fbfcfb",
+   "container": "#eef0ed",
+   "containerHigh": "#e7eae7",
+   "containerHighest": "#e1e4e1",
+   "containerLow": "#f5f7f5",
+   "containerLowest": "#ffffff",
+   "dim": "#daddda",
+   "inverseOnSurface": "#eef1f0",
+   "inverseSurface": "#2a302d",
+   "onSurface": "#121614",
+   "onSurfaceVariant": "#545e5a",
+   "outline": "#737d79",
+   "outlineVariant": "#dde1de",
+   "surface": "#fbfcfb"
+  }
+ },
+ "radius": {
+  "blatt": 12,
+  "gross": 8,
+  "klein": 4,
+  "normal": 6
+ },
+ "schrift": {
+  "familie": "Inter",
+  "stufen": {
+   "klein": {
+    "gewicht": 400,
+    "groesse": 13,
+    "zeile": 18
+   },
+   "marke": {
+    "gewicht": 600,
+    "groesse": 12,
+    "zeile": 16
+   },
+   "text": {
+    "gewicht": 400,
+    "groesse": 15,
+    "zeile": 22
+   },
+   "titel": {
+    "gewicht": 700,
+    "groesse": 22,
+    "zeile": 28
+   },
+   "titelGross": {
+    "gewicht": 700,
+    "groesse": 28,
+    "zeile": 34
+   },
+   "ueberschrift": {
+    "gewicht": 600,
+    "groesse": 17,
+    "zeile": 24
+   }
+  }
+ },
+ "symbol": {
+  "groesse": 24,
+  "kopf": 36,
+  "raster": 24,
+  "strich": 1.75
+ },
+ "ziel": {
+  "android": 48,
+  "ios": 44,
+  "zeile": 56
+ },
+ "zustand": {
+  "fehler": {
+   "dunkel": {
+    "flaeche": "#3b1714",
+    "schrift": "#ffb4ab"
+   },
+   "hell": {
+    "flaeche": "#fbe9e7",
+    "schrift": "#b3261e"
+   }
+  },
+  "gut": {
+   "dunkel": {
+    "flaeche": "#15302a",
+    "schrift": "#8fd6b0"
+   },
+   "hell": {
+    "flaeche": "#e6f3ee",
+    "schrift": "#1d6b46"
+   }
+  },
+  "hinweis": {
+   "dunkel": {
+    "flaeche": "#18263a",
+    "schrift": "#a9c7f2"
+   },
+   "hell": {
+    "flaeche": "#eef3fb",
+    "schrift": "#1f4f8f"
+   }
+  },
+  "neutral": {
+   "dunkel": {
+    "flaeche": "#2a302d",
+    "schrift": "#c9d1cd"
+   },
+   "hell": {
+    "flaeche": "#eef1f0",
+    "schrift": "#4a5551"
+   }
+  },
+  "warnung": {
+   "dunkel": {
+    "flaeche": "#3a2c10",
+    "schrift": "#f4cf86"
+   },
+   "hell": {
+    "flaeche": "#fdf1d8",
+    "schrift": "#7a5200"
+   }
+  }
+ }
+}

@@ -120,6 +120,6 @@ fun brandFor(primaryHex: String?, onPrimaryHex: String?, dark: Boolean = false):
 fun HubiplanTheme(theme: Theme?, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     CompositionLocalProvider(LocalBrand provides brandFor(theme, dark)) {
-        MaterialTheme(colorScheme = colorSchemeFor(theme, dark), shapes = HubiShapes, content = content)
+        MaterialTheme(colorScheme = colorSchemeFor(theme, dark), shapes = HubiShapes, typography = HubiTypography, content = content)
     }
 }

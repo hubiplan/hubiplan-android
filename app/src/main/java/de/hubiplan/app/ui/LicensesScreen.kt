@@ -164,6 +164,12 @@ private fun LicenseList(
                 onShow(mpl.title to (mpl.asset?.let { context.asset(it) } ?: mpl.url))
             }) { Text(tr("Lizenztext MPL 2.0 anzeigen")) }
         }
+        HorizontalDivider()
+        Text(tr("Schrift"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+        Text(tr("Die App verwendet die Schrift {name} (SIL Open Font License 1.1).", "name" to Licenses.FONT_NAME), style = MaterialTheme.typography.bodySmall)
+        TextButton(onClick = {
+            onShow(Licenses.FONT_LICENSE_TITLE to (context.asset(Licenses.FONT_LICENSE_ASSET) ?: Licenses.FONT_SOURCE))
+        }) { Text(tr("Lizenztext der Schrift anzeigen")) }
         TextButton(onClick = onClose) { Text(tr("Schließen")) }
     }
 }

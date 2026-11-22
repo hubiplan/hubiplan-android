@@ -34,6 +34,12 @@ object Licenses {
     const val LIBRARIES_ASSET = "lizenzen/bibliotheken.tsv"
     const val APP_LICENSE_ASSET = "lizenzen/LICENSE.txt"
 
+    /** Schrift Inter (res/font/inter.ttf, gekürzt auf lateinische Zeichen): SIL Open Font License 1.1. */
+    const val FONT_NAME = "Inter"
+    const val FONT_LICENSE_TITLE = "SIL Open Font License 1.1"
+    const val FONT_LICENSE_ASSET = "lizenzen/Inter-OFL-1.1.txt"
+    const val FONT_SOURCE = "https://rsms.me/inter/"
+
     val KNOWN = mapOf(
         "Apache-2.0" to LicenseInfo(
             "Apache License 2.0",
