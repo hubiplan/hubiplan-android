@@ -1,0 +1,3 @@
+• Large tablets (10 inch): events and news in a single column in portrait, content at a comfortable reading width instead of full width.
+• Long club names wrap onto two lines instead of being cut off.
+• Membership card: validity now translated into English.
