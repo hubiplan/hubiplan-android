@@ -25,21 +25,25 @@ in” likewise shows a hint next to empty fields. Both buttons are only disabled
 
 ## Navigation
 
-Die Leiste unten (auf dem Tablet seitlich) hat kurze, einzeilige Beschriftungen: **Termine**,
-**Aufgaben**, **Neues** (die Mitteilungen), **Ich** und **Verwalten**. Bei großer Schrift
-werden sie bei Bedarf etwas kleiner statt umzubrechen. Der aktive Reiter ist farbig hinterlegt.
-In jeder Detailansicht (Termin, Mitteilung, Aufgabe, Bereiche der Verwaltung) stehen der Pfeil
-zurück und der Titel oben in der Kopfleiste; System-Zurück führt ebenfalls eine Ebene zurück.
-Musiker sehen zusätzlich **Noten** (siehe unten). Werden es auf dem Telefon dadurch sechs Ziele,
-steht **Verwaltung** als Symbol oben in der Kopfleiste neben „Mein Konto“; auf dem Tablet bleiben
-alle sechs in der seitlichen Leiste.
+Die Leiste unten (auf dem Tablet seitlich) hat kurze, einzeilige Beschriftungen: **Start**,
+**Termine**, **Neues** (Mitteilungen, Pinnwand, Umfragen), **Ich** und einen fünften Reiter je
+Rolle: **Verwaltung**, sonst **Noten**, sonst **Aufgaben**. Wer mehrere davon hat, wählt den
+fünften unter „Mein Konto › Einstellungen › Fünfter Reiter“; was nicht in der Leiste steht, ist
+auf „Start“ unter „Schnell erreichbar“, die Verwaltung zusätzlich als Symbol im Kopf. Tablets
+zeigen in der seitlichen Leiste alle Bereiche. Bei großer Schrift werden die Beschriftungen bei
+Bedarf etwas kleiner statt umzubrechen. Der aktive Reiter ist farbig hinterlegt. In jeder
+Detailansicht stehen der Pfeil zurück und der Titel oben in der Kopfleiste; System-Zurück führt
+ebenfalls eine Ebene zurück und aus jedem Reiter zuerst zu „Start“. Ab 840 dp Breite (Tablet
+quer) stehen Liste und Detail nebeneinander. Aufbau und Gestaltung im Einzelnen:
+[gestaltung.md](gestaltung.md).
 
 **English:** The bar at the bottom (at the side on tablets) has short single-line labels:
-**Events**, **Tasks**, **News**, **Me** and **Admin**. With large text they shrink a little
-instead of wrapping. The active tab is highlighted in colour. Every detail view (event, message,
-task, admin areas) shows the back arrow and title in the top bar; system back also goes up one
-level. Musicians also see **Sheet music** (see below). If that makes six targets on a phone,
-**Admin** moves to an icon in the top bar next to “My account”; tablets keep all six in the side bar.
+**Start**, **Events**, **News** (messages, pinboard, surveys), **Me** and a fifth tab by role:
+**Admin**, otherwise **Sheet music**, otherwise **Tasks** (selectable under My account ›
+Settings). Anything not in the bar is on “Start” under quick access; Admin also has an icon in
+the top bar. Tablets show all areas in the side bar. Every detail view shows the back arrow and
+title in the top bar; system back goes up one level and from any tab first to “Start”. From
+840 dp (tablet landscape) list and detail sit side by side.
 
 ## Reiter „Ich“
 

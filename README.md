@@ -13,8 +13,9 @@ nur mit der HUBIplan-Instanz des eigenen Vereins, nie mit einem fremden Dienst. 
 > English; the developer documentation is in German. Issues and security reports in English
 > are welcome.
 
-Paketname `de.hubiplan.app`, Version 1.8.0, ab Android 9, für Telefon und Tablet. Für iPhone und
-iPad entsteht [hubiplan-ios](https://github.com/hubiplan/hubiplan-ios) mit demselben Umfang.
+Paketname `de.hubiplan.app`, Version 1.11.1, ab Android 9, für Telefon und Tablet. Für iPhone und
+iPad gibt es [hubiplan-ios](https://github.com/hubiplan/hubiplan-ios) mit demselben Umfang und
+derselben Gestaltung („Frisch mobil“).
 
 ## Inhalt
 
@@ -31,15 +32,24 @@ iPad entsteht [hubiplan-ios](https://github.com/hubiplan/hubiplan-ios) mit demse
 
 ## Für Mitglieder
 
-Unten (auf dem Tablet seitlich) stehen Termine, Aufgaben, Neues (die Mitteilungen), Ich und
-– mit Rechten – Verwalten, für Musiker zusätzlich Noten. „Mein Konto“ öffnet das Symbol oben
-rechts. Die Zurück-Taste führt aus jedem Bereich zuerst zu „Termine“, erst dort schließt sie
-die App.
+Unten (auf dem Tablet seitlich) stehen die Reiter **Start**, **Termine**, **Neues**, **Ich** und
+ein fünfter je Rolle: Verwaltung, sonst Noten, sonst Aufgaben (wählbar unter Mein Konto ›
+Einstellungen). Was nicht in der Leiste steht, ist auf „Start“ unter „Schnell erreichbar“.
+„Mein Konto“ öffnet das Symbol oben rechts. Die Zurück-Taste führt aus jedem Reiter zuerst zu
+„Start“, erst dort schließt sie die App. Auf Tablets quer (ab 840 dp) stehen Liste und Detail
+nebeneinander, Inhalte bleiben in einer angenehmen Lesebreite. Gestaltung „Frisch mobil“ mit
+Schrift Inter und eigenem Symbolsatz, gemeinsam mit der iOS-App
+([docs/gestaltung.md](docs/gestaltung.md)); Darstellung wie das Gerät, hell oder dunkel.
+
+- Reiter „Start“: nächster Termin mit Zu- und Absage, was auf eine Antwort wartet, die Kacheln
+  der Startseite (bei Anlass, etwa eine laufende Umfrage) und kurze Wege; beim ersten Start
+  einmal „So findest du dich zurecht“
 
 - Termine der eigenen Einheiten (Verein, Untereinheit, weitergegebene Termine des
   Dachverbands), Zu- und Absage (auf Wunsch des Vereins auch „Vielleicht“) mit einem
-  Fingertipp, Bemerkung, Anhänge, Anfahrt mit Navigation und Push zur Einladung; Termine
-  „nur Vorstand“ sind für Vorstandsmitglieder gekennzeichnet
+  Fingertipp, Bemerkung, Anhänge, Anfahrt mit Navigation, Videoraum (Nextcloud Talk) und Push
+  zur Einladung; nach Monaten gegliedert mit Filter „ohne Rückmeldung“; Termine „nur Vorstand“
+  sind für Vorstandsmitglieder gekennzeichnet
 - Anmeldung mit Teilnahmegebühr am Termin: Tarif, Zusatzleistungen und Zusatzfragen,
   Warteliste, Abmelden mit Vorschau der Gebühr, Ersatzperson; Eintrittskarte mit QR-Code
   in der App
@@ -49,13 +59,14 @@ die App.
   Helferdienste: eigene Schichten sehen und absagen, sich in freie Schichten eintragen
 - Push ohne Google über eine UnifiedPush-App (z. B. ntfy), Inhalt Ende-zu-Ende
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
-- Reiter „Neues“: Mitteilungen, Pinnwand und Umfragen an einem Ort
+- Reiter „Neues“: Mitteilungen, Pinnwand und Umfragen an einem Ort; wer darf, schreibt
+  Pinnwand-Beiträge mit Fotos direkt aus der App
 - Reiter „Ich“ wie „Mein Bereich“ im Browser, in vier Gruppen (Geld, Mitmachen, Verein, Meine
   Daten): Mitgliedsausweis, Meine Daten, Rechnungen mit
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
   und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Wettbewerbe mit
   Meldungen, Ergebnissen und Ranglisten, Abwesenheiten für Musiker, Belegung anfragen, Kündigung,
-  Helferdienste, Dokumente, Auslagen (selbst Bezahltes mit Belegfoto melden), Training
+  Helferdienste, Dokumente, Bestellungen (Sammelbestellungen mit Größen bis zur Frist), Auslagen (selbst Bezahltes mit Belegfoto melden), Training
   (Einchecken per QR-Code, Anwesenheit, Schießbuch mit Stand nach § 14 WaffG, Trainings leiten),
   Beitragsnachweise (Nachweis für den ermäßigten Beitrag einreichen) und für
   Ansprechpartner einer Firma „Mitarbeiter“ (für wen die Firma zahlt, neue Mitarbeiter melden)
@@ -64,7 +75,8 @@ die App.
   zum Vorzeigen bildschirmfüllend und mit voller Helligkeit; auf Wunsch in Google Wallet oder
   als Wallet-Pass (`.pkpass`), wenn der Verein das anbietet (auch in `foss`, ohne
   Google-Bibliothek)
-- eigenes Profil ansehen und Änderungen melden (der Verein prüft sie)
+- eigenes Profil ansehen und Änderungen melden (der Verein prüft sie); angefangene Eingaben in
+  Formularen gehen beim Zurück oder Reiterwechsel nicht verloren
 - Noten für Musiker: Notenmappen und Programme der eigenen Stimme, verschlüsselt für
   unterwegs, Notenpult im Vollbild mit Fußpedal, Anhören und Transponieren
 - Mitgliederfoto mit der Kamera aufnehmen oder aus der Galerie wählen, mit Einwilligung;
@@ -82,10 +94,10 @@ die App.
 
 Der Reiter „Verwaltung“ erscheint nur mit den passenden Rechten. Er wird einmal mit Passwort
 und Zwei-Faktor-Code oder mit Passkey freigeschaltet, danach mit Fingerabdruck oder PIN
-geöffnet; Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt mit einer Liste „Was
-möchtest du tun?“: oben „Ausweis prüfen“, darunter „Zu erledigen“ mit Anzahl und die Bereiche
-Aufgaben, Mitglieder, Termine, Wettbewerbe, Geschäftspartner, Kassenbuch, Rechnungen, Jubiläen
-und Geburtstage, Qualifikationen und Fristen, je nach Rechten.
+geöffnet; Bildschirmfotos sind dort gesperrt. Die Verwaltung beginnt als Arbeitsplatz: oben
+„Ausweis prüfen“ und „Neu“ (Quittung, Buchung, Termin, Aufgabe je nach Rechten), darunter „Zu
+erledigen“ mit Anzahl, die Kacheln der Startseite und die Bereiche in den Gruppen des
+Hauptmenüs im Browser (Planen, Verein, Vereinsleben, Verwaltung), mit Suche.
 
 - Kurzmitteilung an alle Mitglieder der Einheit, mit Empfängerzahl vorab
 - offene Aufgaben, Geburtstage und Jubiläen
@@ -100,8 +112,10 @@ und Geburtstage, Qualifikationen und Fristen, je nach Rechten.
   Ansprechpartnern (anrufen, mailen) und Rechnungsanschrift; Organisationen aufnehmen
   (Ansprechpartner pflegen im Browser)
 - Änderungsmeldungen und Fotos freigeben, Mitgliedsausweis per QR-Code prüfen
+- Beitrittsanträge prüfen und aufnehmen, Anfragen zur Belegung freigeben, Versammlung leiten
+  (Anmeldung per QR-Code, Anwesenheit, Abstimmungen)
 - Termine mit Zu- und Absagen, Rückmeldung für Mitglieder eintragen, einfache Termine
-  anlegen und absagen
+  anlegen und absagen; eine geteilte Kalenderdatei (`.ics`) füllt einen neuen Termin vor
 - Einlass bei Veranstaltungen mit Anmeldung: Eintrittskarten mit der Kamera scannen, von Hand
   einlassen, Abendkasse
 - Wettbewerbe: Standmodus eingebettet in der App, auch ohne Empfang, mit QR-Code für weitere
@@ -164,7 +178,7 @@ app/src/foss/, app/src/play/   Unterschiede der Varianten
 app/src/main/assets/texte/     englische Texte (en.json)
 app/src/test/                  Unit-Tests
 fastlane/metadata/             Texte und Bilder für F-Droid und Play
-docs/                          Bedienung im Einzelnen, Geräteprüfungen, Lizenzen, Veröffentlichen
+docs/                          Bedienung im Einzelnen, Gestaltung, Geräteprüfungen, Lizenzen, Veröffentlichen
 ```
 
 **Sprache:** Deutsch oder Englisch. Wie im Browser ist der deutsche Text der Schlüssel:
