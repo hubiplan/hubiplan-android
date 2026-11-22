@@ -265,8 +265,9 @@ private fun EventDetailView(
             RsvpSection(e, busy) { status, guests, note ->
                 val api = vm.api() ?: return@RsvpSection
                 change {
-                    if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests, note)
+                    val neu = if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests, note)
                     bestaetigung()
+                    neu
                 }
             }
         }
