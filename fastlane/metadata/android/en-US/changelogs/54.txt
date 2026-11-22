@@ -1,0 +1,5 @@
+• New "Fresh mobile" design: tabs Start, Events, News and Me, plus one per role.
+• Start shows your next event and what you need to do; events by month, filter for open responses.
+• News combines pinboard and surveys.
+• Administration as a workspace with New, To do and search.
+• Light, dark or as the device; form drafts are no longer lost.
