@@ -1,0 +1,5 @@
+• Neue Gestaltung „Frisch mobil“: Reiter Start, Termine, Neues und Ich, dazu einer je Rolle.
+• Start zeigt den nächsten Termin und was für dich zu tun ist; Termine nach Monaten, Filter für offene Rückmeldungen.
+• Neues bündelt Pinnwand und Umfragen.
+• Verwaltung als Arbeitsplatz mit Neu, Zu erledigen und Suche.
+• Hell, dunkel oder wie das Gerät; Entwürfe in Formularen gehen nicht verloren.
