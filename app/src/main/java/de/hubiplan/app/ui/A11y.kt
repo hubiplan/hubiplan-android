@@ -36,6 +36,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -246,9 +251,15 @@ fun DropdownText(
     color: Color = Color.Unspecified,
     style: TextStyle = LocalTextStyle.current,
     showArrow: Boolean = true,
+    /** Im Kopf: lange Namen kleiner auf zwei Zeilen statt abgeschnitten ([KopfName]) */
+    kopf: Boolean = false,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text, color = color, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        if (kopf) {
+            KopfName(text, color = color, modifier = Modifier.weight(1f, fill = false))
+        } else {
+            Text(text, color = color, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+        }
         if (showArrow) {
             Icon(Icons.Filled.ArrowDropDown, contentDescription = null, tint = color.takeOrElse { LocalContentColor.current })
         }
@@ -266,3 +277,33 @@ fun MenuCheck(on: Boolean) {
  * Ausfüllen angeboten und gespeichert (UX-Audit 08.11. A-05).
  */
 fun Modifier.autofill(type: ContentType): Modifier = semantics { contentType = type }
+
+/**
+ * Vereinsname im Kopf. Passt er nicht in eine Zeile, steht er etwas kleiner auf höchstens zwei
+ * Zeilen, statt mit „…“ abgeschnitten zu werden. Kürzer geht es mit dem Kurznamen der Einheit
+ * (`club_display_name`), den der Verein in HUBIplan pflegt.
+ */
+@Composable
+fun KopfName(text: String, color: Color = Color.Unspecified, modifier: Modifier = Modifier) {
+    var zweizeilig by remember(text) { mutableStateOf(false) }
+    if (zweizeilig) {
+        Text(
+            text,
+            color = color,
+            style = MaterialTheme.typography.titleMedium.copy(lineHeight = 20.sp),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = modifier,
+        )
+    } else {
+        Text(
+            text,
+            color = color,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            modifier = modifier,
+            onTextLayout = { if (it.hasVisualOverflow) zweizeilig = true },
+        )
+    }
+}
