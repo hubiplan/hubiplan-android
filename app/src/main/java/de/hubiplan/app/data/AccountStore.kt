@@ -60,6 +60,7 @@ private object Keys {
     val reminderMinutes = intPreferencesKey("erinnerung_minuten")
     val rsvpHints = booleanPreferencesKey("hinweis_rueckmeldung")
     val fifthTab = stringPreferencesKey("fuenfter_reiter")
+    val appearance = stringPreferencesKey("darstellung")
     val notified = stringSetPreferencesKey("hinweise_gezeigt")
     val lastSync = longPreferencesKey("letzter_abgleich")
     val pushKeys = stringPreferencesKey("push_schluessel")
@@ -94,6 +95,8 @@ data class AppSettings(
     val rsvpHints: Boolean = true,
     /** Eigene Wahl für den fünften Reiter der Leiste (Name des Reiters); leer = Vorgabe je Rolle */
     val fifthTab: String = "",
+    /** Darstellung: leer = wie das Gerät, "hell" oder "dunkel" */
+    val appearance: String = "",
     val lastSync: Long? = null,
     val push: PushState = PushState(),
 )
@@ -130,6 +133,7 @@ class AccountStore(private val context: Context, val slot: Int = 0) : AccountMut
             reminderMinutes = (p[Keys.reminderMinutes] ?: DEFAULT_REMINDER_MINUTES).takeIf { it >= 0 },
             rsvpHints = p[Keys.rsvpHints] ?: true,
             fifthTab = p[Keys.fifthTab].orEmpty(),
+            appearance = p[Keys.appearance].orEmpty(),
             lastSync = p[Keys.lastSync],
             push = PushState(p[Keys.pushDistributor], p[Keys.pushEndpoint], p[Keys.pushError], p[Keys.pushOff] ?: false),
         )
@@ -201,6 +205,8 @@ class AccountStore(private val context: Context, val slot: Int = 0) : AccountMut
     suspend fun setRsvpHints(on: Boolean) = dataStore.edit { it[Keys.rsvpHints] = on }
 
     suspend fun setFifthTab(name: String) = dataStore.edit { it[Keys.fifthTab] = name }
+
+    suspend fun setAppearance(wahl: String) = dataStore.edit { it[Keys.appearance] = wahl }
 
     suspend fun markSynced(at: Long) = dataStore.edit { it[Keys.lastSync] = at }
 

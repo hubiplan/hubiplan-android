@@ -117,6 +117,8 @@ fun SettingsSection(vm: AppViewModel) {
 
         FuenfterReiterWahl(vm, settings.fifthTab)
 
+        DarstellungWahl(vm, settings.appearance)
+
         Text(tr("Hinweise"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
         SwitchRow(
             label = tr("Hinweis, wenn eine Rückmeldung fehlt"),
@@ -323,5 +325,22 @@ private fun FuenfterReiterWahl(vm: AppViewModel, wahl: String) {
     Text(tr("Welcher Bereich unten in der Leiste steht. Die anderen erreichst du über „Start“."), style = MaterialTheme.typography.bodySmall)
     moeglich.forEach { reiter ->
         LabeledRadio(reiter.label, reiter == gewaehlt, { vm.setFifthTab(reiter.name) })
+    }
+}
+
+/** Beschriftung einer Darstellung in der Auswahl. */
+internal fun darstellungName(wahl: String): String = when (wahl) {
+    DARSTELLUNG_HELL -> tr("Hell")
+    DARSTELLUNG_DUNKEL -> tr("Dunkel")
+    else -> tr("Wie das Gerät")
+}
+
+/** Darstellung der App: wie das Gerät, hell oder dunkel (Gestaltung „Frisch mobil“). */
+@Composable
+private fun DarstellungWahl(vm: AppViewModel, wahl: String) {
+    val gewaehlt = if (wahl in DARSTELLUNGEN) wahl else ""
+    Text(tr("Darstellung"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
+    DARSTELLUNGEN.forEach { d ->
+        LabeledRadio(darstellungName(d), d == gewaehlt, { vm.setAppearance(d) })
     }
 }

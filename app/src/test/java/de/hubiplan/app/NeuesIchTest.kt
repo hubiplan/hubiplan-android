@@ -4,6 +4,8 @@ import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.ui.IchBereich
 import de.hubiplan.app.ui.IchGruppe
 import de.hubiplan.app.ui.NeuesTeil
+import de.hubiplan.app.ui.darstellungDunkel
+import de.hubiplan.app.ui.darstellungName
 import de.hubiplan.app.ui.ichGruppe
 import de.hubiplan.app.ui.ichGruppen
 import de.hubiplan.app.ui.ichSymbol
@@ -12,6 +14,8 @@ import de.hubiplan.app.ui.neuesTeil
 import de.hubiplan.app.ui.neuesTeile
 import de.hubiplan.app.ui.neuesWahl
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -53,5 +57,17 @@ class NeuesIchTest {
         assertEquals(listOf(IchGruppe.DATEN), ichGruppen(listOf(IchBereich.PINNWAND, IchBereich.DATEN)).map { it.first })
         // Jeder Bereich hat ein eigenes Symbol
         assertEquals(IchBereich.entries.size, IchBereich.entries.map(::ichSymbol).toSet().size)
+    }
+
+    @Test
+    fun darstellungWieGeraetHellOderDunkel() {
+        // Ohne eigene Wahl folgt die App dem Gerät
+        assertTrue(darstellungDunkel("", geraetDunkel = true))
+        assertFalse(darstellungDunkel("", geraetDunkel = false))
+        assertFalse(darstellungDunkel("hell", geraetDunkel = true))
+        assertTrue(darstellungDunkel("dunkel", geraetDunkel = false))
+        // Unbekanntes (z. B. aus einer neueren Fassung) folgt dem Gerät
+        assertTrue(darstellungDunkel("sepia", geraetDunkel = true))
+        assertEquals(listOf("Wie das Gerät", "Hell", "Dunkel"), listOf("", "hell", "dunkel").map(::darstellungName))
     }
 }

@@ -59,7 +59,9 @@ fehlen, den Filter „… ohne Rückmeldung“.
 „Neues“ fasst zusammen, was der Verein mitteilt oder fragt: Mitteilungen, Pinnwand und Umfragen
 (`NeuesPane`, `neuesTeile`); die Auswahl darüber zeigt, wo etwas wartet, und fehlt, wenn es nur
 Mitteilungen gibt. „Ich“ zeigt den Ausweis und darunter „Mein Bereich“ in vier Gruppen: Geld,
-Mitmachen, Verein, Meine Daten (`ichGruppen`); jede Zeile hat Symbol, Kurzstand und Zähler.
+Mitmachen, Verein, Meine Daten (`ichGruppen`); jede Zeile hat Symbol, Kurzstand und Zähler. Unter „Mein
+Konto › Einstellungen“ lässt sich die Darstellung wählen: wie das Gerät, hell oder dunkel
+(`darstellungDunkel`).
 
 Die Verwaltung beginnt als Arbeitsplatz (`AdminStart`): oben „Ausweis prüfen“ und „Neu“ (Quittung,
 Buchung, Termin, Aufgabe je nach Rechten, `neuAktionen`), darunter „Zu erledigen“ mit Zähler, die

@@ -59,7 +59,8 @@ class MainActivity : FragmentActivity() {
             val theme by vm.theme.collectAsStateWithLifecycle()
             val screen by vm.screen.collectAsStateWithLifecycle()
             val connect by vm.connect.collectAsStateWithLifecycle()
-            HubiplanTheme(theme) {
+            val settings by vm.settings.collectAsStateWithLifecycle()
+            HubiplanTheme(theme, settings.appearance) {
                 Surface(Modifier.fillMaxSize()) {
                     Box(Modifier.fillMaxSize().safeDrawingPadding()) {
                         when (val s = screen) {
