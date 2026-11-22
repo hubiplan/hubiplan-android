@@ -673,6 +673,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { store.setRsvpHints(on) }
     }
 
+    /** Fünfter Reiter der Leiste: Name des Reiters, leer für die Vorgabe je Rolle. */
+    fun setFifthTab(name: String) {
+        viewModelScope.launch { store.setFifthTab(name) }
+    }
+
     // Verbinden-Link, der vor dem Laden des Kontos ankam (App über den Link gestartet)
     private var started = false
     private var startLink: String? = null

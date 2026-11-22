@@ -1659,5 +1659,18 @@
  "bei Anlass": "when relevant",
  "Kacheln einblenden": "Show tiles",
  "Kacheln anpassen": "Customise tiles",
- "„Bei Anlass“ zeigt eine Kachel nur, wenn gerade etwas ansteht. Die Auswahl gilt auch für die Startseite im Browser.": "“When relevant” shows a tile only when something is coming up. The choice also applies to the start page in the browser."
+ "„Bei Anlass“ zeigt eine Kachel nur, wenn gerade etwas ansteht. Die Auswahl gilt auch für die Startseite im Browser.": "“When relevant” shows a tile only when something is coming up. The choice also applies to the start page in the browser.",
+ "Schrift": "Typeface",
+ "Die App verwendet die Schrift {name} (SIL Open Font License 1.1).": "The app uses the {name} typeface (SIL Open Font License 1.1).",
+ "Lizenztext der Schrift anzeigen": "Show the typeface licence",
+ "Start": "Home",
+ "Nächster Termin": "Next event",
+ "Alle Termine": "All events",
+ "Für dich zu tun": "For you to do",
+ "{n} Termin wartet auf deine Rückmeldung": "{n} event is waiting for your reply",
+ "{n} Termine warten auf deine Rückmeldung": "{n} events are waiting for your reply",
+ "Schnell erreichbar": "Quick access",
+ "Termin ansehen": "View event",
+ "Fünfter Reiter": "Fifth tab",
+ "Welcher Bereich unten in der Leiste steht. Die anderen erreichst du über „Start“.": "Which area sits in the bar at the bottom. You reach the others from “Home”."
 }

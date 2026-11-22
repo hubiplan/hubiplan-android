@@ -61,11 +61,18 @@ import androidx.compose.ui.platform.LocalContext
 private const val DAYS_AHEAD = 400L
 
 @Composable
-fun EventsPane(access: PortalAccess, vm: AppViewModel) {
+fun EventsPane(access: PortalAccess, vm: AppViewModel, open: String? = null, onOpened: () -> Unit = {}) {
     // Liste bleibt beim Aktualisieren sichtbar; Ziehen lädt neu (UX-Audit 08.11. A-02)
     val events = remember(access.id) { Loadable<List<Occurrence>>() }
     // Gewählt ist der Einzeltermin (Schlüssel der Wiederholung), nicht die ganze Serie (UX-Audit 31.10. A05)
     var selected by rememberSaveable(access.id) { mutableStateOf<String?>(null) }
+    // Von „Start“ aus geöffnet: genau diesen Termin zeigen
+    LaunchedEffect(open) {
+        if (open != null) {
+            selected = open
+            onOpened()
+        }
+    }
 
     LaunchedEffect(access.id, events.tick) {
         val api = vm.api() ?: return@LaunchedEffect

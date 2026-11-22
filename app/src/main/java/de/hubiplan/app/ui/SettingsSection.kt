@@ -115,6 +115,8 @@ fun SettingsSection(vm: AppViewModel) {
 
         PushSection(vm)
 
+        FuenfterReiterWahl(vm, settings.fifthTab)
+
         Text(tr("Hinweise"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
         SwitchRow(
             label = tr("Hinweis, wenn eine Rückmeldung fehlt"),
@@ -298,4 +300,28 @@ private fun BatteryHint(context: Context) {
             )
         }
     }) { Text(tr("App-Info öffnen")) }
+}
+
+/**
+ * Fünfter Reiter der Leiste: Wer mehr als einen Bereich hat (Verwaltung, Noten, Aufgaben),
+ * wählt, welcher unten steht. Die anderen bleiben über „Start“ erreichbar.
+ */
+@Composable
+private fun FuenfterReiterWahl(vm: AppViewModel, wahl: String) {
+    val screen by vm.screen.collectAsStateWithLifecycle()
+    val admin by vm.admin.collectAsStateWithLifecycle()
+    val main = screen as? Screen.Main ?: return
+    val portal = main.me?.portal.orEmpty()
+    val moeglich = fuenfteReiter(
+        adminVisible = admin.visible,
+        tasksVisible = portal.any { it.hasTodos || it.hasHelpers },
+        notesVisible = main.access?.hasScores == true,
+    )
+    if (moeglich.size < 2) return
+    val gewaehlt = fuenfterReiter(moeglich, wahl)
+    Text(tr("Fünfter Reiter"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading().padding(top = Abstand.klein))
+    Text(tr("Welcher Bereich unten in der Leiste steht. Die anderen erreichst du über „Start“."), style = MaterialTheme.typography.bodySmall)
+    moeglich.forEach { reiter ->
+        LabeledRadio(reiter.label, reiter == gewaehlt, { vm.setFifthTab(reiter.name) })
+    }
 }

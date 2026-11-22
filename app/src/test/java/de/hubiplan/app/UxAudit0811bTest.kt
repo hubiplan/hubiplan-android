@@ -93,14 +93,14 @@ class UxAudit0811bTest {
         listOf("AdminPane.kt", "MainScreen.kt").forEach { f ->
             listOf("ShoppingCart", "Icons.Filled.Notifications", "Icons.Filled.Build").forEach { assertFalse("$f: $it", it in src(f)) }
         }
-        assertTrue("Tab.VERWALTUNG -> Symbole.Verwaltung" in src("MainScreen.kt"))
+        assertTrue("VERWALTUNG -> Strich.VERWALTUNG" in src("MainScreen.kt"))
     }
 
-    /** A-15: Angebot nur in der Terminliste, kompakt, nur einmal. */
+    /** A-15: Angebot nur auf „Start“, nie über einem geöffneten Termin, kompakt, nur einmal. */
     @Test
     fun startbildschirmHinweis() {
         val main = src("MainScreen.kt")
-        assertTrue("tab == Tab.TERMINE && detail == null) ShortcutOffer(vm)" in main)
+        assertTrue("tab == Tab.START && detail == null) ShortcutOffer(vm)" in main)
         assertTrue("vm.shortcutOfferSeen()" in main)
         assertFalse("keine Erklärzeile mehr", "Eine Verknüpfung mit Wappen" in main)
         assertTrue("SHORTCUT_SEEN" in src("AppViewModel.kt"))
