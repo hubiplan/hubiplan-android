@@ -552,7 +552,7 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel, onBrand: Boolean =
     val current = main.access
     var open by rememberSaveable { mutableStateOf(false) }
     if (accesses.size <= 1) {
-        Text(current?.label ?: "HUBIplan", maxLines = 1, overflow = TextOverflow.Ellipsis)
+        KopfName(current?.label ?: "HUBIplan")
         return
     }
     Box {
@@ -560,6 +560,7 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel, onBrand: Boolean =
             DropdownText(
                 current?.label ?: tr("Verein oder Gruppe wählen"),
                 color = if (onBrand) LocalBrand.current.onBrand else MaterialTheme.colorScheme.onSurface,
+                kopf = true,
             )
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {

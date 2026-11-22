@@ -55,6 +55,10 @@ wartet, die Kacheln der Startseite und die kurzen Wege. Der Kopf steht nur auf �
 Vereinsfarbe (`kopfInVereinsfarbe`); alle anderen Seiten haben einen ruhigen Kopf. Zurück führt
 von jedem Reiter zu „Start“ und beendet erst dort die App.
 
+Im Kopf steht der Kurzname der Einheit (`club_display_name`, in HUBIplan unter dem Verein
+pflegbar), sonst der volle Name. Passt er nicht in eine Zeile, steht er etwas kleiner auf zwei
+Zeilen statt mit „…“ (`KopfName`).
+
 „Start“ kommt in einem Abruf vom Server (`GET /api/portal/<Zugang>/start/`: nächster Termin, „Für
 dich zu tun“, Kacheln; siehe `docs/app.md` in HUBIplan). Kennt ein älterer HUBIplan-Stand den
 Abruf nicht (404), baut die App die Seite aus der Terminliste (`startAusTerminen`). Zeilen unter
