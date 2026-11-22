@@ -293,7 +293,7 @@ private fun MemberCardView(stored: StoredCard, modifier: Modifier = Modifier) {
                 CardLine(tr("Mitgliedsnummer"), display.clubNumber)
                 CardLine(tr("Mitgliedsart"), display.memberType.orEmpty())
                 Text(
-                    display.statusLabel,
+                    cardStatusText(display.status, display.statusLabel),
                     color = if (display.status == "active") Color(0xFF1B5E20) else Color(0xFFB71C1C),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
@@ -409,4 +409,15 @@ fun qrBitmap(content: String, size: Int): Bitmap {
         if (matrix.get(i % matrix.width, i / matrix.width)) android.graphics.Color.BLACK else android.graphics.Color.WHITE
     }
     return Bitmap.createBitmap(pixels, matrix.width, matrix.height, Bitmap.Config.ARGB_8888)
+}
+
+/**
+ * Gültigkeit auf dem Ausweis in der Sprache der App: Der Server liefert den Text deutsch, die
+ * bekannten Zustände übersetzt die App selbst (auch beim gespeicherten Ausweis ohne Netz).
+ */
+internal fun cardStatusText(status: String, label: String): String = when (status) {
+    "active" -> tr("Gültige Mitgliedschaft")
+    "future" -> tr("Mitgliedschaft beginnt später")
+    "inactive" -> tr("Keine gültige Mitgliedschaft")
+    else -> label
 }
