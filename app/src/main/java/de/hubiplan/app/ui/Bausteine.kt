@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -142,6 +143,25 @@ fun Zeile(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp),
             )
+        }
+    }
+}
+
+/**
+ * Kurze spürbare Bestätigung nach Zusage, Buchung oder Scan (Gestaltung „Frisch mobil“). Das Gerät
+ * beachtet dabei seine eigene Einstellung für Berührungsrückmeldung.
+ */
+@Composable
+fun rememberBestaetigung(): () -> Unit {
+    val view = androidx.compose.ui.platform.LocalView.current
+    return remember(view) {
+        {
+            val art = if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.view.HapticFeedbackConstants.CONFIRM
+            } else {
+                android.view.HapticFeedbackConstants.VIRTUAL_KEY
+            }
+            view.performHapticFeedback(art)
         }
     }
 }

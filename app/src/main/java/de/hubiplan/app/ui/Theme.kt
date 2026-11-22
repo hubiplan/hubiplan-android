@@ -116,10 +116,40 @@ fun brandFor(primaryHex: String?, onPrimaryHex: String?, dark: Boolean = false):
     return BrandColors(Color(primary), Color(onPrimary))
 }
 
+/** Werte der Einstellung „Darstellung“; leer heißt: wie das Gerät. */
+const val DARSTELLUNG_HELL = "hell"
+const val DARSTELLUNG_DUNKEL = "dunkel"
+val DARSTELLUNGEN = listOf("", DARSTELLUNG_HELL, DARSTELLUNG_DUNKEL)
+
+/** Dunkel zeigen? Die eigene Wahl gilt vor dem Gerät; Unbekanntes folgt dem Gerät. */
+fun darstellungDunkel(wahl: String, geraetDunkel: Boolean): Boolean = when (wahl) {
+    DARSTELLUNG_HELL -> false
+    DARSTELLUNG_DUNKEL -> true
+    else -> geraetDunkel
+}
+
+/**
+ * [darstellung]: Einstellung unter „Mein Konto“ (leer, „hell“ oder „dunkel“). Weicht sie vom Gerät
+ * ab, bekommt der Inhalt eine Konfiguration mit dem gewählten Nachtmodus, damit jede Stelle, die
+ * nach Hell oder Dunkel fragt, dieselbe Antwort erhält.
+ */
 @Composable
-fun HubiplanTheme(theme: Theme?, content: @Composable () -> Unit) {
-    val dark = isSystemInDarkTheme()
-    CompositionLocalProvider(LocalBrand provides brandFor(theme, dark)) {
-        MaterialTheme(colorScheme = colorSchemeFor(theme, dark), shapes = HubiShapes, typography = HubiTypography, content = content)
+fun HubiplanTheme(theme: Theme?, darstellung: String = "", content: @Composable () -> Unit) {
+    val geraet = isSystemInDarkTheme()
+    val dark = darstellungDunkel(darstellung, geraet)
+    val themed: @Composable () -> Unit = {
+        CompositionLocalProvider(LocalBrand provides brandFor(theme, dark)) {
+            MaterialTheme(colorScheme = colorSchemeFor(theme, dark), shapes = HubiShapes, typography = HubiTypography, content = content)
+        }
+    }
+    if (dark == geraet) {
+        themed()
+    } else {
+        val basis = androidx.compose.ui.platform.LocalConfiguration.current
+        val config = android.content.res.Configuration(basis).apply {
+            val nacht = if (dark) android.content.res.Configuration.UI_MODE_NIGHT_YES else android.content.res.Configuration.UI_MODE_NIGHT_NO
+            uiMode = (uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK.inv()) or nacht
+        }
+        CompositionLocalProvider(androidx.compose.ui.platform.LocalConfiguration provides config, content = themed)
     }
 }

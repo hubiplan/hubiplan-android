@@ -93,6 +93,8 @@ private fun ReportForm(access: PortalAccess, vm: AppViewModel, c: CompanyEntry) 
     var busy by remember(c.id) { mutableStateOf(false) }
     var message by remember(c.id) { mutableStateOf<String?>(null) }
     var problem by remember(c.id) { mutableStateOf<String?>(null) }
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    rememberFormDraft(first, last, email, busy = busy, retainOnDispose = false)
     Text(tr("Neuen Mitarbeiter melden"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
     Text(tr("Die Person bekommt eine Mail mit dem Link zum Online-Antrag."), style = MaterialTheme.typography.bodySmall)
     OutlinedTextField(first, { first = it }, label = { Text(tr("Vorname")) }, singleLine = true, keyboardOptions = keyboardFor("first_name"), modifier = Modifier.fillMaxWidth())

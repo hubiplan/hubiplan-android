@@ -49,7 +49,9 @@ die App.
   Helferdienste: eigene Schichten sehen und absagen, sich in freie Schichten eintragen
 - Push ohne Google über eine UnifiedPush-App (z. B. ntfy), Inhalt Ende-zu-Ende
   verschlüsselt (Web-Push, RFC 8291); ohne Push-App holt die App alle 15 Minuten ab
-- Reiter „Ich“ wie „Mein Bereich“ im Browser: Mitgliedsausweis, Meine Daten, Rechnungen mit
+- Reiter „Neues“: Mitteilungen, Pinnwand und Umfragen an einem Ort
+- Reiter „Ich“ wie „Mein Bereich“ im Browser, in vier Gruppen (Geld, Mitmachen, Verein, Meine
+  Daten): Mitgliedsausweis, Meine Daten, Rechnungen mit
   Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen, Protokollen, Anmelden per QR-Code
   und Online-Abstimmung, Umfragen (beantworten, ändern, Ergebnis ansehen), Wettbewerbe mit
   Meldungen, Ergebnissen und Ranglisten, Abwesenheiten für Musiker, Belegung anfragen, Kündigung,

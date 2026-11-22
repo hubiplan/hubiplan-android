@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
@@ -66,6 +67,8 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel, open: String? = null, onO
     val events = remember(access.id) { Loadable<List<Occurrence>>() }
     // Gewählt ist der Einzeltermin (Schlüssel der Wiederholung), nicht die ganze Serie (UX-Audit 31.10. A05)
     var selected by rememberSaveable(access.id) { mutableStateOf<String?>(null) }
+    // Nur Termine zeigen, die noch auf die eigene Rückmeldung warten
+    var nurOffene by rememberSaveable(access.id) { mutableStateOf(false) }
     // Von „Start“ aus geöffnet: genau diesen Termin zeigen
     LaunchedEffect(open) {
         if (open != null) {
@@ -89,10 +92,31 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel, open: String? = null, onO
         emptyDetail = tr("Termin auswählen"),
         list = {
             LoadableList(events, empty = tr("Keine anstehenden Termine."), isEmpty = { it.isEmpty() }) { list ->
+                val offen = list.count(::wartetAufAntwort)
+                // Der Filter fällt weg, sobald nichts mehr offen ist
+                val gezeigt = if (nurOffene && offen > 0) list.filter(::wartetAufAntwort) else list
                 LazyColumn(Modifier.fillMaxSize()) {
-                    items(list, key = { it.key }) { occ ->
-                        EventRow(occ, occ.key == selected) { selected = occ.key }
-                        HorizontalDivider()
+                    if (offen > 0) {
+                        item(key = "filter") {
+                            FilterChip(
+                                selected = nurOffene,
+                                onClick = { nurOffene = !nurOffene },
+                                label = { Text(tr("{n} ohne Rückmeldung", "n" to offen)) },
+                                modifier = Modifier.padding(horizontal = Abstand.rand),
+                            )
+                        }
+                    }
+                    // Zwischenüberschrift je Monat, damit lange Listen Halt geben
+                    terminGruppen(gezeigt).forEach { (monat, termine) ->
+                        if (monat.isNotEmpty()) {
+                            item(key = "monat-$monat") {
+                                Abschnittstitel(monat, Modifier.padding(start = Abstand.rand, end = Abstand.rand, top = Abstand.mittel, bottom = Abstand.eng))
+                            }
+                        }
+                        items(termine, key = { it.key }) { occ ->
+                            EventRow(occ, occ.key == selected) { selected = occ.key }
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
@@ -105,6 +129,16 @@ fun EventsPane(access: PortalAccess, vm: AppViewModel, open: String? = null, onO
             }
         },
     )
+}
+
+/** Termine in der Reihenfolge der Liste, gruppiert nach Monat („November 2026“). */
+internal fun terminGruppen(termine: List<Occurrence>): List<Pair<String, List<Occurrence>>> {
+    val gruppen = mutableListOf<Pair<String, MutableList<Occurrence>>>()
+    for (termin in termine) {
+        val monat = monatTitel(termin.startsAt, termin.allDay)
+        if (gruppen.lastOrNull()?.first == monat) gruppen.last().second.add(termin) else gruppen.add(monat to mutableListOf(termin))
+    }
+    return gruppen
 }
 
 /** Zeile eines Termins; ohne [onClick] nur zum Lesen (gespeicherter Stand ohne Netz, AND-07). */
@@ -155,6 +189,7 @@ private fun EventDetailView(
     var attempt by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     var notice by remember(access.id, eventId) { mutableStateOf<String?>(null) }
+    val bestaetigung = rememberBestaetigung()
 
     LaunchedEffect(access.id, eventId, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
@@ -230,7 +265,9 @@ private fun EventDetailView(
             RsvpSection(e, busy) { status, guests, note ->
                 val api = vm.api() ?: return@RsvpSection
                 change {
-                    if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests, note)
+                    val neu = if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests, note)
+                    bestaetigung()
+                    neu
                 }
             }
         }

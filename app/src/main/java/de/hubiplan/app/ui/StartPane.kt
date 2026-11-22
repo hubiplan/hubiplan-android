@@ -29,6 +29,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.Occurrence
 import de.hubiplan.app.data.PortalAccess
+import de.hubiplan.app.data.StartTodo
 import de.hubiplan.app.tr
 import de.hubiplan.app.trn
 import java.time.LocalDate
@@ -47,6 +48,77 @@ internal fun offeneRueckmeldungen(termine: List<Occurrence>, ohne: Occurrence? =
 /** Kann auf „Start“ gleich zu- oder abgesagt werden? */
 internal fun wartetAufAntwort(termin: Occurrence): Boolean = termin.rsvpEnabled && !termin.isCancelled && termin.myResponse == null
 
+/** Was „Start“ oben zeigt: vom Server ([StartSeite]) oder, bei älteren Ständen, aus der Terminliste. */
+internal data class StartInhalt(val naechster: Occurrence?, val todo: List<StartTodo>)
+
+/** Inhalt aus der Terminliste, wenn HUBIplan den Abruf „start“ noch nicht kennt. */
+internal fun startAusTerminen(termine: List<Occurrence>): StartInhalt {
+    val offen = offeneRueckmeldungen(termine)
+    val todo = if (offen > 0) {
+        listOf(StartTodo("rsvp", trn("{n} Termin wartet auf deine Rückmeldung", "{n} Termine warten auf deine Rückmeldung", offen), offen, "events"))
+    } else {
+        emptyList()
+    }
+    return StartInhalt(naechsterTermin(termine), todo)
+}
+
+/** Bereich unter „Ich“, in den eine Zeile „Für dich zu tun“ führt; null: Reiter „Termine“ oder unbekannt. */
+internal fun startBereich(target: String): IchBereich? = when (target) {
+    "surveys" -> IchBereich.UMFRAGEN
+    "orders" -> IchBereich.BESTELLUNGEN
+    "fee_proofs" -> IchBereich.NACHWEISE
+    "expenses" -> IchBereich.AUSLAGEN
+    "training" -> IchBereich.TRAINING
+    "pinboard" -> IchBereich.PINNWAND
+    else -> null
+}
+
+/** Symbol einer Zeile „Für dich zu tun“. */
+internal fun startSymbol(target: String): Strich = when (target) {
+    "events" -> Strich.ZU_ERLEDIGEN
+    "surveys" -> Strich.UMFRAGE
+    "orders" -> Strich.BESTELLUNG
+    "fee_proofs" -> Strich.NACHWEIS
+    "expenses" -> Strich.GELD
+    "training" -> Strich.TRAINING
+    "pinboard" -> Strich.PINNWAND
+    else -> Strich.ZU_ERLEDIGEN
+}
+
+/** Zeilen, die diese App-Fassung und dieser Zugang öffnen können. */
+internal fun startZeilen(todo: List<StartTodo>, bereiche: List<IchBereich>): List<StartTodo> =
+    todo.filter { it.count > 0 && (it.target == "events" || startBereich(it.target) in bereiche) }
+
+/** Stand der Einführung; eine höhere Zahl zeigt sie allen noch einmal. */
+internal const val EINFUEHRUNG_STAND = 1
+
+/** Einführung zeigen? Erst wenn die Einstellungen geladen sind und dieser Stand noch nicht geschlossen wurde. */
+internal fun zeigtEinfuehrung(gesehen: Int?, stand: Int = EINFUEHRUNG_STAND): Boolean = gesehen != null && gesehen < stand
+
+/** Zeilen der Einführung: wo was steht. */
+internal fun einfuehrungZeilen(): List<Pair<Strich, String>> = listOf(
+    Strich.START to tr("„Start“ zeigt deinen nächsten Termin und was auf dich wartet."),
+    Strich.NEUES to tr("„Neues“ fasst Mitteilungen, Pinnwand und Umfragen zusammen."),
+    Strich.ICH to tr("„Ich“ zeigt deinen Ausweis und „Mein Bereich“ in vier Gruppen."),
+)
+
+/** Einmaliger Hinweis „So findest du dich zurecht“ nach dem Umbau der Oberfläche. */
+@Composable
+private fun Einfuehrung(onClose: () -> Unit) {
+    Karte {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+            Text(tr("So findest du dich zurecht"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+            einfuehrungZeilen().forEach { (symbol, text) ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.mittel), verticalAlignment = Alignment.CenterVertically) {
+                    SymbolKopf(strichsymbol(symbol))
+                    Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                }
+            }
+            TextButton(onClick = onClose) { Text(tr("Verstanden")) }
+        }
+    }
+}
+
 /**
  * Reiter „Start“ (Gestaltung „Frisch mobil“): der nächste Termin mit Zusage und Absage, was
  * gerade auf dich wartet, die Kacheln der Startseite und kurze Wege zu den Bereichen, die nicht
@@ -62,44 +134,57 @@ internal fun StartPane(
     weitere: List<Tab>,
     onTab: (Tab) -> Unit,
     onTermin: (String) -> Unit,
+    onBereich: (IchBereich) -> Unit,
 ) {
-    val termine = remember(access.id) { Loadable<List<Occurrence>>() }
-    LaunchedEffect(access.id, termine.tick) {
+    val start = remember(access.id) { Loadable<StartInhalt>() }
+    LaunchedEffect(access.id, start.tick) {
         val api = vm.api() ?: return@LaunchedEffect
-        termine.load(vm::deviceRevoked) {
-            val heute = LocalDate.now()
-            api.events(access.id, heute.toString(), heute.plusDays(START_TAGE).toString())
+        start.load(vm::deviceRevoked) {
+            try {
+                api.start(access.id).let { StartInhalt(it.nextEvent, it.todo) }
+            } catch (e: ApiException) {
+                // Älterer HUBIplan-Stand ohne „start“: aus der Terminliste bauen
+                if (e.status != 404) throw e
+                val heute = LocalDate.now()
+                startAusTerminen(api.events(access.id, heute.toString(), heute.plusDays(START_TAGE).toString()))
+            }
         }
     }
     val ungelesen = vm.unreadCirculars.collectAsStateWithLifecycle().value.size
-    val liste = termine.value
-    val naechster = liste?.let(::naechsterTermin)
-    Refreshable(refreshing = termine.refreshing, onRefresh = termine::refresh) {
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val inhalt = start.value
+    val naechster = inhalt?.naechster
+    Refreshable(refreshing = start.refreshing, onRefresh = start::refresh) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
             verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
         ) {
+            // Einmal je Konto: was sich mit der neuen Oberfläche geändert hat
+            if (zeigtEinfuehrung(settings.introSeen)) {
+                Einfuehrung(onClose = { vm.setIntroSeen(EINFUEHRUNG_STAND) })
+            }
             Abschnittstitel(tr("Nächster Termin"), aktion = tr("Alle Termine"), onAktion = { onTab(Tab.TERMINE) })
             when {
-                liste == null && termine.problem == null -> Karte { Platzhalter(tr("Wird geladen …"), zeilen = 1) }
-                liste == null -> termine.problem?.let { ProblemNotice(it, onRetry = termine::refresh) }
+                inhalt == null && start.problem == null -> Karte { Platzhalter(tr("Wird geladen …"), zeilen = 1) }
+                inhalt == null -> start.problem?.let { ProblemNotice(it, onRetry = start::refresh) }
                 naechster == null -> Karte { Leerzustand(strichsymbol(Strich.TERMINE), tr("Keine anstehenden Termine.")) }
-                else -> NaechsterTermin(access, naechster, vm, onOpen = { onTermin(naechster.key) }, onChanged = termine::reload)
+                else -> NaechsterTermin(access, naechster, vm, onOpen = { onTermin(naechster.key) }, onChanged = start::reload)
             }
 
-            val offen = liste?.let { offeneRueckmeldungen(it, naechster) } ?: 0
-            if (offen > 0 || ungelesen > 0) {
+            val zeilen = startZeilen(inhalt?.todo.orEmpty(), remember(access) { ichBereiche(access) })
+            if (zeilen.isNotEmpty() || ungelesen > 0) {
                 Abschnittstitel(tr("Für dich zu tun"))
                 Karte {
-                    if (offen > 0) {
+                    zeilen.forEachIndexed { i, zeile ->
+                        if (i > 0) ZeilenTrenner()
                         Zeile(
-                            trn("{n} Termin wartet auf deine Rückmeldung", "{n} Termine warten auf deine Rückmeldung", offen),
-                            symbol = strichsymbol(Strich.ZU_ERLEDIGEN),
-                            onClick = { onTab(Tab.TERMINE) },
-                            ende = { Zaehler(offen) },
+                            zeile.title,
+                            symbol = strichsymbol(startSymbol(zeile.target)),
+                            onClick = { startBereich(zeile.target)?.let(onBereich) ?: onTab(Tab.TERMINE) },
+                            ende = { Zaehler(zeile.count) },
                         )
                     }
-                    if (offen > 0 && ungelesen > 0) ZeilenTrenner()
+                    if (zeilen.isNotEmpty() && ungelesen > 0) ZeilenTrenner()
                     if (ungelesen > 0) {
                         Zeile(
                             trn("{n} neue Mitteilung", "{n} neue Mitteilungen", ungelesen),
@@ -114,7 +199,7 @@ internal fun StartPane(
             // Kacheln wie auf der Startseite im Browser: mit Anlass von selbst
             TilesOverview(
                 server = main.account.server,
-                reloadKey = access.id to termine.tick,
+                reloadKey = access.id to start.tick,
                 load = { vm.api()?.let { api -> still(vm) { api.memberTiles(access.id) } } },
                 save = { key, state -> vm.api()?.let { api -> still(vm) { api.setMemberTile(access.id, key, state) } } },
             )
@@ -150,6 +235,7 @@ private suspend fun <T> still(vm: AppViewModel, block: suspend () -> T): T? = tr
 private fun NaechsterTermin(access: PortalAccess, termin: Occurrence, vm: AppViewModel, onOpen: () -> Unit, onChanged: () -> Unit) {
     val scope = rememberCoroutineScope()
     val meldungen = LocalActionMessages.current
+    val bestaetigung = rememberBestaetigung()
     var busy by remember(termin.key) { mutableStateOf(false) }
     fun antworten(status: String) {
         if (busy) return
@@ -158,6 +244,7 @@ private fun NaechsterTermin(access: PortalAccess, termin: Occurrence, vm: AppVie
         scope.launch {
             try {
                 api.respond(access.id, termin.eventId, status)
+                bestaetigung()
                 meldungen?.show(if (status == "yes") tr("Deine Zusage ist gespeichert.") else tr("Deine Absage ist gespeichert."))
                 onChanged()
                 vm.syncSoon()

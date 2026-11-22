@@ -237,6 +237,10 @@ private fun OrderFormCard(
         }
     }
     var note by remember(c.id) { mutableStateOf(c.order?.note ?: "") }
+    // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
+    androidx.compose.runtime.key(c.id) {
+        rememberFormDraft(values.toMap().toSortedMap().toString(), note, busy = busy, retainOnDispose = false)
+    }
     val prices = !c.clubPays
     Column(verticalArrangement = Arrangement.spacedBy(Abstand.mittel)) {
         Text(c.title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.asHeading())

@@ -36,9 +36,12 @@ import de.hubiplan.app.data.CircularItem
 import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.tr
 
-/** Rundschreiben und Mitteilungen der Einheit (wie „Rundschreiben“ im Mitgliederbereich). */
+/**
+ * Rundschreiben und Mitteilungen der Einheit (wie „Rundschreiben“ im Mitgliederbereich).
+ * [kopf] steht über der Liste (Auswahl im Reiter „Neues“).
+ */
 @Composable
-fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
+fun CircularsPane(access: PortalAccess, vm: AppViewModel, kopf: @Composable () -> Unit = {}) {
     val leave = LocalFormLeaveGuard.current
     // Liste bleibt beim Aktualisieren sichtbar; Ziehen lädt neu (UX-Audit 08.11. A-02)
     val circulars = remember(access.id) { Loadable<List<CircularItem>>() }
@@ -72,6 +75,7 @@ fun CircularsPane(access: PortalAccess, vm: AppViewModel) {
                 empty = tr("Noch keine Mitteilungen."),
                 isEmpty = { it.isEmpty() },
                 header = {
+                    kopf()
                     if (canSend) {
                         Row(Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
                             Button(onClick = { if (selected != SEND) { notice = null; if (leave == null) selected = SEND else leave.request { selected = SEND } } }) { Text(tr("Kurzmitteilung senden")) }
