@@ -55,3 +55,8 @@ Abruf nicht (404), baut die App die Seite aus der Terminliste (`startAusTerminen
 „Für dich zu tun“ führen in den Bereich unter „Ich“ (`startBereich`); unbekannte Ziele zeigt die
 App nicht. Die Terminliste hat Zwischenüberschriften je Monat und, solange Rückmeldungen
 fehlen, den Filter „… ohne Rückmeldung“.
+
+„Neues“ fasst zusammen, was der Verein mitteilt oder fragt: Mitteilungen, Pinnwand und Umfragen
+(`NeuesPane`, `neuesTeile`); die Auswahl darüber zeigt, wo etwas wartet, und fehlt, wenn es nur
+Mitteilungen gibt. „Ich“ zeigt den Ausweis und darunter „Mein Bereich“ in vier Gruppen: Geld,
+Mitmachen, Verein, Meine Daten (`ichGruppen`); jede Zeile hat Symbol, Kurzstand und Zähler.

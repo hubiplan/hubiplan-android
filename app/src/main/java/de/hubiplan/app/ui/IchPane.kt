@@ -100,6 +100,50 @@ internal enum class IchBereich(private val labelText: () -> String) {
     val label: String get() = labelText()
 }
 
+/** Gruppen unter „Ich › Mein Bereich“ (Gestaltung „Frisch mobil“). */
+internal enum class IchGruppe(private val labelText: () -> String) {
+    GELD({ tr("Geld") }),
+    MITMACHEN({ tr("Mitmachen") }),
+    VEREIN({ tr("Verein") }),
+    DATEN({ tr("Meine Daten") });
+
+    val label: String get() = labelText()
+}
+
+/** Gruppe eines Bereichs; null: der Bereich steht im Reiter „Neues“ (Pinnwand, Umfragen). */
+internal fun ichGruppe(bereich: IchBereich): IchGruppe? = when (bereich) {
+    IchBereich.PINNWAND, IchBereich.UMFRAGEN -> null
+    IchBereich.RECHNUNGEN, IchBereich.NACHWEISE, IchBereich.AUSLAGEN, IchBereich.BESTELLUNGEN -> IchGruppe.GELD
+    IchBereich.TRAINING, IchBereich.ERGEBNISSE, IchBereich.HELFERDIENSTE, IchBereich.ABWESENHEITEN,
+    IchBereich.BELEGUNG,
+    -> IchGruppe.MITMACHEN
+    IchBereich.VERSAMMLUNGEN, IchBereich.DOKUMENTE -> IchGruppe.VEREIN
+    IchBereich.DATEN, IchBereich.MITARBEITER -> IchGruppe.DATEN
+}
+
+/** Bereiche in ihren Gruppen, in der Reihenfolge der Gruppen; leere Gruppen fallen weg. */
+internal fun ichGruppen(bereiche: List<IchBereich>): List<Pair<IchGruppe, List<IchBereich>>> =
+    IchGruppe.entries.map { gruppe -> gruppe to bereiche.filter { ichGruppe(it) == gruppe } }.filter { it.second.isNotEmpty() }
+
+/** Symbol eines Bereichs in der Liste. */
+internal fun ichSymbol(bereich: IchBereich): Strich = when (bereich) {
+    IchBereich.PINNWAND -> Strich.PINNWAND
+    IchBereich.DATEN -> Strich.MEINE_DATEN
+    IchBereich.RECHNUNGEN -> Strich.RECHNUNG
+    IchBereich.NACHWEISE -> Strich.NACHWEIS
+    IchBereich.VERSAMMLUNGEN -> Strich.VERSAMMLUNG
+    IchBereich.TRAINING -> Strich.TRAINING
+    IchBereich.UMFRAGEN -> Strich.UMFRAGE
+    IchBereich.BESTELLUNGEN -> Strich.BESTELLUNG
+    IchBereich.AUSLAGEN -> Strich.GELD
+    IchBereich.ERGEBNISSE -> Strich.WETTBEWERB
+    IchBereich.ABWESENHEITEN -> Strich.ABWESENHEIT
+    IchBereich.HELFERDIENSTE -> Strich.HELFER
+    IchBereich.BELEGUNG -> Strich.BELEGUNG
+    IchBereich.DOKUMENTE -> Strich.DOKUMENT
+    IchBereich.MITARBEITER -> Strich.FIRMA
+}
+
 /** Nur Bereiche, deren Modul an ist (gleiche Regeln wie `portalSections` im Browser). */
 internal fun ichBereiche(access: PortalAccess): List<IchBereich> = IchBereich.entries.filter {
     when (it) {
@@ -222,8 +266,6 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
     var invoices by remember(access.id) { mutableStateOf<MyInvoices?>(null) }
     var meetings by remember(access.id) { mutableStateOf<MyMeetings?>(null) }
     var documents by remember(access.id) { mutableStateOf<MyDocuments?>(null) }
-    var surveys by remember(access.id) { mutableStateOf<de.hubiplan.app.data.SurveyList?>(null) }
-    var pinboard by remember(access.id) { mutableStateOf<de.hubiplan.app.data.PinboardList?>(null) }
     var orders by remember(access.id) { mutableStateOf<de.hubiplan.app.data.OrderCampaignList?>(null) }
     var expenses by remember(access.id) { mutableStateOf<de.hubiplan.app.data.ExpenseOverview?>(null) }
     // Kurzstand nur nebenbei: Fehler zeigen erst die Unterseiten
@@ -232,9 +274,6 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
         if (IchBereich.RECHNUNGEN in bereiche) invoices = quietly(vm) { api.myInvoices(access.id) }
         if (IchBereich.VERSAMMLUNGEN in bereiche) meetings = quietly(vm) { api.myMeetings(access.id) }
         if (IchBereich.DOKUMENTE in bereiche) documents = quietly(vm) { api.myDocuments(access.id) }
-        if (IchBereich.UMFRAGEN in bereiche) surveys = quietly(vm) { api.memberSurveys(access.id) }
-        // Nur ansehen: der Zähler „neu“ bleibt, bis die Pinnwand geöffnet wird
-        if (IchBereich.PINNWAND in bereiche) pinboard = quietly(vm) { api.memberPinboard(access.id, seen = false) }
         if (IchBereich.AUSLAGEN in bereiche) expenses = quietly(vm) { api.memberExpenses(access.id) }
         if (IchBereich.BESTELLUNGEN in bereiche) orders = quietly(vm) { api.memberOrders(access.id) }
     }
@@ -246,67 +285,48 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
             MemberCardSection(cardStore, access.id, vm, bigRequest = bigRequest)
         }
         // Die Kacheln der Startseite stehen im Reiter „Start“
-        Text(tr("Mein Bereich"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
-        Column {
-            bereiche.forEachIndexed { i, b ->
-                if (i > 0) HorizontalDivider()
-                val (summary, count) = when (b) {
-                    IchBereich.PINNWAND -> (pinboard?.let(::pinboardSummary) ?: "") to (pinboard?.newCount ?: access.pinboardNew)
-                    IchBereich.DATEN -> (if (access.isContact) tr("Anschrift, Kontakt, Logo") else tr("Anschrift, Telefon, Foto")) to 0
-                    IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
-                    IchBereich.NACHWEISE -> feeProofSummary(access.feeProofsDue) to access.feeProofsDue
-                    IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
-                    IchBereich.TRAINING -> (
-                        if (access.trainingCheckin > 0) tr("Einchecken ist offen")
-                        else if (access.shootingLogEnabled) tr("Anwesenheit und Schießbuch")
-                        else tr("Deine Anwesenheit bei Übungsabenden")
-                        ) to access.trainingCheckin
-                    IchBereich.UMFRAGEN -> (surveys?.let(::surveySummary) ?: "") to (surveys?.surveys?.count { it.waiting } ?: access.surveysOpen)
-                    IchBereich.BESTELLUNGEN -> (orders?.let(::ordersSummary) ?: "") to (orders?.openCount ?: access.ordersOpen)
-                    IchBereich.AUSLAGEN -> (expenses?.let(::expenseSummary) ?: tr("Ausgaben für den Verein erstattet bekommen")) to (expenses?.claims?.count { it.asksMe } ?: access.expensesQuestions)
-                    IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
-                    IchBereich.ABWESENHEITEN -> tr("Wann du nicht mitspielen kannst") to 0
-                    IchBereich.BELEGUNG -> tr("Vereinsheim, Räume oder Material anfragen") to 0
-                    IchBereich.HELFERDIENSTE -> tr("unter „Aufgaben“") to 0
-                    IchBereich.DOKUMENTE -> (documents?.let { trn("1 Dokument", "{n} Dokumente", it.count) } ?: "") to 0
-                    IchBereich.MITARBEITER -> tr("Für wen die Firma zahlt") to 0
-                }
-                IchRow(b.label, summary, count) { onOpen(b) }
-            }
-        }
-    }
-}
-
-/** Zeile der Liste: Name links, Kurzstand rechts, Zahl offener Punkte als Plakette. */
-@Composable
-private fun IchRow(label: String, summary: String, count: Int, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp)
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics(mergeDescendants = true) {}
-            .padding(vertical = Abstand.klein),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Abstand.klein),
-    ) {
-        // Name oben, Kurzstand darunter: bei großer Schrift bleibt beiden die volle Breite (AND-13)
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Abstand.klein)) {
-                Text(label, style = MaterialTheme.typography.bodyLarge)
-                if (count > 0) {
+        // In vier Gruppen; Pinnwand und Umfragen stehen im Reiter „Neues“
+        ichGruppen(bereiche).forEach { (gruppe, liste) ->
+            Abschnittstitel(gruppe.label)
+            Karte {
+                liste.forEachIndexed { i, b ->
+                    if (i > 0) ZeilenTrenner()
+                    val (summary, count) = when (b) {
+                        IchBereich.PINNWAND, IchBereich.UMFRAGEN -> "" to 0
+                        IchBereich.DATEN -> (if (access.isContact) tr("Anschrift, Kontakt, Logo") else tr("Anschrift, Telefon, Foto")) to 0
+                        IchBereich.RECHNUNGEN -> (invoices?.let(::invoiceSummary) ?: "") to (invoices?.openCount ?: 0)
+                        IchBereich.NACHWEISE -> feeProofSummary(access.feeProofsDue) to access.feeProofsDue
+                        IchBereich.VERSAMMLUNGEN -> (meetings?.let(::meetingSummary) ?: "") to (meetings?.upcoming?.size ?: 0)
+                        IchBereich.TRAINING -> (
+                            if (access.trainingCheckin > 0) tr("Einchecken ist offen")
+                            else if (access.shootingLogEnabled) tr("Anwesenheit und Schießbuch")
+                            else tr("Deine Anwesenheit bei Übungsabenden")
+                            ) to access.trainingCheckin
+                        IchBereich.BESTELLUNGEN -> (orders?.let(::ordersSummary) ?: "") to (orders?.openCount ?: access.ordersOpen)
+                        IchBereich.AUSLAGEN -> (expenses?.let(::expenseSummary) ?: tr("Ausgaben für den Verein erstattet bekommen")) to (expenses?.claims?.count { it.asksMe } ?: access.expensesQuestions)
+                        IchBereich.ERGEBNISSE -> (if (access.hasEntries) tr("Meldungen, Plätze, Werte und Titel") else tr("Plätze, Werte und Titel")) to 0
+                        IchBereich.ABWESENHEITEN -> tr("Wann du nicht mitspielen kannst") to 0
+                        IchBereich.BELEGUNG -> tr("Vereinsheim, Räume oder Material anfragen") to 0
+                        IchBereich.HELFERDIENSTE -> tr("unter „Aufgaben“") to 0
+                        IchBereich.DOKUMENTE -> (documents?.let { trn("1 Dokument", "{n} Dokumente", it.count) } ?: "") to 0
+                        IchBereich.MITARBEITER -> tr("Für wen die Firma zahlt") to 0
+                    }
                     val spoken = trn("1 offen", "{n} offen", count)
-                    Badge(Modifier.semantics { contentDescription = spoken }) { Text(count.toString()) }
+                    Zeile(
+                        b.label,
+                        detail = summary,
+                        symbol = strichsymbol(ichSymbol(b)),
+                        onClick = { onOpen(b) },
+                        ende = { Zaehler(count, Modifier.semantics { contentDescription = spoken }) },
+                    )
                 }
             }
-            if (summary.isNotBlank()) {
-                Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
         }
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
     }
 }
 
 /** Abruf für den Kurzstand: 401 meldet das Gerät ab, sonst bleibt der Kurzstand leer. */
-private suspend fun <T> quietly(vm: AppViewModel, block: suspend () -> T): T? = try {
+internal suspend fun <T> quietly(vm: AppViewModel, block: suspend () -> T): T? = try {
     block()
 } catch (e: ApiException) {
     if (e.status == 401) vm.deviceRevoked(e)
