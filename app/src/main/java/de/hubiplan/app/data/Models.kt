@@ -39,10 +39,20 @@ data class AdminUnit(
     val stufen: Boolean = false,
     /** Eingeschaltete Module (Server ab 08.11.2026; ältere: leer) */
     val modules: List<String> = emptyList(),
+    /** Hauptmenüpunkte der Einheit wie im Browser (Menü frei anordnen; ältere Server: leer) */
+    @SerialName("menu_groups") val menuGroups: List<MenuGroup> = emptyList(),
 ) {
     val key: String get() = "$scope:$id"
     val isDepartment: Boolean get() = scope == "d"
 }
+
+/** Hauptmenüpunkt der Einheit mit den Kennungen seiner Menüpunkte (Web-Oberfläche). */
+@Serializable
+data class MenuGroup(
+    val id: String,
+    val label: String = "",
+    val items: List<String> = emptyList(),
+)
 
 /** Untereinheit mit Rollen nur dort (z. B. Zugführung), Schritt B4. */
 @Serializable
