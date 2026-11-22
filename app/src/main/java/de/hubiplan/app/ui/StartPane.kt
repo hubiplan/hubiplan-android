@@ -89,6 +89,36 @@ internal fun startSymbol(target: String): Strich = when (target) {
 internal fun startZeilen(todo: List<StartTodo>, bereiche: List<IchBereich>): List<StartTodo> =
     todo.filter { it.count > 0 && (it.target == "events" || startBereich(it.target) in bereiche) }
 
+/** Stand der Einführung; eine höhere Zahl zeigt sie allen noch einmal. */
+internal const val EINFUEHRUNG_STAND = 1
+
+/** Einführung zeigen? Erst wenn die Einstellungen geladen sind und dieser Stand noch nicht geschlossen wurde. */
+internal fun zeigtEinfuehrung(gesehen: Int?, stand: Int = EINFUEHRUNG_STAND): Boolean = gesehen != null && gesehen < stand
+
+/** Zeilen der Einführung: wo was steht. */
+internal fun einfuehrungZeilen(): List<Pair<Strich, String>> = listOf(
+    Strich.START to tr("„Start“ zeigt deinen nächsten Termin und was auf dich wartet."),
+    Strich.NEUES to tr("„Neues“ fasst Mitteilungen, Pinnwand und Umfragen zusammen."),
+    Strich.ICH to tr("„Ich“ zeigt deinen Ausweis und „Mein Bereich“ in vier Gruppen."),
+)
+
+/** Einmaliger Hinweis „So findest du dich zurecht“ nach dem Umbau der Oberfläche. */
+@Composable
+private fun Einfuehrung(onClose: () -> Unit) {
+    Karte {
+        Column(Modifier.padding(Abstand.rand), verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+            Text(tr("So findest du dich zurecht"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
+            einfuehrungZeilen().forEach { (symbol, text) ->
+                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.mittel), verticalAlignment = Alignment.CenterVertically) {
+                    SymbolKopf(strichsymbol(symbol))
+                    Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                }
+            }
+            TextButton(onClick = onClose) { Text(tr("Verstanden")) }
+        }
+    }
+}
+
 /**
  * Reiter „Start“ (Gestaltung „Frisch mobil“): der nächste Termin mit Zusage und Absage, was
  * gerade auf dich wartet, die Kacheln der Startseite und kurze Wege zu den Bereichen, die nicht
@@ -121,6 +151,7 @@ internal fun StartPane(
         }
     }
     val ungelesen = vm.unreadCirculars.collectAsStateWithLifecycle().value.size
+    val settings by vm.settings.collectAsStateWithLifecycle()
     val inhalt = start.value
     val naechster = inhalt?.naechster
     Refreshable(refreshing = start.refreshing, onRefresh = start::refresh) {
@@ -128,6 +159,10 @@ internal fun StartPane(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(Abstand.rand),
             verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
         ) {
+            // Einmal je Konto: was sich mit der neuen Oberfläche geändert hat
+            if (zeigtEinfuehrung(settings.introSeen)) {
+                Einfuehrung(onClose = { vm.setIntroSeen(EINFUEHRUNG_STAND) })
+            }
             Abschnittstitel(tr("Nächster Termin"), aktion = tr("Alle Termine"), onAktion = { onTab(Tab.TERMINE) })
             when {
                 inhalt == null && start.problem == null -> Karte { Platzhalter(tr("Wird geladen …"), zeilen = 1) }
@@ -200,6 +235,7 @@ private suspend fun <T> still(vm: AppViewModel, block: suspend () -> T): T? = tr
 private fun NaechsterTermin(access: PortalAccess, termin: Occurrence, vm: AppViewModel, onOpen: () -> Unit, onChanged: () -> Unit) {
     val scope = rememberCoroutineScope()
     val meldungen = LocalActionMessages.current
+    val bestaetigung = rememberBestaetigung()
     var busy by remember(termin.key) { mutableStateOf(false) }
     fun antworten(status: String) {
         if (busy) return
@@ -208,6 +244,7 @@ private fun NaechsterTermin(access: PortalAccess, termin: Occurrence, vm: AppVie
         scope.launch {
             try {
                 api.respond(access.id, termin.eventId, status)
+                bestaetigung()
                 meldungen?.show(if (status == "yes") tr("Deine Zusage ist gespeichert.") else tr("Deine Absage ist gespeichert."))
                 onChanged()
                 vm.syncSoon()

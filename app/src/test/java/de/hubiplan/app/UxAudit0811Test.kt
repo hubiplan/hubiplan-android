@@ -48,7 +48,7 @@ class UxAudit0811Test {
     @Test
     fun kurzeReiterbeschriftungenEnglisch() {
         Texte.setzeFuerTest("en", katalog)
-        assertEquals("Messages", Texte.text("Neues"))
+        assertEquals("News", Texte.text("Neues"))
         assertEquals("Admin", Texte.text("Verwalten"))
         listOf("Termine", "Aufgaben", "Neues", "Ausweis", "Verwalten").forEach {
             assertTrue(Texte.text(it).length <= 9)

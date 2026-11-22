@@ -8,6 +8,9 @@ import de.hubiplan.app.ui.monatTitel
 import de.hubiplan.app.ui.startAusTerminen
 import de.hubiplan.app.ui.startBereich
 import de.hubiplan.app.ui.startZeilen
+import de.hubiplan.app.ui.EINFUEHRUNG_STAND
+import de.hubiplan.app.ui.einfuehrungZeilen
+import de.hubiplan.app.ui.zeigtEinfuehrung
 import de.hubiplan.app.ui.terminGruppen
 import java.time.ZoneId
 import kotlinx.serialization.json.Json
@@ -138,5 +141,16 @@ class ReiterTest {
         assertEquals(2, offeneRueckmeldungen(liste))
         // Der groß gezeigte Termin zählt nicht noch einmal
         assertEquals(1, offeneRueckmeldungen(liste, ohne = liste[1]))
+    }
+
+    @Test
+    fun einfuehrungErscheintEinmalJeStand() {
+        // solange die Einstellungen nicht geladen sind, blitzt nichts auf
+        assertFalse(zeigtEinfuehrung(null))
+        assertTrue(zeigtEinfuehrung(0))
+        assertFalse(zeigtEinfuehrung(EINFUEHRUNG_STAND))
+        // ein höherer Stand zeigt sie allen noch einmal
+        assertTrue(zeigtEinfuehrung(1, stand = 2))
+        assertEquals(3, einfuehrungZeilen().size)
     }
 }

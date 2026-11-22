@@ -73,3 +73,8 @@ Formulare schützen angefangene Eingaben überall (`rememberFormDraft`): Zurück
 Reiters fragen nach, bevor etwas verloren geht; `FormulareTest` prüft, dass kein Formular des
 Mitgliederbereichs ohne diesen Schutz ist. Datum und Uhrzeit kommen aus der Auswahl des Systems
 (`DatePickButton`, `TimePickButton`), die Felder nehmen dafür nur Ziffern.
+
+Nach dem Umbau zeigt „Start“ einmal die Karte „So findest du dich zurecht“ (`Einfuehrung`,
+`zeigtEinfuehrung`; der Stand `EINFUEHRUNG_STAND` steht in den Einstellungen des Geräts, eine
+höhere Zahl zeigt sie allen noch einmal). Eine gespeicherte Rückmeldung bestätigt das Gerät mit
+einem kurzen Tippen (`rememberBestaetigung`).

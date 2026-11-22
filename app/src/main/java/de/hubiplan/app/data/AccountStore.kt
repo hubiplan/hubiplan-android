@@ -61,6 +61,7 @@ private object Keys {
     val rsvpHints = booleanPreferencesKey("hinweis_rueckmeldung")
     val fifthTab = stringPreferencesKey("fuenfter_reiter")
     val appearance = stringPreferencesKey("darstellung")
+    val introSeen = intPreferencesKey("einfuehrung_gesehen")
     val notified = stringSetPreferencesKey("hinweise_gezeigt")
     val lastSync = longPreferencesKey("letzter_abgleich")
     val pushKeys = stringPreferencesKey("push_schluessel")
@@ -97,6 +98,8 @@ data class AppSettings(
     val fifthTab: String = "",
     /** Darstellung: leer = wie das Gerät, "hell" oder "dunkel" */
     val appearance: String = "",
+    /** Stand der Einführung „So findest du dich zurecht“, den dieses Konto geschlossen hat; null = noch nicht geladen */
+    val introSeen: Int? = null,
     val lastSync: Long? = null,
     val push: PushState = PushState(),
 )
@@ -134,6 +137,7 @@ class AccountStore(private val context: Context, val slot: Int = 0) : AccountMut
             rsvpHints = p[Keys.rsvpHints] ?: true,
             fifthTab = p[Keys.fifthTab].orEmpty(),
             appearance = p[Keys.appearance].orEmpty(),
+            introSeen = p[Keys.introSeen] ?: 0,
             lastSync = p[Keys.lastSync],
             push = PushState(p[Keys.pushDistributor], p[Keys.pushEndpoint], p[Keys.pushError], p[Keys.pushOff] ?: false),
         )
@@ -207,6 +211,8 @@ class AccountStore(private val context: Context, val slot: Int = 0) : AccountMut
     suspend fun setFifthTab(name: String) = dataStore.edit { it[Keys.fifthTab] = name }
 
     suspend fun setAppearance(wahl: String) = dataStore.edit { it[Keys.appearance] = wahl }
+
+    suspend fun setIntroSeen(stand: Int) = dataStore.edit { it[Keys.introSeen] = stand }
 
     suspend fun markSynced(at: Long) = dataStore.edit { it[Keys.lastSync] = at }
 

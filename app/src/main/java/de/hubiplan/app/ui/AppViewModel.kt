@@ -682,6 +682,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { store.setAppearance(wahl) }
     }
 
+    fun setIntroSeen(stand: Int) {
+        viewModelScope.launch { store.setIntroSeen(stand) }
+    }
+
     // Verbinden-Link, der vor dem Laden des Kontos ankam (App über den Link gestartet)
     private var started = false
     private var startLink: String? = null

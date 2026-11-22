@@ -146,6 +146,25 @@ fun Zeile(
     }
 }
 
+/**
+ * Kurze spürbare Bestätigung nach Zusage, Buchung oder Scan (Gestaltung „Frisch mobil“). Das Gerät
+ * beachtet dabei seine eigene Einstellung für Berührungsrückmeldung.
+ */
+@Composable
+fun rememberBestaetigung(): () -> Unit {
+    val view = androidx.compose.ui.platform.LocalView.current
+    return remember(view) {
+        {
+            val art = if (android.os.Build.VERSION.SDK_INT >= 30) {
+                android.view.HapticFeedbackConstants.CONFIRM
+            } else {
+                android.view.HapticFeedbackConstants.VIRTUAL_KEY
+            }
+            view.performHapticFeedback(art)
+        }
+    }
+}
+
 /** Trennlinie zwischen zwei Zeilen einer Karte. */
 @Composable
 fun ZeilenTrenner() {

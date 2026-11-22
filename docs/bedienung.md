@@ -35,7 +35,7 @@ steht **Verwaltung** als Symbol oben in der Kopfleiste neben „Mein Konto“; a
 alle sechs in der seitlichen Leiste.
 
 **English:** The bar at the bottom (at the side on tablets) has short single-line labels:
-**Events**, **Tasks**, **Messages**, **Me** and **Admin**. With large text they shrink a little
+**Events**, **Tasks**, **News**, **Me** and **Admin**. With large text they shrink a little
 instead of wrapping. The active tab is highlighted in colour. Every detail view (event, message,
 task, admin areas) shows the back arrow and title in the top bar; system back also goes up one
 level. Musicians also see **Sheet music** (see below). If that makes six targets on a phone,

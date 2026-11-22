@@ -189,6 +189,7 @@ private fun EventDetailView(
     var attempt by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     var notice by remember(access.id, eventId) { mutableStateOf<String?>(null) }
+    val bestaetigung = rememberBestaetigung()
 
     LaunchedEffect(access.id, eventId, attempt) {
         val api = vm.api() ?: return@LaunchedEffect
@@ -265,6 +266,7 @@ private fun EventDetailView(
                 val api = vm.api() ?: return@RsvpSection
                 change {
                     if (status == null) api.withdraw(access.id, e.id) else api.respond(access.id, e.id, status, guests, note)
+                    bestaetigung()
                 }
             }
         }

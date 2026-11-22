@@ -891,7 +891,7 @@
  "{n} Eingaben warten noch auf die Übertragung. Sie bleiben bis zu zwölf Stunden auf dem Gerät und werden beim nächsten Öffnen des Standmodus mit Empfang übertragen.": "{n} entries are still waiting to be sent. They stay on the device for up to twelve hours and are sent the next time stand mode is opened with a connection.",
  "{n} Starter": "{n} shooters",
  "{n}. Schuss": "shot {n}",
- "Neues": "Messages",
+ "Neues": "News",
  "Verwalten": "Admin",
  "Bitte die Adresse deines Vereins eingeben.": "Please enter your club's address.",
  "Bitte deine E-Mail-Adresse eingeben.": "Please enter your email address.",
@@ -1685,5 +1685,9 @@
  "Termin ansehen": "View event",
  "Fünfter Reiter": "Fifth tab",
  "Welcher Bereich unten in der Leiste steht. Die anderen erreichst du über „Start“.": "Which area sits in the bar at the bottom. You reach the others from “Home”.",
- "{n} ohne Rückmeldung": "{n} without a reply"
+ "{n} ohne Rückmeldung": "{n} without a reply",
+ "So findest du dich zurecht": "How to find your way around",
+ "„Start“ zeigt deinen nächsten Termin und was auf dich wartet.": "“Home” shows your next event and what is waiting for you.",
+ "„Neues“ fasst Mitteilungen, Pinnwand und Umfragen zusammen.": "“News” brings together messages, the notice board and surveys.",
+ "„Ich“ zeigt deinen Ausweis und „Mein Bereich“ in vier Gruppen.": "“Me” shows your membership card and “My area” in four groups."
 }
