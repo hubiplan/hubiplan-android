@@ -71,6 +71,7 @@ import de.hubiplan.app.data.AdminClient
 import de.hubiplan.app.data.AdminTask
 import de.hubiplan.app.data.AdminUnit
 import de.hubiplan.app.data.LastUnitStore
+import de.hubiplan.app.data.MenuGroup
 import de.hubiplan.app.data.Api
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.CardCheck
@@ -320,6 +321,41 @@ internal fun sectionGroup(s: Section): VerwaltungGruppe? = when (s) {
 /** Bereiche in ihren Gruppen, Reihenfolge wie in [sectionsFor]; leere Gruppen fallen weg. */
 internal fun sectionGroups(sections: List<Section>): List<Pair<VerwaltungGruppe, List<Section>>> =
     VerwaltungGruppe.entries.map { g -> g to sections.filter { sectionGroup(it) == g } }.filter { it.second.isNotEmpty() }
+
+/** Menüpunkt der Web-Oberfläche, zu dem ein Bereich der App gehört (Menü frei anordnen). */
+internal fun sectionModule(s: Section): String? = when (s) {
+    Section.TASKS -> null
+    Section.TODOS -> "aufgaben"
+    Section.MEMBERS, Section.APPLICATIONS, Section.OCCASIONS, Section.QUALIFICATIONS -> "mitglieder"
+    Section.BOOKINGS -> "belegung"
+    Section.MEETINGS -> "versammlungen"
+    Section.EVENTS -> "termine"
+    Section.FINANCE, Section.BILLING -> "finanzen"
+    Section.COMPETITIONS -> "wettbewerbe"
+    Section.PARTNERS -> "geschaeftspartner"
+    Section.OBLIGATIONS -> "fristenkalender"
+}
+
+/** Gruppe der Startliste: Name und Bereiche. */
+internal data class BereichsGruppe(val key: String, val label: String, val sections: List<Section>)
+
+/**
+ * Gruppen der Startliste: nach den Hauptmenüpunkten der Einheit, wie sie der Server liefert
+ * ([menuGroups]); ohne sie (älterer Server) die festen Gruppen. Bereiche ohne Platz in den
+ * Hauptmenüpunkten stehen in „Weitere“. Reihenfolge der Bereiche wie in [sectionsFor].
+ */
+internal fun sectionGroupsFor(sections: List<Section>, menuGroups: List<MenuGroup>): List<BereichsGruppe> {
+    if (menuGroups.isEmpty()) {
+        return sectionGroups(sections).map { (g, liste) -> BereichsGruppe(g.name, g.label, liste) }
+    }
+    val rest = sections.filter { it != Section.TASKS }.toMutableList()
+    val result = menuGroups.mapNotNull { g ->
+        val liste = rest.filter { sectionModule(it) in g.items }
+        rest.removeAll(liste)
+        if (liste.isEmpty()) null else BereichsGruppe("m:${g.id}", g.label.ifBlank { g.id }, liste)
+    }
+    return if (rest.isEmpty()) result else result + BereichsGruppe("weitere", tr("Weitere"), rest)
+}
 
 /** Suche auf der Startliste: Bereiche, deren Name oder Beschreibung alle Wörter enthält. */
 internal fun sectionSearch(sections: List<Section>, text: String): List<Section> {
@@ -593,6 +629,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         client = client,
                         server = main.account.server,
                         sections = sections,
+                        menuGroups = unit.menuGroups,
                         until = until,
                         vm = vm,
                         reloadKey = reload,
@@ -855,6 +892,8 @@ private fun AdminStart(
     client: AdminClient,
     server: String,
     sections: List<Section>,
+    /** Hauptmenüpunkte der Einheit (Menü frei anordnen); leer: feste Gruppen */
+    menuGroups: List<MenuGroup>,
     until: String?,
     vm: AppViewModel,
     reloadKey: Int,
@@ -960,11 +999,11 @@ private fun AdminStart(
             }
         }
         if (suche.isBlank()) {
-            sectionGroups(bereiche).forEach { (gruppe, liste) ->
-                item(key = gruppe.name) {
+            sectionGroupsFor(bereiche, menuGroups).forEach { gruppe ->
+                item(key = gruppe.key) {
                     Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
                         Abschnittstitel(gruppe.label)
-                        BereichKarte(liste, onOpen)
+                        BereichKarte(gruppe.sections, onOpen)
                     }
                 }
             }

@@ -1,12 +1,15 @@
 package de.hubiplan.app
 
 import de.hubiplan.app.data.AdminUnit
+import de.hubiplan.app.data.MenuGroup
 import de.hubiplan.app.ui.NeuAktion
 import de.hubiplan.app.ui.Section
 import de.hubiplan.app.ui.VerwaltungGruppe
 import de.hubiplan.app.ui.neuAktionen
 import de.hubiplan.app.ui.sectionGroup
 import de.hubiplan.app.ui.sectionGroups
+import de.hubiplan.app.ui.sectionGroupsFor
+import de.hubiplan.app.ui.sectionModule
 import de.hubiplan.app.ui.sectionSearch
 import de.hubiplan.app.ui.sectionSymbol
 import org.junit.Assert.assertEquals
@@ -40,6 +43,31 @@ class VerwaltungStartTest {
         )
         // Jeder Bereich hat ein eigenes Symbol
         assertEquals(Section.entries.size, Section.entries.map(::sectionSymbol).toSet().size)
+    }
+
+    @Test
+    fun gruppenNachHauptmenuepunktenDerEinheit() {
+        // Ohne Angabe vom Server: die festen Gruppen
+        assertEquals(
+            listOf("Planen", "Verein", "Vereinsleben", "Verwaltung"),
+            sectionGroupsFor(Section.entries, emptyList()).map { it.label },
+        )
+        // Mit Angabe: Hauptmenüpunkte in Leistenreihenfolge, leere entfallen
+        val gruppen = listOf(
+            MenuGroup("start", "Start", listOf("start")),
+            MenuGroup("mitglieder", "Mitglieder", listOf("mitglieder")),
+            MenuGroup("b1", "Schießsport", listOf("wettbewerbe", "termine")),
+            MenuGroup("finanzen", "Finanzen", listOf("finanzen")),
+            MenuGroup("verein", "Verein", listOf("geschaeftspartner")),
+        )
+        val bereiche = listOf(Section.TASKS, Section.EVENTS, Section.MEMBERS, Section.COMPETITIONS, Section.FINANCE, Section.PARTNERS, Section.OBLIGATIONS)
+        val ergebnis = sectionGroupsFor(bereiche, gruppen)
+        assertEquals(listOf("Mitglieder", "Schießsport", "Finanzen", "Verein", "Weitere"), ergebnis.map { it.label })
+        assertEquals(listOf(Section.EVENTS, Section.COMPETITIONS), ergebnis[1].sections)
+        // Fristen hat keinen Platz in den Gruppen: unter „Weitere“, „Zu erledigen“ nie in einer Gruppe
+        assertEquals(listOf(Section.OBLIGATIONS), ergebnis.last().sections)
+        // Jeder Bereich außer „Zu erledigen“ gehört zu einem Menüpunkt der Web-Oberfläche
+        assertEquals(listOf(Section.TASKS), Section.entries.filter { sectionModule(it) == null })
     }
 
     @Test
