@@ -79,7 +79,8 @@ fun MemberTodosPane(main: Screen.Main, vm: AppViewModel, openHelpers: Boolean = 
         val switch: (@Composable () -> Unit)? = if (withHelpers && !onlyHelpers) {
             { TaskSwitch(helpers) { helpers = it } }
         } else null
-        if (withHelpers && (helpers || onlyHelpers)) MemberHelpers(api, access.id, main.account.server, vm) { switch?.invoke() }
+        // Helferdienste ohne Liste und Detail: Lesebreite wie die übrigen Reiter
+        if (withHelpers && (helpers || onlyHelpers)) Lesebreite { MemberHelpers(api, access.id, main.account.server, vm) { switch?.invoke() } }
         else MemberTaskList(api, access.id, portalTarget?.todoId, main.account.server, vm, switch)
     }
 }

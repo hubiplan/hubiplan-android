@@ -121,13 +121,18 @@ internal fun NeuesPane(access: PortalAccess, vm: AppViewModel, request: String? 
     when (teil) {
         // Die Auswahl steht über der Liste, nicht über einer geöffneten Mitteilung
         NeuesTeil.MITTEILUNGEN -> CircularsPane(access, vm, kopf = kopf)
-        NeuesTeil.PINNWAND -> Column(Modifier.fillMaxSize()) {
-            kopf()
-            Box(Modifier.weight(1f)) { PinnwandSection(access, vm) }
+        // Ohne Liste und Detail: Lesebreite wie die übrigen Reiter
+        NeuesTeil.PINNWAND -> Lesebreite {
+            Column(Modifier.fillMaxSize()) {
+                kopf()
+                Box(Modifier.weight(1f)) { PinnwandSection(access, vm) }
+            }
         }
-        NeuesTeil.UMFRAGEN -> Column(Modifier.fillMaxSize()) {
-            kopf()
-            Box(Modifier.weight(1f)) { SurveysSection(access, vm) }
+        NeuesTeil.UMFRAGEN -> Lesebreite {
+            Column(Modifier.fillMaxSize()) {
+                kopf()
+                Box(Modifier.weight(1f)) { SurveysSection(access, vm) }
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import de.hubiplan.app.tr
 import de.hubiplan.app.trn
@@ -154,8 +156,29 @@ internal fun backTarget(tab: Tab, previous: Tab): Tab? = when (tab) {
     else -> Tab.START
 }
 
-/** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
-val TWO_PANE_MIN_WIDTH = 720.dp
+/**
+ * Ab dieser Breite stehen Liste und Detail nebeneinander (7- und 10-Zoll-Tablet quer). Ein
+ * 10-Zoll-Tablet hochkant (rund 720 dp neben der Seitenleiste) zeigt sie nacheinander: dort
+ * bliebe für die Liste zu wenig Platz, Titel brächen mitten im Wort um.
+ */
+val TWO_PANE_MIN_WIDTH = 840.dp
+
+/** Breite der Liste neben dem Detail: 40 %, mindestens 340 dp, höchstens 420 dp. */
+internal fun listenBreite(gesamt: Dp): Dp = (gesamt * 0.4f).coerceIn(340.dp, 420.dp)
+
+/**
+ * Lesebreite: Auf breiten Bildschirmen laufen Inhalte, Karten und Knöpfe nicht über die ganze
+ * Breite, sondern stehen mittig in höchstens dieser Breite (wie `lesebreite()` der iOS-App).
+ */
+val LESEBREITE = 720.dp
+
+/** Inhalt mittig in höchstens [LESEBREITE]; auf Handys und 7-Zoll-Tablets hochkant ohne Wirkung. */
+@Composable
+fun Lesebreite(content: @Composable () -> Unit) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Box(Modifier.widthIn(max = LESEBREITE).fillMaxSize()) { content() }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -421,6 +444,10 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
             // Nur in der Terminliste, nie über einem geöffneten Termin (A-15)
             if (offer && access != null && tab == Tab.START && detail == null) ShortcutOffer(vm)
             Box(Modifier.fillMaxSize()) {
+                // Reiter mit Liste und Detail begrenzen die Breite selbst (ListDetail), alle
+                // anderen hier: auf 10-Zoll-Tablets quer keine Knöpfe und Karten über die ganze Breite
+                val eigeneBreite = tab == Tab.TERMINE || tab == Tab.MITTEILUNGEN || tab == Tab.AUFGABEN || tab == Tab.NOTEN
+                BreiteFuer(eigeneBreite) {
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
                     tab == Tab.VERWALTUNG -> AdminPane(main, vm)
@@ -460,6 +487,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     // Ohne Netz beim Kaltstart: Hinweis statt leerer Fläche, dazu wartende
                     // Kassenvorgänge dieses Telefons (UX-Audit 31.10. A15, F03)
                     main.offline -> OfflinePane(main, events = tab == Tab.TERMINE || tab == Tab.START, vm)
+                }
                 }
                 androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
             }
@@ -565,20 +593,28 @@ fun ListDetail(
         val boxWidth = maxWidth
         if (boxWidth >= TWO_PANE_MIN_WIDTH) {
             Row(Modifier.fillMaxSize()) {
-                Box(Modifier.width(boxWidth * 0.4f).fillMaxHeight()) { list() }
+                Box(Modifier.width(listenBreite(boxWidth)).fillMaxHeight()) { list() }
                 VerticalDivider()
                 Box(Modifier.fillMaxSize()) {
-                    if (hasDetail) detail() else Message(emptyDetail)
+                    if (hasDetail) Lesebreite { detail() } else Message(emptyDetail)
                 }
             }
         } else {
-            if (hasDetail) {
-                detail()
-            } else {
-                list()
+            Lesebreite {
+                if (hasDetail) {
+                    detail()
+                } else {
+                    list()
+                }
             }
         }
     }
+}
+
+/** [Lesebreite], außer [frei]: dann regelt der Inhalt seine Breite selbst. */
+@Composable
+private fun BreiteFuer(frei: Boolean, content: @Composable () -> Unit) {
+    if (frei) content() else Lesebreite(content)
 }
 
 @Composable

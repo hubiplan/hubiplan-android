@@ -44,6 +44,12 @@ ihn unter „Mein Konto › Einstellungen › Fünfter Reiter“. Was nicht in d
 „Start“ unter „Schnell erreichbar“ zu finden, die Verwaltung zusätzlich als Symbol im Kopf.
 Tablets zeigen in der seitlichen Leiste alle Bereiche.
 
+Liste und Detail (Termine, Neues, Aufgaben, Noten) stehen erst ab 840 dp Breite nebeneinander,
+also auf 7- und 10-Zoll-Tablets quer; die Liste ist dann 340 bis 420 dp breit. Ein 10-Zoll-Tablet
+hochkant zeigt sie nacheinander wie das Handy. Alle Inhalte stehen auf breiten Bildschirmen
+mittig in höchstens 720 dp (`Lesebreite`, wie `lesebreite()` in iOS), damit Karten und Knöpfe
+nicht über die ganze Breite laufen.
+
 „Start“ (`StartPane.kt`) zeigt den nächsten Termin mit Zusage und Absage, was auf eine Antwort
 wartet, die Kacheln der Startseite und die kurzen Wege. Der Kopf steht nur auf „Start“ in der
 Vereinsfarbe (`kopfInVereinsfarbe`); alle anderen Seiten haben einen ruhigen Kopf. Zurück führt
