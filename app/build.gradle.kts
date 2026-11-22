@@ -19,8 +19,8 @@ android {
         // Benachrichtigungskanäle und einheitliche Hintergrundregeln
         minSdk = 28
         targetSdk = 37
-        versionCode = 54
-        versionName = "1.11.0"
+        versionCode = 55
+        versionName = "1.11.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunnerArguments["additionalTestOutputDir"] = "/sdcard/Android/media/de.hubiplan.app/ui-test-output"
     }
