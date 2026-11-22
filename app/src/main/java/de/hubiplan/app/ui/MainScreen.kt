@@ -173,6 +173,8 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     var previousTab by rememberSaveable { mutableStateOf(Tab.START) }
     // „Termin ansehen“ auf „Start“ öffnet genau diesen Termin im Reiter „Termine“
     var terminRequest by rememberSaveable { mutableStateOf<String?>(null) }
+    // „Für dich zu tun“ auf „Start“ öffnet den Bereich unter „Ich“
+    var ichRequest by rememberSaveable { mutableStateOf<String?>(null) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, leave.busy) { if (openRequest != null && tab != Tab.MITTEILUNGEN) leave.request(action = { tab = Tab.MITTEILUNGEN }, onStay = vm::openHandled) }
     // App-Verknüpfung „Ausweis zeigen“: Reiter „Ich“; den großen Ausweis öffnet der Reiter selbst
@@ -430,10 +432,16 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                         access, main, vm, weitere,
                         onTab = { ziel -> leave.request { tab = ziel } },
                         onTermin = { key -> leave.request { terminRequest = key; tab = Tab.TERMINE } },
+                        onBereich = { bereich -> leave.request { ichRequest = bereich.name; tab = Tab.ICH } },
                     )
                     access != null && tab == Tab.TERMINE -> EventsPane(access, vm, open = terminRequest, onOpened = { terminRequest = null })
                     access != null && tab == Tab.MITTEILUNGEN -> CircularsPane(access, vm)
-                    access != null && tab == Tab.ICH -> IchPane(access, main, vm, onHelpers = { leave.request { helpersRequest = true; tab = Tab.AUFGABEN } })
+                    access != null && tab == Tab.ICH -> IchPane(
+                        access, main, vm,
+                        onHelpers = { leave.request { helpersRequest = true; tab = Tab.AUFGABEN } },
+                        request = ichRequest,
+                        onRequestHandled = { ichRequest = null },
+                    )
                     // Ohne Netz: wenigstens den gespeicherten Ausweis zeigen
                     main.offline && tab == Tab.ICH -> OfflineCardPane(main, vm)
                     // Ohne Netz beim Kaltstart: Hinweis statt leerer Fläche, dazu wartende

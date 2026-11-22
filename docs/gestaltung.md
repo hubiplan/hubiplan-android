@@ -48,3 +48,10 @@ Tablets zeigen in der seitlichen Leiste alle Bereiche.
 wartet, die Kacheln der Startseite und die kurzen Wege. Der Kopf steht nur auf „Start“ in der
 Vereinsfarbe (`kopfInVereinsfarbe`); alle anderen Seiten haben einen ruhigen Kopf. Zurück führt
 von jedem Reiter zu „Start“ und beendet erst dort die App.
+
+„Start“ kommt in einem Abruf vom Server (`GET /api/portal/<Zugang>/start/`: nächster Termin, „Für
+dich zu tun“, Kacheln; siehe `docs/app.md` in HUBIplan). Kennt ein älterer HUBIplan-Stand den
+Abruf nicht (404), baut die App die Seite aus der Terminliste (`startAusTerminen`). Zeilen unter
+„Für dich zu tun“ führen in den Bereich unter „Ich“ (`startBereich`); unbekannte Ziele zeigt die
+App nicht. Die Terminliste hat Zwischenüberschriften je Monat und, solange Rückmeldungen
+fehlen, den Filter „… ohne Rückmeldung“.

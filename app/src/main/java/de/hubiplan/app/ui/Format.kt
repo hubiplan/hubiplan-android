@@ -36,6 +36,15 @@ internal fun deviceTimeNote(iso: String, zone: ZoneId): String {
     return if (zone.rules.getOffset(at) == CALENDAR_ZONE.rules.getOffset(at)) "" else " " + tr("(Zeit an deinem Gerät)")
 }
 
+/**
+ * Monat eines Termins als Zwischenüberschrift der Terminliste: „November 2026“. Ganztägige
+ * Termine zählen nach dem Kalendertag der Verwaltung. Leer, wenn das Datum nicht lesbar ist.
+ */
+fun monatTitel(start: String, allDay: Boolean, zone: ZoneId = ZoneId.systemDefault(), english: Boolean = Texte.sprache == "en"): String {
+    val tag = runCatching { local(start, if (allDay) CALENDAR_ZONE else zone) }.getOrNull() ?: return ""
+    return tag.format(DateTimeFormatter.ofPattern("LLLL yyyy", if (english) Locale.UK else Locale.GERMAN))
+}
+
 /** „Fr, 14. November 2026, 19:00 – 22:00 Uhr“ bzw. ganztägig nur Datum. */
 fun formatWhen(start: String, end: String, allDay: Boolean, zone: ZoneId = ZoneId.systemDefault()): String {
     if (allDay) {

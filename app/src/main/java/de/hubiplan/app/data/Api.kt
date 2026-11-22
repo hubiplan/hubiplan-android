@@ -939,6 +939,10 @@ class Api(
 
     // --- Pinnwand (HUBIplan docs/app.md) ---
 
+    /** Startseite der App in einem Abruf; ältere HUBIplan-Stände antworten mit 404. */
+    suspend fun start(accessId: Int): StartSeite =
+        decodeApi(expect("GET", "/api/portal/$accessId/start/"))
+
     /** Kacheln der Übersicht im Mitgliederbereich (wie die Startseite im Browser). */
     suspend fun memberTiles(accessId: Int): HomeTiles =
         decodeApi(expect("GET", "/api/portal/$accessId/home-tiles/"))

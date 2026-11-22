@@ -148,8 +148,22 @@ internal fun formatShortDate(iso: String?): String = formatPlainDate(
  * [onHelpers] öffnet die Helferdienste im Reiter „Aufgaben“.
  */
 @Composable
-fun IchPane(access: PortalAccess, main: Screen.Main, vm: AppViewModel, onHelpers: () -> Unit) {
+fun IchPane(
+    access: PortalAccess,
+    main: Screen.Main,
+    vm: AppViewModel,
+    onHelpers: () -> Unit,
+    request: String? = null,
+    onRequestHandled: () -> Unit = {},
+) {
     var section by rememberSaveable(access.id) { mutableStateOf<String?>(null) }
+    // Von „Start“ aus geöffnet („Für dich zu tun“): gleich diesen Bereich zeigen
+    LaunchedEffect(request) {
+        if (request != null) {
+            if (ichBereiche(access).any { it.name == request }) section = request
+            onRequestHandled()
+        }
+    }
     val open = section?.let { name -> IchBereich.entries.firstOrNull { it.name == name } }
     // Verknüpfung „Ausweis zeigen“: zurück zur Liste, Ausweis groß
     val openCard by vm.openCard.collectAsStateWithLifecycle()
