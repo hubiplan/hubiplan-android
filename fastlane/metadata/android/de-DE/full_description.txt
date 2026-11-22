@@ -1,18 +1,14 @@
-Die Begleit-App zu HUBIplan, der freien Vereinsverwaltung. Sie verbindet sich mit der
-HUBIplan-Instanz deines Vereins (QR-Code aus dem Mitgliederbereich im Browser) und zeigt:
+Die Begleit-App zu HUBIplan, der freien Vereinsverwaltung. Sie verbindet sich mit dem HUBIplan deines Vereins (QR-Code aus dem Mitgliederbereich im Browser) und bringt das Vereinsleben auf Telefon und Tablet:
 
-* Termine deines Vereins und deiner Untereinheiten, Zu- und Absage mit einem Fingertipp
-* Termine im Gerätekalender mit Erinnerung, Hinweis „Rückmeldung fehlt“
-* Mitteilungen und Rundschreiben des Vorstands, sofort per Push über eine UnifiedPush-App
-  wie ntfy (ohne Google, Inhalt Ende-zu-Ende verschlüsselt) oder per Abruf
-* Kurzmitteilungen senden (für Vorstand und Zugführung)
-* Reiter „Ich“: Mitgliedsausweis (auch offline), eigene Daten, Änderungen melden, Mitgliederfoto aufnehmen
-* Eigene Rechnungen und Lastschriftmandat, Versammlungen mit Tagesordnung, Anträgen und Protokoll, Dokumente des Vereins
-* Farben und Wappen deines Vereins, Ansicht für Telefon und Tablet
-* Verknüpfung mit Wappen und Namen deines Vereins auf dem Startbildschirm
-* Mehrere Vereine mit eigener HUBIplan-Adresse in einer App
+* Start: dein nächster Termin und was für dich zu tun ist
+* Termine nach Monaten, Zu- und Absage mit einem Fingertipp, Filter für offene Rückmeldungen, Erinnerung im Gerätekalender
+* Anmeldung mit Teilnahmegebühr, Eintrittskarten mit QR-Code, Warteliste
+* Neues: Mitteilungen und Rundschreiben deines Vereins, Pinnwand mit Fotos, Umfragen
+* Sofortige Benachrichtigung über eine UnifiedPush-App wie ntfy (ohne Google, Ende-zu-Ende verschlüsselt) oder per Abruf
+* Ich: Mitgliedsausweis (auch offline), eigene Daten, Rechnungen und Lastschriftmandat, Versammlungen, Dokumente, Training mit QR-Einchecken und Schießbuch, Sammelbestellungen
+* Für den Vorstand: Verwaltung als Arbeitsplatz mit „Neu“, „Zu erledigen“ und Suche; Beitrittsanträge, Belegungen, Versammlung leiten, Einlass mit Kartenscanner
+* Videoraum am Termin; Kalendereinladungen (.ics) teilen und daraus einen Termin anlegen
+* Farben und Wappen deines Vereins, hell oder dunkel, Ansicht für Telefon und Tablet
+* Mehrere Vereine in einer App, Deutsch oder Englisch
 
-Im App-Menü heißt die App HUBIplan; nach der Anmeldung zeigt sie deinen Verein.
-Die App spricht nur mit der HUBIplan-Instanz deines Vereins. Sie enthält keine Werbung,
-keine Analyse und keine Google-Dienste (kein Firebase, keine Play-Dienste). Voraussetzung ist, dass dein Verein HUBIplan
-nutzt und dir einen Zugang zum Mitgliederbereich gegeben hat.
+Die App spricht nur mit dem HUBIplan deines Vereins. Sie enthält keine Werbung, keine Analyse und keine Google-Dienste (kein Firebase, keine Play-Dienste). Bildschirmfotos sind zum Schutz persönlicher Daten gesperrt; du kannst sie unter „Mein Konto“ erlauben. Voraussetzung ist, dass dein Verein HUBIplan nutzt und dir einen Zugang zum Mitgliederbereich gegeben hat.
