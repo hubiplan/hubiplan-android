@@ -164,19 +164,23 @@ class NotenTest {
     @Test
     fun navigationMitNoten() {
         // Ohne Noten unverändert
-        assertEquals(listOf(Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH), barTabs(adminVisible = false, tasksVisible = false))
+        assertEquals(listOf(Tab.START, Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH), barTabs(adminVisible = false, tasksVisible = false))
+        // Musiker ohne Verwaltung: Noten als fünfter Reiter, vor Aufgaben
         assertEquals(
-            listOf(Tab.TERMINE, Tab.NOTEN, Tab.AUFGABEN, Tab.MITTEILUNGEN, Tab.ICH),
-            barTabs(adminVisible = true, tasksVisible = true, notesVisible = true),
+            listOf(Tab.START, Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH, Tab.NOTEN),
+            barTabs(adminVisible = false, tasksVisible = true, notesVisible = true),
         )
-        // Telefon mit sechs Zielen: Verwaltung in die Kopfleiste
+        // Telefon: Verwaltung geht vor; wer Noten wählt, hat die Verwaltung als Symbol im Kopf
         val phone = barTabs(adminVisible = true, tasksVisible = true, notesVisible = true, wide = false)
-        assertTrue(adminInHeader(true, phone))
-        // Tablet: alle sechs
+        assertEquals(Tab.VERWALTUNG, phone.last())
+        assertFalse(adminInHeader(true, phone))
+        val gewaehlt = barTabs(adminVisible = true, tasksVisible = true, notesVisible = true, wahl = "NOTEN")
+        assertEquals(Tab.NOTEN, gewaehlt.last())
+        assertTrue(adminInHeader(true, gewaehlt))
+        // Tablet: alle
         val tablet = barTabs(adminVisible = true, tasksVisible = true, notesVisible = true, wide = true)
-        assertEquals(6, tablet.size)
+        assertEquals(7, tablet.size)
         assertFalse(adminInHeader(true, tablet))
-        // Fünf passen: Verwaltung bleibt unten
         assertEquals(Tab.VERWALTUNG, barTabs(adminVisible = true, tasksVisible = false, notesVisible = true).last())
         assertTrue(wideNavigation(800, 1280))
         assertFalse(wideNavigation(411, 891))

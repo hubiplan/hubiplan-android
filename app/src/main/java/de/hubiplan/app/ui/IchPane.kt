@@ -231,13 +231,7 @@ private fun IchOverview(access: PortalAccess, main: Screen.Main, vm: AppViewMode
         if (access.hasCard) {
             MemberCardSection(cardStore, access.id, vm, bigRequest = bigRequest)
         }
-        // Kacheln wie auf der Startseite im Browser: mit Anlass von selbst
-        TilesOverview(
-            server = main.account.server,
-            reloadKey = access.id,
-            load = { vm.api()?.let { api -> quietly(vm) { api.memberTiles(access.id) } } },
-            save = { key, state -> vm.api()?.let { api -> quietly(vm) { api.setMemberTile(access.id, key, state) } } },
-        )
+        // Die Kacheln der Startseite stehen im Reiter „Start“
         Text(tr("Mein Bereich"), style = MaterialTheme.typography.titleMedium, modifier = Modifier.asHeading())
         Column {
             bereiche.forEachIndexed { i, b ->

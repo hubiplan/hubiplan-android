@@ -59,6 +59,7 @@ private object Keys {
     val calendarOn = booleanPreferencesKey("kalender_an")
     val reminderMinutes = intPreferencesKey("erinnerung_minuten")
     val rsvpHints = booleanPreferencesKey("hinweis_rueckmeldung")
+    val fifthTab = stringPreferencesKey("fuenfter_reiter")
     val notified = stringSetPreferencesKey("hinweise_gezeigt")
     val lastSync = longPreferencesKey("letzter_abgleich")
     val pushKeys = stringPreferencesKey("push_schluessel")
@@ -91,6 +92,8 @@ data class AppSettings(
     // Persönliche Erinnerung im Gerätekalender; null = keine (Standard 1 Tag vorher)
     val reminderMinutes: Int? = DEFAULT_REMINDER_MINUTES,
     val rsvpHints: Boolean = true,
+    /** Eigene Wahl für den fünften Reiter der Leiste (Name des Reiters); leer = Vorgabe je Rolle */
+    val fifthTab: String = "",
     val lastSync: Long? = null,
     val push: PushState = PushState(),
 )
@@ -126,6 +129,7 @@ class AccountStore(private val context: Context, val slot: Int = 0) : AccountMut
             calendarOn = p[Keys.calendarOn] ?: false,
             reminderMinutes = (p[Keys.reminderMinutes] ?: DEFAULT_REMINDER_MINUTES).takeIf { it >= 0 },
             rsvpHints = p[Keys.rsvpHints] ?: true,
+            fifthTab = p[Keys.fifthTab].orEmpty(),
             lastSync = p[Keys.lastSync],
             push = PushState(p[Keys.pushDistributor], p[Keys.pushEndpoint], p[Keys.pushError], p[Keys.pushOff] ?: false),
         )
@@ -195,6 +199,8 @@ class AccountStore(private val context: Context, val slot: Int = 0) : AccountMut
     suspend fun setReminderMinutes(minutes: Int?) = dataStore.edit { it[Keys.reminderMinutes] = minutes ?: -1 }
 
     suspend fun setRsvpHints(on: Boolean) = dataStore.edit { it[Keys.rsvpHints] = on }
+
+    suspend fun setFifthTab(name: String) = dataStore.edit { it[Keys.fifthTab] = name }
 
     suspend fun markSynced(at: Long) = dataStore.edit { it[Keys.lastSync] = at }
 

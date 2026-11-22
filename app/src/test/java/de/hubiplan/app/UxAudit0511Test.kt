@@ -18,8 +18,8 @@ class UxAudit0511Test {
     @Test
     fun hoechstensFuenfZieleOhneKonto() {
         val all = barTabs(adminVisible = true, tasksVisible = true)
-        assertEquals(listOf(Tab.TERMINE, Tab.AUFGABEN, Tab.MITTEILUNGEN, Tab.ICH, Tab.VERWALTUNG), all)
-        assertEquals(listOf(Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH), barTabs(adminVisible = false, tasksVisible = false))
+        assertEquals(listOf(Tab.START, Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH, Tab.VERWALTUNG), all)
+        assertEquals(listOf(Tab.START, Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH), barTabs(adminVisible = false, tasksVisible = false))
         assertFalse(Tab.KONTO in all)
     }
 
@@ -31,12 +31,12 @@ class UxAudit0511Test {
 
     @Test
     fun zurueckFuehrtZumStartreiter() {
-        assertNull(backTarget(Tab.TERMINE, Tab.TERMINE))
-        Tab.entries.filter { it != Tab.TERMINE && it != Tab.KONTO }.forEach {
-            assertEquals(Tab.TERMINE, backTarget(it, Tab.TERMINE))
+        assertNull(backTarget(Tab.START, Tab.START))
+        Tab.entries.filter { it != Tab.START && it != Tab.KONTO }.forEach {
+            assertEquals(Tab.START, backTarget(it, Tab.START))
         }
         assertEquals(Tab.ICH, backTarget(Tab.KONTO, Tab.ICH))
-        assertEquals(Tab.TERMINE, backTarget(Tab.KONTO, Tab.KONTO))
+        assertEquals(Tab.START, backTarget(Tab.KONTO, Tab.KONTO))
     }
 
     @Test

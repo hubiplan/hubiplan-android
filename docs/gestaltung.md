@@ -34,3 +34,17 @@ Vektorbild für `Icon`. Neue Symbole kommen in `symbole.json` (beide Apps) und i
 `ZeilenTrenner`, `Zaehler`, `Leerzustand`, `Platzhalter`. Dazu aus `Design.kt` `Abzeichen` und
 `DatumKaestchen`. Neue Bildschirme setzen sich aus diesen Teilen zusammen; Vereinsfarbe steht
 nur als Akzent (Hauptknopf, Symbolkopf, Zähler, gewählter Reiter).
+
+## Reiter
+
+Beide Apps haben dieselben Reiter: **Start · Termine · Neues · Ich** und einen fünften je
+Rolle. Vorgabe für den fünften ist Verwaltung, sonst Noten, sonst Aufgaben
+(`fuenfteReiter`, `fuenfterReiter` in `MainScreen.kt`); wer mehrere dieser Bereiche hat, wählt
+ihn unter „Mein Konto › Einstellungen › Fünfter Reiter“. Was nicht in der Leiste steht, ist auf
+„Start“ unter „Schnell erreichbar“ zu finden, die Verwaltung zusätzlich als Symbol im Kopf.
+Tablets zeigen in der seitlichen Leiste alle Bereiche.
+
+„Start“ (`StartPane.kt`) zeigt den nächsten Termin mit Zusage und Absage, was auf eine Antwort
+wartet, die Kacheln der Startseite und die kurzen Wege. Der Kopf steht nur auf „Start“ in der
+Vereinsfarbe (`kopfInVereinsfarbe`); alle anderen Seiten haben einen ruhigen Kopf. Zurück führt
+von jedem Reiter zu „Start“ und beendet erst dort die App.

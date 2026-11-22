@@ -15,12 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Card
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -69,24 +64,62 @@ import de.hubiplan.app.trn
  */
 // Texte erst beim Anzeigen übersetzen, damit ein Sprachwechsel sofort wirkt (UX-Audit 16.11. AND-11)
 internal enum class Tab(private val labelText: () -> String, private val shortText: () -> String = labelText) {
-    TERMINE({ tr("Termine") }), NOTEN({ tr("Noten") }), AUFGABEN({ tr("Aufgaben") }), MITTEILUNGEN({ tr("Mitteilungen") }, { tr("Neues") }), ICH({ tr("Ich") }),
-    VERWALTUNG({ tr("Verwaltung") }, { tr("Verwalten") }), KONTO({ tr("Mein Konto") });
+    START({ tr("Start") }), TERMINE({ tr("Termine") }), MITTEILUNGEN({ tr("Mitteilungen") }, { tr("Neues") }), ICH({ tr("Ich") }),
+    VERWALTUNG({ tr("Verwaltung") }, { tr("Verwalten") }), NOTEN({ tr("Noten") }), AUFGABEN({ tr("Aufgaben") }), KONTO({ tr("Mein Konto") });
 
     val label: String get() = labelText()
     val short: String get() = shortText()
+
+    /** Symbol aus dem gemeinsamen Symbolsatz beider Apps. */
+    val symbol: Strich
+        get() = when (this) {
+            START -> Strich.START
+            TERMINE -> Strich.TERMINE
+            MITTEILUNGEN -> Strich.NEUES
+            ICH -> Strich.ICH
+            VERWALTUNG -> Strich.VERWALTUNG
+            NOTEN -> Strich.NOTEN
+            AUFGABEN -> Strich.AUFGABEN
+            KONTO -> Strich.KONTO
+        }
 }
 
+/** Die vier festen Reiter, in beiden Apps gleich (Gestaltung „Frisch mobil“). */
+internal val FESTE_REITER = listOf(Tab.START, Tab.TERMINE, Tab.MITTEILUNGEN, Tab.ICH)
+
 /**
- * Ziele der Navigationsleiste: auf dem Telefon nie mehr als fünf, „Mein Konto“ nie (A-01).
- * „Noten“ nur für Musiker (Konzept Noten in der App, E2). Würden es auf dem Telefon sechs,
- * wandert „Verwaltung“ als Symbol in die Kopfleiste; die seitliche Leiste ([wide]) zeigt alle.
+ * Wer den fünften Platz der Leiste bekommen kann, in der Reihenfolge der Vorgabe: Verwaltung
+ * vor Noten vor Aufgaben. Nur was dieses Konto überhaupt hat.
  */
-internal fun barTabs(adminVisible: Boolean, tasksVisible: Boolean, notesVisible: Boolean = false, wide: Boolean = false): List<Tab> {
-    val all = Tab.entries.filter {
-        it != Tab.KONTO && (it != Tab.VERWALTUNG || adminVisible) && (it != Tab.AUFGABEN || tasksVisible) && (it != Tab.NOTEN || notesVisible)
-    }
-    return if (all.size > 5 && !wide) all - Tab.VERWALTUNG else all
+internal fun fuenfteReiter(adminVisible: Boolean, tasksVisible: Boolean, notesVisible: Boolean): List<Tab> = buildList {
+    if (adminVisible) add(Tab.VERWALTUNG)
+    if (notesVisible) add(Tab.NOTEN)
+    if (tasksVisible) add(Tab.AUFGABEN)
 }
+
+/** Der fünfte Reiter: die eigene Wahl aus „Mein Konto“, wenn es sie (noch) gibt, sonst die Vorgabe. */
+internal fun fuenfterReiter(moeglich: List<Tab>, wahl: String): Tab? = moeglich.firstOrNull { it.name == wahl } ?: moeglich.firstOrNull()
+
+/**
+ * Ziele der Navigationsleiste: Start, Termine, Neues, Ich und ein fünfter Reiter je Rolle
+ * ([fuenfterReiter], [wahl] aus „Mein Konto“). Auf dem Telefon nie mehr als fünf, „Mein Konto“
+ * nie (A-01). Was nicht in der Leiste steht, ist von „Start“ aus erreichbar; „Verwaltung“
+ * zusätzlich als Symbol im Kopf. Die seitliche Leiste ([wide]) zeigt alle.
+ */
+internal fun barTabs(
+    adminVisible: Boolean,
+    tasksVisible: Boolean,
+    notesVisible: Boolean = false,
+    wide: Boolean = false,
+    wahl: String = "",
+): List<Tab> {
+    val moeglich = fuenfteReiter(adminVisible, tasksVisible, notesVisible)
+    return FESTE_REITER + if (wide) moeglich else listOfNotNull(fuenfterReiter(moeglich, wahl))
+}
+
+/** Reiter dieses Kontos, die nicht in der Leiste stehen: „Start“ führt dorthin. */
+internal fun weitereReiter(adminVisible: Boolean, tasksVisible: Boolean, notesVisible: Boolean, tabs: List<Tab>): List<Tab> =
+    fuenfteReiter(adminVisible, tasksVisible, notesVisible).filter { it !in tabs }
 
 /** Zugang für den Bereich „Noten“: online aus den Modulen, ohne Netz aus dem Speicher. */
 @Composable
@@ -102,6 +135,9 @@ private fun notesAccessId(main: Screen.Main, context: android.content.Context): 
     return selected.takeIf { stored }
 }
 
+/** Kopf in Vereinsfarbe nur auf „Start“ und nicht über einer Detailansicht. */
+internal fun kopfInVereinsfarbe(tab: Tab, detail: Boolean): Boolean = tab == Tab.START && !detail
+
 /** Steht „Verwaltung“ als Symbol in der Kopfleiste statt unten? */
 internal fun adminInHeader(adminVisible: Boolean, tabs: List<Tab>): Boolean = adminVisible && Tab.VERWALTUNG !in tabs
 
@@ -110,12 +146,12 @@ internal fun wideNavigation(widthDp: Int, heightDp: Int): Boolean = widthDp >= 6
 
 /**
  * Wohin System-Zurück auf oberster Ebene führt (A-04): aus „Mein Konto“ zum vorherigen Reiter,
- * aus jedem anderen Reiter zum Startreiter „Termine“; nur dort beendet Zurück die App.
+ * aus jedem anderen Reiter zum Reiter „Start“; nur dort beendet Zurück die App.
  */
 internal fun backTarget(tab: Tab, previous: Tab): Tab? = when (tab) {
-    Tab.TERMINE -> null
-    Tab.KONTO -> previous.takeIf { it != Tab.KONTO } ?: Tab.TERMINE
-    else -> Tab.TERMINE
+    Tab.START -> null
+    Tab.KONTO -> previous.takeIf { it != Tab.KONTO } ?: Tab.START
+    else -> Tab.START
 }
 
 /** Ab dieser Breite stehen Liste und Detail nebeneinander (Tablet, Querformat). */
@@ -132,9 +168,11 @@ fun MainScreen(main: Screen.Main, vm: AppViewModel) {
 private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLeaveGuard) {
     // Einmal nach dem Verbinden: Erlaubnis für Benachrichtigungen mit Begründung (AND-01)
     NotificationPermissionAsk()
-    var tab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
+    var tab by rememberSaveable { mutableStateOf(Tab.START) }
     // Reiter vor „Mein Konto“, damit Zurück dorthin führt
-    var previousTab by rememberSaveable { mutableStateOf(Tab.TERMINE) }
+    var previousTab by rememberSaveable { mutableStateOf(Tab.START) }
+    // „Termin ansehen“ auf „Start“ öffnet genau diesen Termin im Reiter „Termine“
+    var terminRequest by rememberSaveable { mutableStateOf<String?>(null) }
     val openRequest by vm.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest, leave.busy) { if (openRequest != null && tab != Tab.MITTEILUNGEN) leave.request(action = { tab = Tab.MITTEILUNGEN }, onStay = vm::openHandled) }
     // App-Verknüpfung „Ausweis zeigen“: Reiter „Ich“; den großen Ausweis öffnet der Reiter selbst
@@ -185,10 +223,12 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
     val notesVisible = notesAccess != null
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val wide = wideNavigation(configuration.screenWidthDp, configuration.screenHeightDp)
-    val tabs = barTabs(adminVisible, tasksVisible, notesVisible, wide)
+    val settings by vm.settings.collectAsStateWithLifecycle()
+    val tabs = barTabs(adminVisible, tasksVisible, notesVisible, wide, settings.fifthTab)
+    val weitere = weitereReiter(adminVisible, tasksVisible, notesVisible, tabs)
     val adminIcon = adminInHeader(adminVisible, tabs)
-    LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.TERMINE }
-    LaunchedEffect(notesVisible) { if (tab == Tab.NOTEN && !notesVisible) tab = Tab.TERMINE }
+    LaunchedEffect(adminVisible) { if (tab == Tab.VERWALTUNG && !adminVisible) tab = Tab.START }
+    LaunchedEffect(notesVisible) { if (tab == Tab.NOTEN && !notesVisible) tab = Tab.START }
     // Zurück auf oberster Ebene: zum Startreiter statt die App zu schließen (A-04). Hier vor dem
     // Inhalt angelegt, damit Zurück in Listen, Details und Formularen zuerst dort wirkt.
     val back = backTarget(tab, previousTab)
@@ -288,18 +328,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                                 }
                             },
                         ) {
-                        Icon(
-                            when (t) {
-                                Tab.AUFGABEN -> Icons.Filled.CheckCircle
-                                Tab.TERMINE -> Icons.Filled.DateRange
-                                Tab.NOTEN -> NotenSymbol
-                                Tab.MITTEILUNGEN -> Icons.Filled.Email
-                                Tab.ICH -> Icons.Filled.Person
-                                Tab.VERWALTUNG -> Symbole.Verwaltung
-                                Tab.KONTO -> Icons.Filled.AccountCircle
-                            },
-                            contentDescription = null,
-                        )
+                        Icon(strichsymbol(t.symbol), contentDescription = null)
                         }
                     },
                     label = { BarLabel(t.short, barScale) },
@@ -309,6 +338,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
         },
     ) {
         Column(Modifier.fillMaxSize()) {
+            val inBrand = kopfInVereinsfarbe(tab, detail != null)
             TopAppBar(
                 // In der Verwaltung nicht den persönlichen Zugang als Kopf zeigen; welche Einheit
                 // verwaltet wird, steht darunter (UX-Audit 31.10. A04)
@@ -322,7 +352,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                         )
                         tab == Tab.VERWALTUNG -> Text(tr("Verwaltung"))
                         tab == Tab.KONTO -> Text(tr("Mein Konto"))
-                        else -> AccessPicker(main, vm)
+                        else -> AccessPicker(main, vm, onBrand = inBrand)
                     }
                 },
                 // Wappen der gewählten Einheit vor dem Namen (Schmuck; der Name steht daneben)
@@ -346,21 +376,32 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     // Sechs Ziele auf dem Telefon: „Verwaltung“ hier statt unten (Noten, E2)
                     if (adminIcon && tab != Tab.KONTO) {
                         IconButton(onClick = { if (tab != Tab.VERWALTUNG) leave.request { tab = Tab.VERWALTUNG } }) {
-                            Icon(Symbole.Verwaltung, contentDescription = tr("Verwaltung"))
+                            Icon(strichsymbol(Strich.VERWALTUNG), contentDescription = tr("Verwaltung"))
                         }
                     }
                     if (tab != Tab.KONTO) {
                         IconButton(onClick = { leave.request { previousTab = tab; tab = Tab.KONTO } }) {
-                            Icon(Icons.Filled.AccountCircle, contentDescription = tr("Mein Konto"))
+                            Icon(strichsymbol(Strich.KONTO), contentDescription = tr("Mein Konto"))
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = LocalBrand.current.brand,
-                    titleContentColor = LocalBrand.current.onBrand,
-                    navigationIconContentColor = LocalBrand.current.onBrand,
-                    actionIconContentColor = LocalBrand.current.onBrand,
-                ),
+                // Vereinsfarbe nur auf „Start“; überall sonst ein ruhiger Kopf, damit der Inhalt
+                // vorn steht (Gestaltung „Frisch mobil“)
+                colors = if (inBrand) {
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = LocalBrand.current.brand,
+                        titleContentColor = LocalBrand.current.onBrand,
+                        navigationIconContentColor = LocalBrand.current.onBrand,
+                        actionIconContentColor = LocalBrand.current.onBrand,
+                    )
+                } else {
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface,
+                        navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
+                        actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
             )
             // Offline als neutrale Fläche, nicht in Fehlerrot (UX-Audit 08.11. A-03)
             // Offline als neutrale Fläche, ein Serverfehler nennt HUBIplan statt des Internets (AND-07)
@@ -374,7 +415,7 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
             signedOut?.let { SignedOutDialog(it, onReconnect = { vm.signedOutSeen(); vm.addAccount() }, onDismiss = vm::signedOutSeen) }
             val offer by vm.shortcutOffer.collectAsStateWithLifecycle()
             // Nur in der Terminliste, nie über einem geöffneten Termin (A-15)
-            if (offer && access != null && tab == Tab.TERMINE && detail == null) ShortcutOffer(vm)
+            if (offer && access != null && tab == Tab.START && detail == null) ShortcutOffer(vm)
             Box(Modifier.fillMaxSize()) {
                 when {
                     tab == Tab.KONTO -> AccountPane(main, vm)
@@ -385,14 +426,19 @@ private fun MainScreenContent(main: Screen.Main, vm: AppViewModel, leave: FormLe
                     access == null && main.me != null -> Message(
                         tr("Für dieses Konto ist kein Mitgliederbereich freigeschaltet. Bitte wende dich an deinen Verein."),
                     )
-                    access != null && tab == Tab.TERMINE -> EventsPane(access, vm)
+                    access != null && tab == Tab.START -> StartPane(
+                        access, main, vm, weitere,
+                        onTab = { ziel -> leave.request { tab = ziel } },
+                        onTermin = { key -> leave.request { terminRequest = key; tab = Tab.TERMINE } },
+                    )
+                    access != null && tab == Tab.TERMINE -> EventsPane(access, vm, open = terminRequest, onOpened = { terminRequest = null })
                     access != null && tab == Tab.MITTEILUNGEN -> CircularsPane(access, vm)
                     access != null && tab == Tab.ICH -> IchPane(access, main, vm, onHelpers = { leave.request { helpersRequest = true; tab = Tab.AUFGABEN } })
                     // Ohne Netz: wenigstens den gespeicherten Ausweis zeigen
                     main.offline && tab == Tab.ICH -> OfflineCardPane(main, vm)
                     // Ohne Netz beim Kaltstart: Hinweis statt leerer Fläche, dazu wartende
                     // Kassenvorgänge dieses Telefons (UX-Audit 31.10. A15, F03)
-                    main.offline -> OfflinePane(main, events = tab == Tab.TERMINE, vm)
+                    main.offline -> OfflinePane(main, events = tab == Tab.TERMINE || tab == Tab.START, vm)
                 }
                 androidx.compose.material3.SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
             }
@@ -451,7 +497,7 @@ private fun ShortcutOffer(vm: AppViewModel) {
 }
 
 @Composable
-private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
+private fun AccessPicker(main: Screen.Main, vm: AppViewModel, onBrand: Boolean = true) {
     val leave = LocalFormLeaveGuard.current
     val accesses = main.me?.portal.orEmpty()
     val current = main.access
@@ -462,7 +508,10 @@ private fun AccessPicker(main: Screen.Main, vm: AppViewModel) {
     }
     Box {
         TextButton(onClick = { open = true }, modifier = Modifier.dropdown(tr("Verein oder Gruppe"), current?.label ?: tr("keine gewählt"), open)) {
-            DropdownText(current?.label ?: tr("Verein oder Gruppe wählen"), color = LocalBrand.current.onBrand)
+            DropdownText(
+                current?.label ?: tr("Verein oder Gruppe wählen"),
+                color = if (onBrand) LocalBrand.current.onBrand else MaterialTheme.colorScheme.onSurface,
+            )
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             accesses.forEach { a ->
