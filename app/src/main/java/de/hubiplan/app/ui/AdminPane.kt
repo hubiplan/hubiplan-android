@@ -61,6 +61,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import de.hubiplan.app.trn
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
@@ -294,6 +297,78 @@ internal fun sectionsFor(unit: AdminUnit): List<Section> {
         Section.PARTNERS.takeIf { showsPartners(unit) },
     )
 }
+
+/** Gruppen der Startliste, wie die Gruppen des Hauptmenüs im Browser (Gestaltung „Frisch mobil“). */
+internal enum class VerwaltungGruppe(private val labelText: () -> String) {
+    PLANEN({ tr("Planen") }),
+    VEREIN({ tr("Verein") }),
+    VEREINSLEBEN({ tr("Vereinsleben") }),
+    VERWALTUNG({ tr("Verwaltung") });
+
+    val label: String get() = labelText()
+}
+
+/** Gruppe eines Bereichs; null: „Zu erledigen“ steht für sich über den Gruppen. */
+internal fun sectionGroup(s: Section): VerwaltungGruppe? = when (s) {
+    Section.TASKS -> null
+    Section.EVENTS, Section.TODOS, Section.OBLIGATIONS -> VerwaltungGruppe.PLANEN
+    Section.MEMBERS, Section.APPLICATIONS, Section.OCCASIONS, Section.QUALIFICATIONS -> VerwaltungGruppe.VEREIN
+    Section.MEETINGS, Section.BOOKINGS, Section.COMPETITIONS -> VerwaltungGruppe.VEREINSLEBEN
+    Section.FINANCE, Section.BILLING, Section.PARTNERS -> VerwaltungGruppe.VERWALTUNG
+}
+
+/** Bereiche in ihren Gruppen, Reihenfolge wie in [sectionsFor]; leere Gruppen fallen weg. */
+internal fun sectionGroups(sections: List<Section>): List<Pair<VerwaltungGruppe, List<Section>>> =
+    VerwaltungGruppe.entries.map { g -> g to sections.filter { sectionGroup(it) == g } }.filter { it.second.isNotEmpty() }
+
+/** Suche auf der Startliste: Bereiche, deren Name oder Beschreibung alle Wörter enthält. */
+internal fun sectionSearch(sections: List<Section>, text: String): List<Section> {
+    val words = text.trim().lowercase().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (words.isEmpty()) return sections
+    return sections.filter { s ->
+        val hay = "${s.label} ${s.hint}".lowercase()
+        words.all { it in hay }
+    }
+}
+
+/** Strichsymbol eines Bereichs (gemeinsamer Symbolsatz beider Apps). */
+internal fun sectionSymbol(s: Section): Strich = when (s) {
+    Section.TASKS -> Strich.ZU_ERLEDIGEN
+    Section.TODOS -> Strich.AUFGABEN
+    Section.MEMBERS -> Strich.MITGLIEDER
+    Section.APPLICATIONS -> Strich.ANTRAG
+    Section.BOOKINGS -> Strich.BELEGUNG
+    Section.MEETINGS -> Strich.VERSAMMLUNG
+    Section.EVENTS -> Strich.TERMINE
+    Section.FINANCE -> Strich.KASSENBUCH
+    Section.BILLING -> Strich.RECHNUNG
+    Section.OCCASIONS -> Strich.JUBILAEUM
+    Section.COMPETITIONS -> Strich.WETTBEWERB
+    Section.PARTNERS -> Strich.PARTNER
+    Section.QUALIFICATIONS -> Strich.QUALIFIKATION
+    Section.OBLIGATIONS -> Strich.FRIST
+}
+
+/** Was der Knopf „Neu“ auf der Startliste anlegen kann. */
+internal enum class NeuAktion(private val labelText: () -> String, val symbol: Strich) {
+    QUITTUNG({ tr("Neue Quittung") }, Strich.RECHNUNG),
+    BUCHUNG({ tr("Neue Buchung") }, Strich.KASSENBUCH),
+    TERMIN({ tr("Neuer Termin") }, Strich.TERMINE),
+    AUFGABE({ tr("Neue Aufgabe") }, Strich.AUFGABEN);
+
+    val label: String get() = labelText()
+}
+
+/**
+ * Aktionen unter „Neu“ je nach Rechten. Ob Termine angelegt werden dürfen, weiß erst der Server;
+ * die App fragt beim Antippen nach.
+ */
+internal fun neuAktionen(unit: AdminUnit): List<NeuAktion> = listOfNotNull(
+    NeuAktion.QUITTUNG.takeIf { !unit.isDepartment && FINANCE_EDIT in unit.permissions },
+    NeuAktion.BUCHUNG.takeIf { !unit.isDepartment && FINANCE_EDIT in unit.permissions },
+    NeuAktion.TERMIN.takeIf { showsEvents(unit) },
+    NeuAktion.AUFGABE.takeIf { showsTodos(unit) },
+)
 
 @Composable
 private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main, vm: AppViewModel) {
@@ -534,6 +609,29 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         } else {
                             null
                         },
+                        neu = neuAktionen(unit),
+                        onNeu = { aktion ->
+                            when (aktion) {
+                                NeuAktion.QUITTUNG -> newReceipt = true
+                                NeuAktion.BUCHUNG -> newBooking = true
+                                NeuAktion.AUFGABE -> creatingTodo = true
+                                // Ob Rückmeldungen möglich sind, sagt die Terminliste
+                                NeuAktion.TERMIN -> scope.launch {
+                                    val today = java.time.LocalDate.now().toString()
+                                    try {
+                                        val list = client.events(today, today)
+                                        if (list.canManage) {
+                                            section = Section.EVENTS
+                                            creatingEvent = list.rsvpAllowed
+                                        } else {
+                                            snackbar.showSnackbar(tr("Termine anlegen können nur Konten mit Verwaltungsrechten."))
+                                        }
+                                    } catch (e: ApiException) {
+                                        snackbar.showSnackbar(errors.message(e))
+                                    }
+                                }
+                            }
+                        },
                         onOpen = { section = it },
                     )
                     section == Section.TODOS && showsTodos(unit) -> TodoListScreen(client, errors, reload, onNew = { creatingTodo = true }, onLock = vm::lockAdmin, onOpen = { todoId = it })
@@ -747,9 +845,10 @@ private fun TaskList(
 }
 
 /**
- * Startliste der Verwaltung (A-03): „Ausweis prüfen“ ganz oben, weil es am Einlass schnell gehen
- * muss, darunter „Zu erledigen“ mit Anzahl und alle Bereiche als große Zeilen, ohne seitliches
- * Wischen. TalkBack sagt „Schaltfläche“ und „Öffnen“, nicht „Filter“.
+ * Startliste der Verwaltung als Arbeitsplatz (Gestaltung „Frisch mobil“): oben „Ausweis prüfen“,
+ * weil es am Einlass schnell gehen muss (A-03), daneben „Neu“ für das, was man am häufigsten
+ * anlegt. Darunter „Zu erledigen“ mit Zähler, die Kacheln der Startseite und alle Bereiche in den
+ * Gruppen des Hauptmenüs; die Suche schränkt die Bereiche ein.
  */
 @Composable
 private fun AdminStart(
@@ -760,67 +859,137 @@ private fun AdminStart(
     vm: AppViewModel,
     reloadKey: Int,
     onScan: (() -> Unit)?,
+    neu: List<NeuAktion>,
+    onNeu: (NeuAktion) -> Unit,
     onOpen: (Section) -> Unit,
 ) {
     var reload by remember { mutableIntStateOf(0) }
     var openCount by remember(client) { mutableStateOf<Int?>(null) }
+    var suche by rememberSaveable(client.unitId) { mutableStateOf("") }
+    var neuOffen by remember { mutableStateOf(false) }
     LaunchedEffect(client, reload, reloadKey) {
         if (Section.TASKS !in sections) return@LaunchedEffect
         val api = vm.adminApi() ?: return@LaunchedEffect
         // Die Anzahl ist nur ein Hinweis; ein Fehler zeigt sich beim Öffnen der Liste.
         openCount = try { api.adminTasks(client.unitId).items.size } catch (_: ApiException) { null }
     }
-    LazyColumn(Modifier.fillMaxSize()) {
-        if (onScan != null) {
+    val bereiche = sections.filter { it != Section.TASKS }
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(Abstand.rand),
+        verticalArrangement = Arrangement.spacedBy(Abstand.mittel),
+    ) {
+        if (onScan != null || neu.isNotEmpty()) {
             item {
-                Button(
-                    onClick = onScan,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Abstand.rand, vertical = Abstand.mittel).heightIn(min = 56.dp),
-                ) {
-                    Icon(Icons.Filled.AccountBox, contentDescription = null, modifier = Modifier.padding(end = Abstand.klein))
-                    Text(tr("Ausweis prüfen"))
+                Row(horizontalArrangement = Arrangement.spacedBy(Abstand.klein), verticalAlignment = Alignment.CenterVertically) {
+                    if (onScan != null) {
+                        Button(onClick = onScan, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
+                            Icon(strichsymbol(Strich.SCANNEN), contentDescription = null, modifier = Modifier.padding(end = Abstand.klein))
+                            Text(tr("Ausweis prüfen"))
+                        }
+                    }
+                    if (neu.isNotEmpty()) {
+                        Box(if (onScan == null) Modifier.weight(1f) else Modifier) {
+                            OutlinedButton(
+                                onClick = { neuOffen = true },
+                                modifier = (if (onScan == null) Modifier.fillMaxWidth() else Modifier).heightIn(min = 56.dp),
+                            ) {
+                                Icon(strichsymbol(Strich.PLUS), contentDescription = null, modifier = Modifier.padding(end = Abstand.klein))
+                                Text(tr("Neu"))
+                            }
+                            DropdownMenu(expanded = neuOffen, onDismissRequest = { neuOffen = false }) {
+                                neu.forEach { aktion ->
+                                    DropdownMenuItem(
+                                        text = { Text(aktion.label) },
+                                        leadingIcon = { Icon(strichsymbol(aktion.symbol), contentDescription = null) },
+                                        onClick = {
+                                            neuOffen = false
+                                            onNeu(aktion)
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (Section.TASKS in sections) {
+            item {
+                val count = openCount ?: 0
+                val spoken = trn("1 offen", "{n} offen", count)
+                Karte {
+                    Zeile(
+                        Section.TASKS.label,
+                        detail = Section.TASKS.hint,
+                        symbol = strichsymbol(Strich.ZU_ERLEDIGEN),
+                        onClick = { onOpen(Section.TASKS) },
+                        ende = { Zaehler(count, Modifier.semantics { contentDescription = spoken }) },
+                    )
                 }
             }
         }
         // Kacheln wie auf der Startseite im Browser (nur für die Einheit selbst, nicht Untereinheiten)
         if (client.scope != "d") {
             item {
-                Box(Modifier.padding(horizontal = Abstand.rand, vertical = Abstand.klein)) {
-                    TilesOverview(
-                        server = server,
-                        reloadKey = Pair(client, reload + reloadKey),
-                        load = { vm.adminApi()?.let { api -> try { api.adminTiles(client.unitId) } catch (_: ApiException) { null } } },
-                        save = { key, state ->
-                            vm.adminApi()?.let { api -> try { api.setAdminTile(client.unitId, key, state) } catch (_: ApiException) { null } }
-                        },
-                    )
+                TilesOverview(
+                    server = server,
+                    reloadKey = Pair(client, reload + reloadKey),
+                    load = { vm.adminApi()?.let { api -> try { api.adminTiles(client.unitId) } catch (_: ApiException) { null } } },
+                    save = { key, state ->
+                        vm.adminApi()?.let { api -> try { api.setAdminTile(client.unitId, key, state) } catch (_: ApiException) { null } }
+                    },
+                )
+            }
+        }
+        if (bereiche.isEmpty() && Section.TASKS !in sections) {
+            item { Text(tr("Für diese Einheit sind in der App keine Bereiche freigegeben.")) }
+        }
+        // Ab einer Handvoll Bereichen lohnt die Suche
+        if (bereiche.size > 5) {
+            item {
+                OutlinedTextField(
+                    value = suche,
+                    onValueChange = { suche = it },
+                    label = { Text(tr("Bereich suchen")) },
+                    leadingIcon = { Icon(strichsymbol(Strich.SUCHE), contentDescription = null) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+        if (suche.isBlank()) {
+            sectionGroups(bereiche).forEach { (gruppe, liste) ->
+                item(key = gruppe.name) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Abstand.klein)) {
+                        Abschnittstitel(gruppe.label)
+                        BereichKarte(liste, onOpen)
+                    }
+                }
+            }
+        } else {
+            val treffer = sectionSearch(bereiche, suche)
+            item {
+                if (treffer.isEmpty()) {
+                    Text(tr("Kein Bereich passt zu „{text}“.", "text" to suche.trim()), modifier = Modifier.announce())
+                } else {
+                    BereichKarte(treffer, onOpen)
                 }
             }
         }
-        item {
-            Text(
-                tr("Was möchtest du tun?"),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.asHeading().padding(start = Abstand.rand, top = Abstand.mittel, end = Abstand.rand, bottom = Abstand.eng),
-            )
+        item { Footer(until, vm) { reload++ } }
+    }
+}
+
+/** Bereiche als Zeilen einer Karte: Symbol, Name, Beschreibung. */
+@Composable
+private fun BereichKarte(bereiche: List<Section>, onOpen: (Section) -> Unit) {
+    Karte {
+        bereiche.forEachIndexed { i, s ->
+            if (i > 0) ZeilenTrenner()
+            Zeile(s.label, detail = s.hint, symbol = strichsymbol(sectionSymbol(s)), onClick = { onOpen(s) })
         }
-        if (sections.isEmpty()) {
-            item { Text(tr("Für diese Einheit sind in der App keine Bereiche freigegeben."), modifier = Modifier.padding(Abstand.rand)) }
-        }
-        items(sections) { s ->
-            val count = openCount
-            ListItem(
-                leadingContent = { Icon(sectionIcon(s), contentDescription = null) },
-                headlineContent = {
-                    Text(if (s == Section.TASKS && count != null) tr("Zu erledigen ({count})", "count" to count) else s.label)
-                },
-                supportingContent = { Text(s.hint) },
-                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
-                modifier = Modifier.openRow { onOpen(s) },
-            )
-            HorizontalDivider()
-        }
-        item { Box(Modifier.padding(Abstand.rand)) { Footer(until, vm) { reload++ } } }
     }
 }
 

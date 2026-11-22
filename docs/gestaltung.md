@@ -60,3 +60,9 @@ fehlen, den Filter „… ohne Rückmeldung“.
 (`NeuesPane`, `neuesTeile`); die Auswahl darüber zeigt, wo etwas wartet, und fehlt, wenn es nur
 Mitteilungen gibt. „Ich“ zeigt den Ausweis und darunter „Mein Bereich“ in vier Gruppen: Geld,
 Mitmachen, Verein, Meine Daten (`ichGruppen`); jede Zeile hat Symbol, Kurzstand und Zähler.
+
+Die Verwaltung beginnt als Arbeitsplatz (`AdminStart`): oben „Ausweis prüfen“ und „Neu“ (Quittung,
+Buchung, Termin, Aufgabe je nach Rechten, `neuAktionen`), darunter „Zu erledigen“ mit Zähler, die
+Kacheln der Startseite und die Bereiche in den Gruppen des Hauptmenüs im Browser (Planen, Verein,
+Vereinsleben, Verwaltung; `sectionGroups`). Die Suche schränkt die Bereiche nach Name und
+Beschreibung ein (`sectionSearch`).
