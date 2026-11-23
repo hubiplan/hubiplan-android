@@ -1,0 +1,1 @@
+• Verwaltung: Die Bereiche stehen in denselben Gruppen und derselben Reihenfolge wie die Hauptmenüpunkte deines Vereins in HUBIplan. Ordnet der Verein sein Menü frei an, folgt die App dieser Anordnung; Bereiche ohne Gruppe stehen unter „Weitere“.
