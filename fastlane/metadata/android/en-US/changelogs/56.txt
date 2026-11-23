@@ -1,0 +1,1 @@
+• Administration: areas appear in the same groups and order as your club's main menu in HUBIplan. If the club arranges its menu freely, the app follows that arrangement; areas without a group appear under "More".
