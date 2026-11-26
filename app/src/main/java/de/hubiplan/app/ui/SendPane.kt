@@ -30,10 +30,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import de.hubiplan.app.data.ApiException
 import de.hubiplan.app.data.Sender
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
+
+private val LOCKED = { tr("Die Verwaltung ist gesperrt. Bitte unter „Verwaltung“ entsperren und dann erneut senden.") }
 
 /** Vorstand oder Zugführung: Kurzmitteilung an alle Mitglieder der Einheit. */
 @Composable
@@ -48,6 +51,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     val fields = rememberServerFields()
+    val admin by vm.admin.collectAsStateWithLifecycle()
     var preview by remember { mutableStateOf<Map<String, Int>?>(null) }
     // Absender neu laden, wenn der erste Abruf scheiterte (AND-26)
     var loadKey by remember { mutableIntStateOf(0) }
@@ -69,13 +73,31 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
     val leave = LocalFormLeaveGuard.current
 
     fun call(confirm: Boolean) {
-        val api = vm.api() ?: return
         val s = sender ?: return
+        // Senden nur mit entsperrter Verwaltung (Vorstandsschlüssel), nie mit dem Geräteschlüssel allein
+        val api = vm.adminApi()
+        if (api == null) {
+            preview = null
+            error = LOCKED()
+            return
+        }
         busy = true
         error = null
         scope.launch {
             try {
-                val result = api.sendShort(s, subject.trim(), body.trim(), confirm)
+                val result = try {
+                    api.sendShort(s, subject.trim(), body.trim(), confirm)
+                } catch (e: ApiException) {
+                    // Instanz ohne den neuen Pfad (ältere Fassung): früherer Weg. Eine aktuelle
+                    // Instanz lehnt ihn ab; 404 heißt dort nur „Einheit nicht gefunden“.
+                    val before = vm.api()
+                    if (e.status != 404 || before == null) throw e
+                    try {
+                        before.sendShortBefore(s, subject.trim(), body.trim(), confirm)
+                    } catch (old: ApiException) {
+                        throw if (old.status == 401 || old.status == 403) e else old
+                    }
+                }
                 if (confirm) {
                     preview = null
                     saved()
@@ -84,7 +106,14 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                     preview = result.counts
                 }
             } catch (e: ApiException) {
-                if (e.status == 401) vm.deviceRevoked(e) else error = fields.receive(e)
+                // 401 kommt hier von der Verwaltung: gesperrt oder abgelaufen, das Gerät bleibt angemeldet
+                if (e.status == 401) {
+                    preview = null
+                    vm.adminRejected()
+                    error = LOCKED()
+                } else {
+                    error = fields.receive(e)
+                }
             } finally {
                 busy = false
             }
@@ -128,6 +157,9 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 }
             }
             Text(tr("Geht an alle Mitglieder dieser Einheit: per App, sonst per E-Mail."), style = MaterialTheme.typography.bodySmall)
+            if (admin.token == null) {
+                Text(tr("Zum Senden muss die Verwaltung entsperrt sein. Bitte unter „Verwaltung“ entsperren; der Text bleibt erhalten."), style = MaterialTheme.typography.bodySmall)
+            }
             ServerTextField(field = "subject", errors = fields, enabled = !busy, value = subject,
                 onValueChange = { subject = it.take(200) },
                 label = { Text(tr("Betreff")) },
