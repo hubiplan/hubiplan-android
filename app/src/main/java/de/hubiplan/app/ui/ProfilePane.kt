@@ -99,23 +99,28 @@ fun ProfilePane(access: PortalAccess, main: Screen.Main, vm: AppViewModel) {
     }
 
     // Kamera: Foto in eine Datei im Cache, danach gleich wieder löschen
-    var cameraFile by remember { mutableStateOf<File?>(null) }
+    // Pfad übersteht auch ein Beenden der App im Hintergrund, zufälliger Name (SEC-05)
+    var cameraPath by rememberSaveable { mutableStateOf<String?>(null) }
     fun load(uri: Uri) {
         scope.launch {
             draft = withContext(Dispatchers.IO) { runCatching { PhotoPrep.load(context, uri) }.getOrNull() }
             if (draft == null) error = tr("Das Bild ließ sich nicht öffnen.")
-            cameraFile?.delete()
-            cameraFile = null
+            cameraPath?.let { File(it).delete() }
+            cameraPath = null
         }
     }
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
-        val file = cameraFile
-        if (ok && file != null) load(Uri.fromFile(file)) else file?.delete()
+        val file = cameraPath?.let(::File)
+        if (ok && file != null) {
+            load(Uri.fromFile(file))
+        } else {
+            file?.delete()
+            cameraPath = null
+        }
     }
     fun startCamera() {
-        val dir = File(context.cacheDir, "fotos").apply { mkdirs() }
-        val file = File(dir, "aufnahme.jpg")
-        cameraFile = file
+        val file = de.hubiplan.app.data.Kamerafotos.neu(context, "profil")
+        cameraPath = file.absolutePath
         takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.dateien", file))
     }
     val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->

@@ -68,12 +68,29 @@ data class StandLink(val server: String, val token: String) {
     }
 }
 
-/** Darf die eingebettete Ansicht diese Adresse laden? Nur die eigene Instanz über HTTPS. */
+/** Darf die eingebettete Ansicht diese Adresse laden? Nur die eigene Instanz über HTTPS, ohne Benutzerangabe. */
 fun sameInstance(server: String, url: String): Boolean {
     val a = try { URI(server) } catch (e: Exception) { return false }
     val b = try { URI(url) } catch (e: Exception) { return false }
+    if (a.host.isNullOrBlank() || a.rawUserInfo != null || b.rawUserInfo != null) return false
     return b.scheme == "https" && a.scheme == "https" &&
         a.host.equals(b.host, ignoreCase = true) && portOf(a) == portOf(b)
+}
+
+/**
+ * Darf der Standmodus diese fremde Adresse an den Browser geben? Nur https ohne Benutzerangabe;
+ * nie `intent:`, `hubiplan:`, `tel:`, `file:` oder andere Schemata (Sicherheitsprüfung
+ * 26.11.2026, SEC-04).
+ */
+fun allowedExternalStandUrl(url: String): Boolean = safeExternalUrl(url) != null
+
+/**
+ * Darf die Seite im Standmodus diese Adresse nachladen (Bild, Skript, Abruf)? Die eigene
+ * Instanz und Inhalte, die keine Verbindung aufbauen (`data:`, `blob:`, `about:`).
+ */
+fun allowedStandResource(server: String, url: String): Boolean {
+    val scheme = url.substringBefore(':', "").lowercase(java.util.Locale.ROOT)
+    return scheme in setOf("data", "blob", "about") || sameInstance(server, url)
 }
 
 private fun portOf(u: URI): Int = if (u.port == -1) 443 else u.port

@@ -363,8 +363,8 @@ data class Rsvp(
 /** Videoraum (Nextcloud Talk) am Termin: Link und Passwort; ältere Server ohne Angabe. */
 @Serializable
 data class VideoRoom(val url: String = "", val password: String = "") {
-    /** Nur https-Links öffnen (der Server liefert nie etwas anderes) */
-    val openable: Boolean get() = url.startsWith("https://")
+    /** Nur https-Links ohne Benutzerangabe öffnen (der Server liefert nie etwas anderes) */
+    val openable: Boolean get() = safeExternalUrl(url) != null
 }
 
 /** Routenlinks zum Ort (OpenStreetMap, Google Maps). */

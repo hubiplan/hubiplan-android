@@ -1693,5 +1693,7 @@
  "Gültige Mitgliedschaft": "Valid membership",
  "Mitgliedschaft beginnt später": "Membership starts later",
  "Keine gültige Mitgliedschaft": "No valid membership",
- "Weitere": "More"
+ "Weitere": "More",
+ " Sonst löscht die App sie am {date} endgültig.": " Otherwise the app deletes them permanently on {date}.",
+ "Zum Exportieren braucht das Gerät eine Bildschirmsperre (PIN, Muster oder Fingerabdruck).": "To export, the device needs a screen lock (PIN, pattern or fingerprint)."
 }

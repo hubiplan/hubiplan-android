@@ -86,7 +86,13 @@ class BrowserLoginStore(context: Context) {
     fun load(): PendingBrowserLogin? {
         val server = prefs.getString("server", null) ?: return null
         val verifier = prefs.getString("verifier", null) ?: return null
-        return PendingBrowserLogin(server, verifier, prefs.getLong("created", 0))
+        val created = prefs.getLong("created", 0)
+        // Abgelaufen: den Prüfwert nicht länger aufbewahren (SEC-08)
+        if (System.currentTimeMillis() - created !in 0..BrowserLogin.MAX_AGE_MS) {
+            clear()
+            return null
+        }
+        return PendingBrowserLogin(server, verifier, created)
     }
 
     fun clear() {

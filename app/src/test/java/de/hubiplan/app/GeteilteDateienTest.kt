@@ -25,21 +25,24 @@ class GeteilteDateienTest {
         val oldExport = file(cache, "${LocalAccountData.EXPORT}/hubiplan-belege.json", now - 2 * hour)
         val newPass = file(cache, "${LocalAccountData.WALLET_PASS}/mitgliedsausweis.pkpass", now - 10 * 60 * 1000)
         val newView = file(cache, "ansicht/rechnung.pdf", now - 1000)
-        // Notenpult und Kamerafotos räumen sich selbst auf
+        // Das Notenpult räumt sich selbst auf
         val pult = file(cache, "notenpult/n1.pdf", now - 3 * hour)
-        val foto = file(cache, "fotos/beleg.jpg", now - 3 * hour)
+        // Liegen gebliebene Aufnahmen der Kamera gehen mit (Sicherheitsprüfung 26.11.2026, SEC-05)
+        val foto = file(cache, "fotos/beleg-abc.jpg", now - 3 * hour)
+        val neuesFoto = file(cache, "fotos/beleg-def.jpg", now - 5000)
 
         // Die älteste Datei bestimmt die nächste Runde
-        assertEquals(oldExport.lastModified() + hour, GeteilteDateien.nextExpiry(cache))
-        assertEquals(2, GeteilteDateien.clear(cache, now))
+        assertEquals(foto.lastModified() + hour, GeteilteDateien.nextExpiry(cache))
+        assertEquals(3, GeteilteDateien.clear(cache, now))
 
         assertFalse(oldReceipt.exists() || oldExport.exists())
         assertFalse(File(cache, "quittungen/k-1").exists())
         assertTrue(File(cache, "quittungen").isDirectory)
-        assertTrue(newPass.exists() && newView.exists() && pult.exists() && foto.exists())
+        assertFalse(foto.exists())
+        assertTrue(newPass.exists() && newView.exists() && pult.exists() && neuesFoto.exists())
         assertEquals(newPass.lastModified() + hour, GeteilteDateien.nextExpiry(cache))
 
-        assertEquals(2, GeteilteDateien.clear(cache, now + hour + 1000))
+        assertEquals(3, GeteilteDateien.clear(cache, now + hour + 1000))
         assertNull(GeteilteDateien.nextExpiry(cache))
         cache.deleteRecursively()
     }

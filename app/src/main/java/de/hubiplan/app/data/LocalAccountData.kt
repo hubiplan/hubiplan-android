@@ -20,7 +20,10 @@ import kotlinx.serialization.json.put
  * Abmelden werden Ordner und Schlüssel gelöscht.
  */
 object LocalAccountData {
-    private val FOLDERS = listOf("entwuerfe", "quittungen", "ausweise", ClubLogo.FOLDER, FormAttachments.FOLDER, OfflineStore.FOLDER, ReadStore.FOLDER)
+    private val FOLDERS = listOf("entwuerfe", "quittungen", "ausweise", ClubLogo.FOLDER, FormAttachments.FOLDER, OfflineStore.FOLDER, ReadStore.FOLDER, StandStore.FOLDER)
+
+    /** Was nach einer Abmeldung durch den Server in die Quarantäne kommt; alles andere wird gelöscht. */
+    private val QUARANTINED = listOf("entwuerfe", "quittungen")
 
     /** Kontokennung wie bisher: Serveradresse und Geräte-Nummer. */
     fun key(server: String, deviceId: Int) = "$server-$deviceId"
@@ -38,9 +41,7 @@ object LocalAccountData {
     /** Abmelden: alle lokalen Daten dieses Kontos und seinen Schlüssel löschen. */
     fun forget(context: Context, accountKey: String) {
         FOLDERS.forEach { dir(context, it, accountKey).deleteRecursively() }
-        ReceiptCache.forget(context.cacheDir, accountKey)
-        File(context.cacheDir, WALLET_PASS).deleteRecursively()
-        Ansicht.clear(context)
+        forgetShared(context, accountKey)
         DraftCrypto.deleteKey(alias(accountKey))
         StandStore.forget(context, accountKey)
         LastUnitStore.forget(context, accountKey)
@@ -53,22 +54,34 @@ object LocalAccountData {
      * verschlüsselt in die Quarantäne legen. Der Schlüssel bleibt nur, wenn dort etwas liegt.
      */
     fun retire(context: Context, accountKey: String, server: String = "", email: String = "") {
-        dir(context, "ausweise", accountKey).deleteRecursively()
-        dir(context, OfflineStore.FOLDER, accountKey).deleteRecursively()
-        dir(context, ReadStore.FOLDER, accountKey).deleteRecursively()
+        // Alles außer den ungesendeten Vorgängen löschen, wie beim eigenen Abmelden (SEC-03):
+        // auch Standzugänge, angefangene Formularanhänge und das Wappen
+        retireFolders(context.filesDir, accountKey)
+        StandStore.forget(context, accountKey)
         // Noten nie behalten, wenn das Gerät abgemeldet ist (Konzept Noten, Abschnitt 5)
         NotenStore.forget(context, accountKey)
         LastUnitStore.forget(context, accountKey)
-        ReceiptCache.forget(context.cacheDir, accountKey)
-        File(context.cacheDir, WALLET_PASS).deleteRecursively()
-        Ansicht.clear(context)
+        forgetShared(context, accountKey)
         var kept = false
-        for (folder in listOf("entwuerfe", "quittungen")) {
+        for (folder in QUARANTINED) {
             val source = dir(context, folder, accountKey)
             val target = File(File(context.filesDir, QUARANTINE), "$folder-k-${id(accountKey)}")
             if (quarantine(source, target, server, email.lowercase(), alias(accountKey), System.currentTimeMillis())) kept = true
         }
         if (!kept) DraftCrypto.deleteKey(alias(accountKey))
+    }
+
+    /** Ordner des Kontos löschen, die nicht in die Quarantäne gehören. */
+    internal fun retireFolders(filesDir: File, accountKey: String) {
+        FOLDERS.filter { it !in QUARANTINED }.forEach { File(filesDir, "$it/k-${id(accountKey)}").deleteRecursively() }
+    }
+
+    /** Dateien im Cache, die an andere Apps gingen oder von der Kamera kamen. */
+    private fun forgetShared(context: Context, accountKey: String) {
+        ReceiptCache.forget(context.cacheDir, accountKey)
+        Einmalablage.forget(context.cacheDir, WALLET_PASS, accountKey)
+        Ansicht.forget(context, accountKey)
+        Kamerafotos.clearAll(context.cacheDir)
     }
 
     /**
@@ -119,7 +132,7 @@ object LocalAccountData {
 
     private const val OWNER = ".konto"
 
-    /** Cache-Ordner für den zuletzt geöffneten Wallet-Pass (beim nächsten Öffnen überschrieben, nach etwa einer Stunde gelöscht). */
+    /** Cache-Ordner für den zuletzt geöffneten Wallet-Pass (je Konto, zufälliger Unterordner; nach etwa einer Stunde gelöscht). */
     const val WALLET_PASS = "ausweis"
 
     /** Nach dieser Zeit fragt die App, ob alte Belege aus der Quarantäne gelöscht werden dürfen. */
@@ -274,24 +287,42 @@ object LocalAccountData {
     /** Ordner im Cache für den Export (geteilt über FileProvider, nach etwa einer Stunde und beim nächsten Start gelöscht). */
     const val EXPORT = "export"
 
+    /** Gehört die Quarantäne einem der [accounts] (Instanz, E-Mail)? Ohne lesbaren Eigentümer nie. */
+    private fun matches(who: Owner?, accounts: List<Pair<String, String>>): Boolean =
+        who != null && who.email.isNotEmpty() && accounts.any { (server, email) ->
+            email.isNotBlank() && who.server.equals(server, ignoreCase = true) && who.email.equals(email, ignoreCase = true)
+        }
+
     /**
      * Alte Vorgänge (älter als [STALE_DAYS]) entschlüsselt als JSON-Datei, um sie zu teilen
-     * oder zu speichern, bevor sie gelöscht werden (Fachfrage FQ24). Rückgabe: Datei und Zahl
-     * der Vorgänge darin; null, wenn sich nichts öffnen ließ.
+     * oder zu speichern, bevor sie gelöscht werden (Fachfrage FQ24). Nur Vorgänge der gerade
+     * angemeldeten [accounts] (Instanz, E-Mail; Sicherheitsprüfung 26.11.2026, SEC-02): Wer das
+     * Gerät später bekommt oder nur mit einem anderen Konto angemeldet ist, kann fremde Belege
+     * nicht im Klartext herausholen. Rückgabe: Datei und Zahl der Vorgänge darin; null, wenn sich nichts öffnen ließ.
      */
-    fun exportStale(context: Context, now: Long = System.currentTimeMillis()): Pair<File, Int>? {
+    fun exportStale(context: Context, accounts: List<Pair<String, String>>, now: Long = System.currentTimeMillis()): Pair<File, Int>? =
+        exportStale(context.filesDir, context.cacheDir, accounts, now) { alias, data -> DraftCrypto.open(alias, data) }
+            ?.also { GeteilteDateien.schedule(context) }
+
+    internal fun exportStale(
+        filesDir: File,
+        cacheDir: File,
+        accounts: List<Pair<String, String>>,
+        now: Long,
+        open: (String, ByteArray) -> ByteArray,
+    ): Pair<File, Int>? {
         val items = mutableListOf<JsonElement>()
-        for (box in File(context.filesDir, QUARANTINE).listFiles().orEmpty()) {
+        for (box in File(filesDir, QUARANTINE).listFiles().orEmpty()) {
             if (!olderThan(box, STALE_DAYS, now)) continue
             val who = owner(box)
-            val alias = keyAlias(box, who) ?: DraftCrypto.LEGACY_ALIAS
+            if (who == null || !matches(who, accounts)) continue
             for (file in entries(box)) {
-                val plain = runCatching { String(DraftCrypto.open(alias, file.readBytes())) }.getOrNull() ?: continue
+                val plain = runCatching { String(open(who.alias, file.readBytes())) }.getOrNull() ?: continue
                 val content = runCatching { Json.parseToJsonElement(plain) }.getOrElse { JsonPrimitive(plain) }
                 items += buildJsonObject {
                     put("art", box.name.substringBefore("-k-").substringBefore("-"))
-                    put("server", who?.server ?: "")
-                    put("konto", who?.email ?: "")
+                    put("server", who.server)
+                    put("konto", who.email)
                     put("inhalt", content)
                 }
             }
@@ -302,12 +333,22 @@ object LocalAccountData {
             put("exportiert", java.time.Instant.ofEpochMilli(now).toString())
             put("vorgaenge", JsonArray(items))
         }
-        val dir = File(context.cacheDir, EXPORT).apply { deleteRecursively(); mkdirs() }
+        // Zufälliger Unterordner: Die geteilte Adresse zeigt nie einen späteren Export (SEC-05)
+        val root = File(cacheDir, EXPORT).apply { deleteRecursively() }
+        val dir = File(root, java.util.UUID.randomUUID().toString()).apply { mkdirs() }
         val file = File(dir, "hubiplan-belege.json")
         file.writeText(Json { prettyPrint = true }.encodeToString(JsonObject.serializer(), doc))
-        GeteilteDateien.schedule(context)
         return file to items.size
     }
+
+    /** Alte Vorgänge, die [exportStale] für diese Konten herausgeben würde. */
+    fun exportableStaleCount(context: Context, accounts: List<Pair<String, String>>, now: Long = System.currentTimeMillis()): Int =
+        exportableStaleCount(context.filesDir, accounts, now)
+
+    internal fun exportableStaleCount(filesDir: File, accounts: List<Pair<String, String>>, now: Long): Int =
+        File(filesDir, QUARANTINE).listFiles().orEmpty()
+            .filter { olderThan(it, STALE_DAYS, now) && matches(owner(it), accounts) }
+            .sumOf { entries(it).size }
 
     /** Vorgänge in der Quarantäne, die älter als [STALE_DAYS] Tage sind. */
     fun staleCount(context: Context, now: Long = System.currentTimeMillis()): Int = staleCount(context.filesDir, now)

@@ -90,23 +90,20 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             when (e.status) {
                 401 -> {
                     var pushCleanup: (suspend () -> Unit)? = null
-                    val removed = (applicationContext as HubiplanApp).accounts.remove(store.slot, account) {
+                    val accounts = (applicationContext as HubiplanApp).accounts
+                    val removed = accounts.remove(store.slot, account) {
                         // Gerät abgemeldet: Kalender und Konto entfernen, die App fragt beim Öffnen neu
                         calendar.removeCalendarsExcept(emptySet(), account.server)
                         // Keine verwaisten Ordner (Audit 31.10., C-D01): Ausweise löschen, ungesendete
                         // Buchungen/Quittungen verschlüsselt in die Quarantäne statt sie zu vernichten
-                        runCatching {
-                            de.hubiplan.app.data.LocalAccountData.retire(
-                                applicationContext,
-                                de.hubiplan.app.data.LocalAccountData.key(account.server, account.deviceId),
-                                account.server,
-                                account.email,
-                            )
-                        }
-                        runCatching { RsvpActionReceiver.cancelFor(applicationContext, account) }
+                        // Dieselbe Bereinigung wie in der offenen App (SEC-03): auch Verknüpfungen
+                        Kontobereinigung.local(applicationContext, account, byServer = true)
                         pushCleanup = de.hubiplan.app.push.PushSetup.detach(applicationContext, store)
                     }
-                    if (removed) runCatching { pushCleanup?.invoke() }
+                    if (removed) {
+                        runCatching { pushCleanup?.invoke() }
+                        runCatching { Kontobereinigung.webData(applicationContext, account.server, accounts.list().map { it.second }) }
+                    }
                     false
                 }
                 0, in 500..599 -> true

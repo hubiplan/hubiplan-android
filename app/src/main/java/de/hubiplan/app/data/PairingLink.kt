@@ -79,7 +79,8 @@ fun normalizeServer(input: String): String? {
 
 /** https://Host[:Port], nur wenn okhttp die Adresse auch annimmt (Port 1–65535). */
 internal fun httpsOrigin(uri: URI): String? {
-    val host = uri.host?.takeIf { it.isNotBlank() } ?: return null
+    // Kleinschreibung: dieselbe Instanz ergibt immer dieselbe Adresse (Anmeldung im Browser, Kontenliste)
+    val host = uri.host?.lowercase(java.util.Locale.ROOT)?.takeIf { it.isNotBlank() } ?: return null
     if (uri.port != -1 && uri.port !in 1..65535) return null
     val origin = "https://$host" + if (uri.port == -1) "" else ":${uri.port}"
     return origin.takeIf { it.toHttpUrlOrNull() != null }
@@ -103,3 +104,43 @@ fun serverLink(server: String, path: String): String? {
     if (url.scheme != "https" || url.scheme != base.scheme || url.host != base.host || url.port != base.port) return null
     return url.toString()
 }
+
+/**
+ * Adresse einer Anfrage an die Instanz (Sicherheitsprüfung 26.11.2026, SEC-01). Jede Anfrage
+ * trägt Geräteschlüssel, Vorstandsschlüssel oder Signatur; sie darf deshalb nie an einen
+ * anderen Host gehen, auch wenn ein Pfad aus einer Serverantwort stammt (Bild, Wappen, Datei).
+ * Regeln wie [serverLink]: genau ein führender „/“, keine Leer- oder Steuerzeichen, und das
+ * Ergebnis behält Schema, Host und Port von [server], ohne Benutzerangabe. null: [server] ist
+ * keine gültige Adresse; [UnsafePath]: der Pfad führt von der Instanz weg.
+ */
+internal fun apiUrl(server: String, path: String): okhttp3.HttpUrl? {
+    val base = server.toHttpUrlOrNull() ?: return null
+    if (base.username.isNotEmpty() || base.password.isNotEmpty()) return null
+    if (!path.startsWith("/") || path.startsWith("//")) throw UnsafePath()
+    if (path.any { it == '\\' || it.isWhitespace() || it.isISOControl() }) throw UnsafePath()
+    val url = (server.trimEnd('/') + path).toHttpUrlOrNull() ?: throw UnsafePath()
+    if (url.scheme != base.scheme || url.host != base.host || url.port != base.port ||
+        url.username.isNotEmpty() || url.password.isNotEmpty()
+    ) {
+        throw UnsafePath()
+    }
+    return url
+}
+
+/** Ein Pfad, der nicht auf der Instanz bleibt; die Anfrage wird nicht gesendet. */
+internal class UnsafePath : IllegalArgumentException()
+
+/** Kartenlink aus einer Serverantwort: nur https ohne Benutzerangabe und nur zu [hosts] (SEC-06). */
+fun safeExternalUrl(url: String?, hosts: Set<String>? = null): String? {
+    val parsed = url?.toHttpUrlOrNull() ?: return null
+    if (parsed.scheme != "https" || parsed.username.isNotEmpty() || parsed.password.isNotEmpty()) return null
+    if (hosts != null && parsed.host !in hosts) return null
+    return url
+}
+
+val OSM_HOSTS = setOf("www.openstreetmap.org", "openstreetmap.org")
+val GOOGLE_MAPS_HOSTS = setOf("www.google.com", "maps.google.com", "google.com")
+
+/** Schlüssel des Impressums in einer Adresse: nur Buchstaben, Ziffern, „-“ und „_“ (SEC-06). */
+fun imprintSuffix(key: String?): String =
+    key?.takeIf { Regex("^[A-Za-z0-9_-]{1,64}$").matches(it) }?.let { "/$it" } ?: ""

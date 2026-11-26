@@ -59,7 +59,6 @@ import de.hubiplan.app.trn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.time.LocalDate
 import java.util.UUID
 import androidx.compose.ui.text.input.ImeAction
@@ -186,7 +185,7 @@ internal val ExpenseDraftSaver = listSaver<ExpenseDraft, String>(
 internal fun rememberReceiptPhotos(onPhoto: (ByteArray) -> Unit, onFail: (String) -> Unit): Pair<() -> Unit, () -> Unit> {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     fun take(uri: Uri?) {
         if (uri == null) return
         scope.launch {
@@ -195,16 +194,18 @@ internal fun rememberReceiptPhotos(onPhoto: (ByteArray) -> Unit, onFail: (String
             }
             // Kamerafoto sofort aus dem Cache löschen
             withContext(Dispatchers.IO) {
-                File(context.cacheDir, "fotos").listFiles { f -> f.name.startsWith("auslage-") }?.forEach { it.delete() }
+                de.hubiplan.app.data.Kamerafotos.clear(context, "auslage")
             }
             if (jpeg == null) onFail(tr("Das Foto ließ sich nicht lesen.")) else onPhoto(jpeg)
         }
     }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok -> if (ok) take(photoUri) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        // Abgebrochen: die leere oder halbe Aufnahme nicht liegen lassen (SEC-05)
+        if (ok) take(photoUri) else de.hubiplan.app.data.Kamerafotos.clear(context, "auslage")
+    }
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> take(uri) }
     fun startCamera() {
-        val dir = File(context.cacheDir, "fotos").apply { mkdirs() }
-        val file = File(dir, "auslage-${UUID.randomUUID()}.jpg")
+        val file = de.hubiplan.app.data.Kamerafotos.neu(context, "auslage")
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.dateien", file)
         photoUri = uri
         camera.launch(uri)

@@ -30,8 +30,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -45,6 +43,9 @@ import de.hubiplan.app.data.PortalAccess
 import de.hubiplan.app.data.VideoRoom
 import java.time.LocalDate
 import kotlinx.coroutines.launch
+import de.hubiplan.app.data.safeExternalUrl
+import de.hubiplan.app.data.OSM_HOSTS
+import de.hubiplan.app.data.GOOGLE_MAPS_HOSTS
 import de.hubiplan.app.tr
 import de.hubiplan.app.trk
 import androidx.compose.foundation.layout.size
@@ -382,8 +383,9 @@ private fun PlaceSection(location: String, address: String, e: EventDetail) {
         OutlinedButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(geo))) }, modifier = Modifier.fillMaxWidth()) {
             Text(tr("Navigation starten"))
         }
-        e.mapLinks.osm?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in OpenStreetMap")) } }
-        e.mapLinks.google?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in Google Maps")) } }
+        // Nur https-Links zu den erwarteten Kartendiensten öffnen (SEC-06)
+        safeExternalUrl(e.mapLinks.osm, OSM_HOSTS)?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in OpenStreetMap")) } }
+        safeExternalUrl(e.mapLinks.google, GOOGLE_MAPS_HOSTS)?.let { url -> TextButton(onClick = { start(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }) { Text(tr("Route in Google Maps")) } }
     }
 }
 
@@ -392,7 +394,6 @@ private fun PlaceSection(location: String, address: String, e: EventDetail) {
 private fun VideoSection(video: VideoRoom) {
     if (!video.openable) return
     val context = LocalContext.current
-    val clipboard = LocalClipboardManager.current
     var copied by remember { mutableStateOf(false) }
     Text(tr("Videoraum"), style = MaterialTheme.typography.titleSmall, modifier = Modifier.asHeading())
     OutlinedButton(
@@ -402,7 +403,7 @@ private fun VideoSection(video: VideoRoom) {
     if (video.password.isNotBlank()) {
         SelectionContainer { Text(tr("Passwort: {password}", "password" to video.password)) }
         TextButton(onClick = {
-            clipboard.setText(AnnotatedString(video.password))
+            copySensitive(context, tr("Passwort"), video.password)
             copied = true
         }) { Text(if (copied) tr("Passwort kopiert") else tr("Passwort kopieren")) }
     }

@@ -424,7 +424,10 @@ class AdminClient(
 /** Hinterlegte eigene Unterschrift (nur mit Vorstandsschlüssel). */
 const val SIGNATURE_PATH = "/api/app/v1/admin/signature/"
 
-/** `/api/orgs/<Einheit>/…` → `/api/app/v1/admin/u/<Einheit>/…` (nur für diese Einheit). */
+/**
+ * `/api/orgs/<Einheit>/…` → `/api/app/v1/admin/u/<Einheit>/…` (nur für diese Einheit). Andere
+ * Pfade bleiben, wie sie sind; dass sie auf der Instanz bleiben, prüft [apiUrl] bei jeder Anfrage.
+ */
 fun adminPath(path: String, unitId: Int): String {
     val prefix = "/api/orgs/$unitId/"
     return if (path.startsWith(prefix)) "/api/app/v1/admin/u/$unitId/" + path.removePrefix(prefix) else path
