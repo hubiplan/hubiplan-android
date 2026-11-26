@@ -36,7 +36,8 @@ import de.hubiplan.app.data.Sender
 import kotlinx.coroutines.launch
 import de.hubiplan.app.tr
 
-private val LOCKED = { tr("Die Verwaltung ist gesperrt. Bitte unter „Verwaltung“ entsperren und dann erneut senden.") }
+private fun verwaltungGesperrt(): String =
+    tr("Die Verwaltung ist gesperrt. Bitte unter „Verwaltung“ entsperren und dann erneut senden.")
 
 /** Vorstand oder Zugführung: Kurzmitteilung an alle Mitglieder der Einheit. */
 @Composable
@@ -78,7 +79,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
         val api = vm.adminApi()
         if (api == null) {
             preview = null
-            error = LOCKED()
+            error = verwaltungGesperrt()
             return
         }
         busy = true
@@ -110,7 +111,7 @@ fun SendPane(vm: AppViewModel, onDone: (String) -> Unit, onCancel: () -> Unit) {
                 if (e.status == 401) {
                     preview = null
                     vm.adminRejected()
-                    error = LOCKED()
+                    error = verwaltungGesperrt()
                 } else {
                     error = fields.receive(e)
                 }
