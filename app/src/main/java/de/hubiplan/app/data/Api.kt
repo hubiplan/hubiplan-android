@@ -518,15 +518,20 @@ class Api(
 
     suspend fun senders(): Senders = decodeApi(expect("GET", "/api/app/v1/send/"))
 
-    /** Kurzmitteilung: [confirm] false zählt nur die Empfänger, true sendet. */
+    /**
+     * Kurzmitteilung: [confirm] false zählt nur die Empfänger, true sendet. Nur mit dem
+     * Vorstandsschlüssel (diese Api aus der entsperrten Verwaltung), der Server lehnt den
+     * Geräteschlüssel allein ab.
+     */
     suspend fun sendShort(sender: Sender, subject: String, body: String, confirm: Boolean): SendResult =
-        decodeApi(
-            expect(
-                "POST",
-                "/api/app/v1/send/${sender.type}/${sender.id}/",
-                """{"subject":${quote(subject)},"body":${quote(body)},"confirm":$confirm}""",
-            ),
-        )
+        decodeApi(admin("POST", "/api/app/v1/admin/send/${sender.type}/${sender.id}/", sendBody(subject, body, confirm)).text)
+
+    /** Früherer Sendepfad mit dem Geräteschlüssel: nur noch für Instanzen ohne den neuen Pfad. */
+    suspend fun sendShortBefore(sender: Sender, subject: String, body: String, confirm: Boolean): SendResult =
+        decodeApi(expect("POST", "/api/app/v1/send/${sender.type}/${sender.id}/", sendBody(subject, body, confirm)))
+
+    private fun sendBody(subject: String, body: String, confirm: Boolean): String =
+        """{"subject":${quote(subject)},"body":${quote(body)},"confirm":$confirm}"""
 
     suspend fun profile(accessId: Int): Profile = decodeApi(expect("GET", "/api/portal/$accessId/"))
 

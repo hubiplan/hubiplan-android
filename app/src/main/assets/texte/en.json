@@ -381,6 +381,8 @@
  "Der Code stimmt nicht. Bitte erneut versuchen.": "The code is wrong. Please try again.",
  "Unter dieser Adresse läuft kein HUBIplan.": "HUBIplan is not running at this address.",
  "Bitte die App aktualisieren, diese Version wird von HUBIplan nicht mehr unterstützt.": "Please update the app, HUBIplan no longer supports this version.",
+ "Die Verwaltung ist gesperrt. Bitte unter „Verwaltung“ entsperren und dann erneut senden.": "The administration is locked. Please unlock it under “Administration” and then send again.",
+ "Zum Senden muss die Verwaltung entsperrt sein. Bitte unter „Verwaltung“ entsperren; der Text bleibt erhalten.": "Sending requires the unlocked administration. Please unlock it under “Administration”; your text is kept.",
  "Die Verwaltung ist gesperrt. Bitte unter „Verwaltung“ entsperren und dann noch einmal abmelden.": "The administration is locked. Please unlock it under “Administration” and then sign out again.",
  "1 Vorgang konnte nicht gesendet werden (z. B. ohne Verbindung oder mit Fehler). Bitte unter Verwaltung › Kasse prüfen.": "1 transaction could not be sent (e.g. no connection or an error). Please check under Administration › Cash.",
  "{n} Vorgänge konnten nicht gesendet werden (z. B. ohne Verbindung oder mit Fehler). Bitte unter Verwaltung › Kasse prüfen.": "{n} transactions could not be sent (e.g. no connection or an error). Please check under Administration › Cash.",
