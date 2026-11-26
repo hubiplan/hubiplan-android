@@ -114,7 +114,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
             AccountPage.UEBER -> {
                 TextButton(onClick = { open("${main.account.server}/hilfe") }) { Text(tr("Hilfe und Anleitungen im Browser")) }
                 main.access?.let { a ->
-                    val key = a.imprintKey?.let { "/$it" } ?: ""
+                    val key = de.hubiplan.app.data.imprintSuffix(a.imprintKey)
                     TextButton(onClick = { open("${main.account.server}/datenschutz$key") }) { Text(tr("Datenschutzhinweise")) }
                     TextButton(onClick = { open("${main.account.server}/impressum$key") }) { Text(tr("Impressum")) }
                 }
@@ -149,7 +149,7 @@ fun AccountPane(main: Screen.Main, vm: AppViewModel) {
     }
 
     if (deleteInfo) {
-        val key = main.access?.imprintKey?.let { "/$it" } ?: ""
+        val key = de.hubiplan.app.data.imprintSuffix(main.access?.imprintKey)
         AlertDialog(
             onDismissRequest = { deleteInfo = false },
             title = { Text(tr("Konto und Daten löschen")) },

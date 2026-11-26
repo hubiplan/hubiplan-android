@@ -171,7 +171,10 @@ private fun PartnerScreen(p: PartnerItem, onBack: () -> Unit) {
 @Composable
 private fun ContactPersonRows(c: PartnerContact) {
     val context = LocalContext.current
-    fun start(intent: Intent) = runCatching { context.startActivity(intent) }
+    fun start(intent: Intent) = runCatching {
+        AdminAway.allow()
+        context.startActivity(intent)
+    }
     ListItem(
         headlineContent = { Text(c.fullName.ifBlank { c.lastName }) },
         supportingContent = {

@@ -42,11 +42,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import de.hubiplan.app.data.allowedExternalStandUrl
+import de.hubiplan.app.data.allowedStandResource
 import de.hubiplan.app.data.sameInstance
 import de.hubiplan.app.tr
 import de.hubiplan.app.trn
-import java.io.File
-import java.util.UUID
 
 /** Laufender Standmodus in der App (Adresse mit Standzugang, Instanz, Titel). */
 data class StandSession(val url: String, val server: String, val title: String)
@@ -83,12 +83,11 @@ fun StandScreen(session: StandSession, onClose: () -> Unit) {
     }
 
     fun startCamera() {
-        val dir = File(context.cacheDir, "fotos").apply { mkdirs() }
-        // Vorheriges Standfoto löschen: Fotos bleiben nicht auf dem Gerät
-        dir.listFiles { f -> f.name.startsWith("stand-") }?.forEach { it.delete() }
-        val file = File(dir, "stand-${UUID.randomUUID()}.jpg")
+        // Vorheriges Standfoto wird dabei gelöscht: Fotos bleiben nicht auf dem Gerät
+        val file = de.hubiplan.app.data.Kamerafotos.neu(context, "stand")
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.dateien", file)
         photo = uri
+        AdminAway.allow()
         takePicture.launch(uri)
     }
 
@@ -136,7 +135,7 @@ fun StandScreen(session: StandSession, onClose: () -> Unit) {
                 destroy()
             }
             web = null
-            File(context.cacheDir, "fotos").listFiles { f -> f.name.startsWith("stand-") }?.forEach { it.delete() }
+            de.hubiplan.app.data.Kamerafotos.clear(context, "stand")
         }
     }
 
@@ -175,9 +174,20 @@ fun StandScreen(session: StandSession, onClose: () -> Unit) {
                             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                                 val url = request.url.toString()
                                 if (sameInstance(session.server, url)) return false
-                                // Fremde Links (Hilfe, Impressum anderer Seiten) im Browser öffnen
-                                runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
+                                // Fremde Links (Hilfe, Impressum anderer Seiten) im Browser öffnen, aber nur
+                                // https; andere Schemata könnten fremde Apps starten (SEC-04)
+                                if (allowedExternalStandUrl(url)) {
+                                    runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, request.url)) }
+                                }
                                 return true
+                            }
+
+                            // Die Seite lädt nichts von fremden Servern nach (SEC-04)
+                            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): android.webkit.WebResourceResponse? {
+                                if (allowedStandResource(session.server, request.url.toString())) return null
+                                return android.webkit.WebResourceResponse(
+                                    "text/plain", "utf-8", 403, "Forbidden", emptyMap(), java.io.ByteArrayInputStream(ByteArray(0)),
+                                )
                             }
                         }
                         webChromeClient = object : WebChromeClient() {
@@ -211,10 +221,12 @@ fun StandScreen(session: StandSession, onClose: () -> Unit) {
                                             startCamera()
                                         } else {
                                             notice = tr("Ohne Zugriff auf die Kamera bitte ein Bild aus der Galerie wählen.")
+                                            AdminAway.allow()
                                             pickImage.launch("image/*")
                                         }
                                     }
                                 } else {
+                                    AdminAway.allow()
                                     pickImage.launch("image/*")
                                 }
                                 return true

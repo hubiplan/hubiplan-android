@@ -174,6 +174,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Wie viele der alten Belege einem gerade angemeldeten Konto gehören: nur die lassen sich exportieren (SEC-02). */
+    private val _staleExportable = MutableStateFlow(0)
+    val staleExportable: StateFlow<Int> = _staleExportable
+
+    private suspend fun signedInAccounts(): List<Pair<String, String>> =
+        accounts.list().map { it.second.server to it.second.email }
+
+    /** Alte Belege der angemeldeten Konten als Datei; erst nach dem Entsperren des Geräts aufrufen. */
+    suspend fun exportStaleQuarantine(): Pair<java.io.File, Int>? {
+        val mine = signedInAccounts()
+        return withContext(Dispatchers.IO) { runCatching { LocalAccountData.exportStale(context, mine) }.getOrNull() }
+    }
+
     /** Alte Belege behalten: erst beim nächsten Start wieder fragen. */
     fun keepStaleQuarantine() {
         _staleQuarantine.value = 0
@@ -209,6 +222,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun accountKey(): String? =
         (screen.value as? Screen.Main)?.account?.let { LocalAccountData.key(it.server, it.deviceId) }
+
+    /** Kennung des gezeigten Kontos für seine Ordner auf dem Gerät ([LocalAccountData.key]). */
+    fun localAccountKey(): String? = accountKey()
 
     /** Zuletzt geladene Termine und Mitteilungen dieses Kontos. */
     fun offlineStore(): de.hubiplan.app.data.OfflineStore? =
@@ -470,9 +486,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private var backgroundSince = 0L
 
-    /** App geht in den Hintergrund (auch beim Sperren des Telefons). */
+    /**
+     * App geht in den Hintergrund (auch beim Sperren des Telefons). Die Verwaltung wird sofort
+     * gesperrt, außer sie hat selbst gerade Kamera, Scanner, Bildauswahl oder einen Betrachter
+     * geöffnet ([AdminAway.allow]); nur dann gilt die kurze Frist (Sicherheitsprüfung
+     * 26.11.2026, SEC-07).
+     */
     fun wentToBackground() {
         backgroundSince = SystemClock.elapsedRealtime()
+        if (!AdminAway.consume(backgroundSince)) lockAdminNow()
     }
 
     /**
@@ -703,6 +725,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             _staleQuarantine.value = withContext(Dispatchers.IO) {
                 runCatching { LocalAccountData.staleCount(context) }.getOrDefault(0)
             }
+            val mine = runCatching { signedInAccounts() }.getOrDefault(emptyList())
+            _staleExportable.value = withContext(Dispatchers.IO) {
+                runCatching { LocalAccountData.exportableStaleCount(context, mine) }.getOrDefault(0)
+            }
             _staleDeadline.value = withContext(Dispatchers.IO) {
                 runCatching { LocalAccountData.finalDeletion(context) }.getOrNull()
             }
@@ -779,18 +805,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // Selbst abgemeldet (nach der Rückfrage „senden oder verwerfen“): alle lokalen Daten
             // und Schlüssel löschen (AND-S02). Vom Server abgemeldet: ungesendete Belege in die
             // Quarantäne, sie kommen nach erneuter Anmeldung zurück (Fachfrage 16, Audit 31.10.)
-            runCatching { ClubShortcut.forget(context, current) }
-            // Ein anderes Konto mit Ausweis legt die Verknüpfung beim Laden wieder an
-            runCatching { de.hubiplan.app.shortcut.CardShortcut.update(context, false) }
-            current.let {
-                val key = LocalAccountData.key(it.server, it.deviceId)
-                runCatching {
-                    if (error == null) LocalAccountData.forget(context, key)
-                    else LocalAccountData.retire(context, key, it.server, it.email)
-                }
-            }
-            // Noch wartende Zu-/Absagen dieses Kontos verwerfen (C-F02)
-            runCatching { de.hubiplan.app.sync.RsvpActionReceiver.cancelFor(context, current) }
+            de.hubiplan.app.sync.Kontobereinigung.local(context, current, byServer = error != null)
             if (wasActive) resetAdmin()
             pushCleanup = PushSetup.detach(context, slotStore)
             runCatching { DeviceCalendar(context).removeCalendarsExcept(emptySet(), server) }
@@ -799,8 +814,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         runCatching { pushCleanup?.invoke() }
         // Speicher der eingebetteten Webansicht (Standmodus) nicht über die Abmeldung hinaus
         // behalten (Gesamtaudit 19.11.2026, S-09)
-        val rest = accounts.list().map { it.second }
-        Sichtschutz.clearWebData(server, othersOnServer = rest.any { it.server == server }, anyLeft = rest.isNotEmpty())
+        de.hubiplan.app.sync.Kontobereinigung.webData(context, server, accounts.list().map { it.second })
         if (!wasActive) {
             loadAccounts()
             return
@@ -1074,6 +1088,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun cancelPairing() {
         _connect.value = _connect.value.copy(pendingPairing = null)
+        // Den Prüfwert einer angefangenen Anmeldung im Browser nicht liegen lassen (SEC-08)
+        runCatching { de.hubiplan.app.data.BrowserLoginStore(context).clear() }
     }
 
     fun login(serverInput: String, email: String, password: String) {
@@ -1282,6 +1298,30 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
 /** Länger im Hintergrund als das: Verwaltung beim Zurückkommen gesperrt (Fachfrage 18). */
 const val BACKGROUND_LOCK_MS = 60_000L
+
+/**
+ * Die Verwaltung öffnet gleich selbst eine andere Ansicht (Kamera für den Beleg, QR-Scanner,
+ * Bildauswahl, PDF-Betrachter). Nur dann bleibt sie im Hintergrund bis zu [BACKGROUND_LOCK_MS]
+ * offen; bei jedem anderen Wechsel aus der App wird der Vorstandsschlüssel sofort verworfen.
+ */
+object AdminAway {
+    /** So lange nach [allow] darf der Wechsel in den Hintergrund kommen. */
+    internal const val WINDOW_MS = 10_000L
+
+    @Volatile
+    private var allowedAt = 0L
+
+    fun allow(now: Long = SystemClock.elapsedRealtime()) {
+        allowedAt = now
+    }
+
+    /** Gilt die Erlaubnis für diesen Wechsel? Sie wird dabei verbraucht. */
+    internal fun consume(now: Long): Boolean {
+        val at = allowedAt
+        allowedAt = 0L
+        return at > 0L && now - at in 0..WINDOW_MS
+    }
+}
 
 /** Status der Ausnahme, wenn die Verwaltung wegen Pause gesperrt wurde (kein Serverfehler). */
 const val ADMIN_IDLE = 423

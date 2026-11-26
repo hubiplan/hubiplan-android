@@ -26,9 +26,7 @@ import de.hubiplan.app.tr
 import de.hubiplan.app.trn
 import java.io.File
 import java.time.Instant
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Hinweise zur Quarantäne nicht gesendeter Belege (Fachfrage 16, Audit 31.10.; FQ24, Audit
@@ -40,6 +38,7 @@ fun QuarantineDialogs(vm: AppViewModel) {
     val restored by vm.restored.collectAsStateWithLifecycle()
     val stale by vm.staleQuarantine.collectAsStateWithLifecycle()
     val deadline by vm.staleDeadline.collectAsStateWithLifecycle()
+    val exportable by vm.staleExportable.collectAsStateWithLifecycle()
     val swept by vm.swept.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -119,18 +118,37 @@ fun QuarantineDialogs(vm: AppViewModel) {
                         "STALE_DAYS" to LocalAccountData.STALE_DAYS,
                     ) +
                         tr(" Nach erneuter Anmeldung mit demselben Konto bei derselben HUBIplan-Instanz werden sie wieder angeboten.") +
-                        (deadline?.let { tr(" Sonst löscht die App sie am {date} endgültig. Was noch beim Verein ankommen muss, vorher exportieren und weitergeben.", "date" to formatDate(Instant.ofEpochMilli(it).toString())) } ?: "") +
+                        (deadline?.let {
+                            val date = formatDate(Instant.ofEpochMilli(it).toString())
+                            // Export nur für Belege eines angemeldeten Kontos (SEC-02)
+                            if (exportable > 0) tr(" Sonst löscht die App sie am {date} endgültig. Was noch beim Verein ankommen muss, vorher exportieren und weitergeben.", "date" to date)
+                            else tr(" Sonst löscht die App sie am {date} endgültig.", "date" to date)
+                        } ?: "") +
                         (exportError?.let { "\n\n$it" } ?: ""),
                 )
             },
             confirmButton = {
                 Row {
-                    TextButton(onClick = {
-                        scope.launch {
-                            val result = withContext(Dispatchers.IO) { runCatching { LocalAccountData.exportStale(context) }.getOrNull() }
-                            exportError = if (result == null) tr("Nichts ließ sich öffnen. Bitte das Gerät entsperren und erneut versuchen.") else shareExport(context, result.first)
-                        }
-                    }) { Text(tr("Exportieren")) }
+                    if (exportable > 0) {
+                        TextButton(onClick = {
+                            // Klartext nur nach Fingerabdruck, Gesicht oder Geräte-PIN (SEC-02)
+                            if (!DeviceUnlock.available(context)) {
+                                exportError = tr("Zum Exportieren braucht das Gerät eine Bildschirmsperre (PIN, Muster oder Fingerabdruck).")
+                            } else {
+                                DeviceUnlock.ask(
+                                    context,
+                                    tr("Belege exportieren"),
+                                    onSuccess = {
+                                        scope.launch {
+                                            val result = vm.exportStaleQuarantine()
+                                            exportError = if (result == null) tr("Nichts ließ sich öffnen. Bitte das Gerät entsperren und erneut versuchen.") else shareExport(context, result.first)
+                                        }
+                                    },
+                                    onError = { exportError = it },
+                                )
+                            }
+                        }) { Text(tr("Exportieren")) }
+                    }
                     TextButton(onClick = vm::discardStaleQuarantine) { Text(tr("Löschen")) }
                 }
             },

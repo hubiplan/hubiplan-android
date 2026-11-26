@@ -725,6 +725,7 @@ fun MeetingLeadScreen(
                     if (a.editable) {
                         if (canScanCards) {
                             Button(onClick = {
+                                AdminAway.allow()
                                 scanner.launch(
                                     ScanOptions()
                                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)

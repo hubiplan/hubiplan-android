@@ -635,6 +635,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         reloadKey = reload,
                         onScan = if (hasMembers) {
                             {
+                                AdminAway.allow()
                                 scanner.launch(
                                     ScanOptions()
                                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
@@ -757,6 +758,7 @@ private fun AdminHome(units: List<AdminUnit>, until: String?, main: Screen.Main,
                         errors = errors,
                         reload = reload,
                         onScan = {
+                            AdminAway.allow()
                             scanner.launch(
                                 ScanOptions()
                                     .setDesiredBarcodeFormats(ScanOptions.QR_CODE)

@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Geteilte oder zum Ansehen geöffnete Dateien (Quittungen, Export alter Belege, Wallet-Pass,
- * Rechnungen und Dokumente aus „Ich“) bleiben höchstens etwa eine Stunde im App-Speicher
+ * Rechnungen und Dokumente aus „Ich“) und liegen gebliebene Aufnahmen der Kamera bleiben höchstens etwa eine Stunde im App-Speicher
  * (Gesamtaudit 10.11., V04, Fachfrage 9). Aufgeräumt wird beim Start der App und durch eine
  * Hintergrundarbeit, die die App nach jedem Ablegen für den Ablauf der ältesten Datei plant.
  * Das Notenpult ist ausgenommen: Es löscht seine Kopien selbst beim Schließen.
@@ -24,7 +24,7 @@ object GeteilteDateien {
 
     private const val WORK = "geteilte-dateien-aufraeumen"
 
-    val FOLDERS = listOf(ReceiptCache.FOLDER, LocalAccountData.EXPORT, LocalAccountData.WALLET_PASS, Ansicht.FOLDER)
+    val FOLDERS = listOf(ReceiptCache.FOLDER, LocalAccountData.EXPORT, LocalAccountData.WALLET_PASS, Ansicht.FOLDER, Kamerafotos.FOLDER)
 
     private fun files(cacheDir: File) = FOLDERS.asSequence()
         .map { File(cacheDir, it) }

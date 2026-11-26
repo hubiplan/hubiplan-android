@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Foto aus der Kamera (nach dem Hochladen gelöscht) und Quittungen zum Teilen (je Konto und Ausgabe eigener Ordner, aufgeräumt beim Start, nach 10 Minuten und beim Abmelden), beides nur im Cache -->
+<!-- Foto aus der Kamera (zufälliger Name; nach dem Übernehmen gelöscht, sonst nach etwa einer Stunde und beim Abmelden) und Quittungen zum Teilen (je Konto und Ausgabe eigener Ordner, aufgeräumt beim Start, nach 10 Minuten und beim Abmelden), beides nur im Cache -->
 <paths>
     <cache-path name="fotos" path="fotos/" />
     <cache-path name="quittungen" path="quittungen/" />
-    <!-- Export alter, nicht gesendeter Belege vor dem Löschen (Fachfrage FQ24), nach etwa einer Stunde und beim Start gelöscht -->
+    <!-- Export alter, nicht gesendeter Belege vor dem Löschen (Fachfrage FQ24), je Export ein zufälliger Unterordner, nach etwa einer Stunde und beim Start gelöscht -->
     <cache-path name="export" path="export/" />
-    <!-- Wallet-Pass zum Öffnen in einer Wallet-App, beim nächsten Laden überschrieben, nach etwa einer Stunde gelöscht -->
+    <!-- Wallet-Pass zum Öffnen in einer Wallet-App, je Konto und Ausgabe ein eigener Ordner, nach etwa einer Stunde und beim Abmelden gelöscht -->
     <cache-path name="ausweis" path="ausweis/" />
-    <!-- Rechnung, Protokoll oder Dokument zum Ansehen (Reiter „Ich“), beim nächsten Öffnen, nach etwa einer Stunde, beim Start und beim Abmelden gelöscht -->
+    <!-- Rechnung, Protokoll oder Dokument zum Ansehen (Reiter „Ich“), je Konto und Datei ein eigener Ordner, beim nächsten Öffnen, nach etwa einer Stunde, beim Start und beim Abmelden gelöscht -->
     <cache-path name="ansicht" path="ansicht/" />
 </paths>

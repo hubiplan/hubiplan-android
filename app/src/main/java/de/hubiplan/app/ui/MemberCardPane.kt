@@ -184,7 +184,8 @@ private fun WalletButtons(vm: AppViewModel, accessId: Int, wallet: CardWallet) {
                     run { api ->
                         val bytes = api.walletApple(accessId)
                         val file = withContext(Dispatchers.IO) {
-                            File(context.cacheDir, LocalAccountData.WALLET_PASS).apply { mkdirs() }.resolve("mitgliedsausweis.pkpass").apply { writeBytes(bytes) }
+                            // Je Konto und Ausgabe ein eigener Ordner: nie dieselbe Adresse für zwei Ausweise (SEC-05)
+                            de.hubiplan.app.data.Einmalablage.write(context.cacheDir, LocalAccountData.WALLET_PASS, vm.localAccountKey().orEmpty(), "mitgliedsausweis.pkpass", bytes)
                                 .also { de.hubiplan.app.data.GeteilteDateien.schedule(context) }
                         }
                         message = openPass(context, file)

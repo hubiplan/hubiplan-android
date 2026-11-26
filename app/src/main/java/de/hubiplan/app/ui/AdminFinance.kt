@@ -413,9 +413,9 @@ fun rememberPhotoPicker(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit): P
         if (ok && file != null) load(Uri.fromFile(file)) else file?.delete()
     }
     fun startCamera() {
-        val dir = File(context.cacheDir, "fotos").apply { mkdirs() }
-        val file = File(dir, "beleg-${UUID.randomUUID()}.jpg")
+        val file = de.hubiplan.app.data.Kamerafotos.neu(context, "beleg")
         cameraPath = file.absolutePath
+        AdminAway.allow()
         takePicture.launch(FileProvider.getUriForFile(context, "${context.packageName}.dateien", file))
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
@@ -431,7 +431,10 @@ fun rememberPhotoPicker(onPhoto: (Bitmap) -> Unit, onError: (String) -> Unit): P
                     permission.launch(Manifest.permission.CAMERA)
                 }
             },
-            gallery = { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+            gallery = {
+                AdminAway.allow()
+                pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            },
         )
     }
 }

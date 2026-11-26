@@ -120,7 +120,7 @@ internal fun RegistrationSection(access: PortalAccess, e: EventDetail, vm: AppVi
         scope.launch {
             try {
                 val bytes = api.registrationTickets(access.id, e.id, reg.id)
-                val file = withContext(Dispatchers.IO) { Ansicht.store(context, "eintrittskarten-${reg.number}.pdf", bytes) }
+                val file = withContext(Dispatchers.IO) { Ansicht.store(context, vm.localAccountKey().orEmpty(), "eintrittskarten-${reg.number}.pdf", bytes) }
                 openForViewing(context, file, "application/pdf")?.let { notice = it }
             } catch (x: ApiException) {
                 if (x.status == 401) vm.deviceRevoked(x) else error = x.problem()

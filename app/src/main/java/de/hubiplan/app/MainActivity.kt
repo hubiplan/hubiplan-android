@@ -88,7 +88,8 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onStop() {
-        vm.wentToBackground()
+        // Drehen des Geräts ist kein Wechsel in den Hintergrund
+        if (!isChangingConfigurations) vm.wentToBackground()
         super.onStop()
     }
 
@@ -122,6 +123,8 @@ class MainActivity : FragmentActivity() {
 
     /** Kalenderdatei lesen, höchstens [IcsLeser.MAX_BYTES]; Fehler → null. */
     private suspend fun readCalendar(uri: android.net.Uri): String? = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        // Nur Inhalte, die eine andere App freigibt; nie Dateipfade (SEC-08)
+        if (uri.scheme != android.content.ContentResolver.SCHEME_CONTENT) return@withContext null
         runCatching {
             contentResolver.openInputStream(uri)?.use { input ->
                 val bytes = input.readNBytesCompat(de.hubiplan.app.data.IcsLeser.MAX_BYTES + 1)
@@ -162,7 +165,9 @@ class MainActivity : FragmentActivity() {
             intent?.action = null
             intent?.data = null
             lifecycleScope.launch {
-                val text = inline?.takeIf { "BEGIN:VEVENT" in it } ?: uri?.let { readCalendar(it) }
+                // Mitgegebener Text mit derselben Obergrenze wie eine Datei (SEC-08)
+                val text = inline?.takeIf { it.length <= de.hubiplan.app.data.IcsLeser.MAX_BYTES && "BEGIN:VEVENT" in it }
+                    ?: uri?.let { readCalendar(it) }
                 vm.openSharedEvent(text)
             }
             return

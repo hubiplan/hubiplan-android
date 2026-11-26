@@ -382,6 +382,7 @@ internal fun openPdf(context: Context, file: File, share: Boolean): String? {
     intent.clipData = ClipData.newRawUri(file.name, uri)
     intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     return try {
+        AdminAway.allow()
         context.startActivity(if (share) Intent.createChooser(intent, tr("Quittung teilen")) else intent)
         null
     } catch (e: ActivityNotFoundException) {

@@ -186,7 +186,8 @@ object PushSetup {
     suspend fun onNewEndpoint(context: Context, token: String?, endpoint: String?) {
         val store = storeFor(context, token) ?: return
         val account = accountForToken(store, token) ?: return
-        if (endpoint == null) return
+        // Der Verteiler ist eine fremde App: nur https-Adressen an den Server melden (SEC-08)
+        if (endpoint == null || de.hubiplan.app.data.safeExternalUrl(endpoint) == null) return
         register(store, account, endpoint, kind = "unifiedpush")
     }
 

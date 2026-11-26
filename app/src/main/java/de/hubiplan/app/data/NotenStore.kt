@@ -144,7 +144,10 @@ class NotenStore(private val context: Context, accountKey: String) {
         /** Beim Abmelden: Dateien, Merkliste und offene Kopien löschen. */
         fun forget(context: Context, accountKey: String) {
             LocalAccountData.dir(context, FOLDER, accountKey).deleteRecursively()
-            context.getSharedPreferences("noten-" + LocalAccountData.id(accountKey), Context.MODE_PRIVATE).edit().clear().apply()
+            // Auch die Datei selbst entfernen, nicht nur ihren Inhalt (SEC-08)
+            val prefs = "noten-" + LocalAccountData.id(accountKey)
+            context.getSharedPreferences(prefs, Context.MODE_PRIVATE).edit().clear().commit()
+            runCatching { context.deleteSharedPreferences(prefs) }
             PultDateien.clear(context)
         }
 

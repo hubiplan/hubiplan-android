@@ -167,8 +167,12 @@ class Api(
         accept: Boolean,
     ): Request {
         // Gespeicherte Adresse mit ungültigem Port (ältere Version): Fehler melden statt Absturz (Audit F04)
-        val url = (server + path).toHttpUrlOrNull()
-            ?: throw ApiException(0, tr("Bitte die Adresse von HUBIplan angeben, z. B. verein.example.de."))
+        // Nie an einen anderen Host als die Instanz: Die Anfrage trägt Schlüssel und Signatur (SEC-01)
+        val url = try {
+            apiUrl(server, path)
+        } catch (e: UnsafePath) {
+            throw protocolError()
+        } ?: throw ApiException(0, tr("Bitte die Adresse von HUBIplan angeben, z. B. verein.example.de."))
         val builder = Request.Builder().url(url)
         if (accept) builder.header("Accept", "application/json")
         token?.let { builder.header("Authorization", "Bearer ${if (it.startsWith(TOKEN_PREFIX)) DeviceTokens.current(it) else it}") }

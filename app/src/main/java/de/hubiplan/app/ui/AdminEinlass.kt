@@ -145,6 +145,7 @@ fun CheckInScreen(
         }
         if (l.canEdit) {
             Button(onClick = {
+                AdminAway.allow()
                 scanner.launch(
                     ScanOptions()
                         .setDesiredBarcodeFormats(ScanOptions.QR_CODE)

@@ -43,8 +43,6 @@ import de.hubiplan.app.trn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
-import java.util.UUID
 
 /** Kurzstand rechts neben „Beitragsnachweise“. */
 internal fun feeProofSummary(due: Int): String =
@@ -147,7 +145,7 @@ private fun FeeYearCard(access: PortalAccess, vm: AppViewModel, st: FeeYearState
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
+    var photoUri by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf<Uri?>(null) }
     // Angefangene Eingaben: Zurück und Reiterwechsel fragen nach (Gestaltung „Frisch mobil“, U6)
     androidx.compose.runtime.key(st.discount, st.year) { rememberFormDraft(file != null, note, busy = busy, retainOnDispose = false) }
 
@@ -158,7 +156,7 @@ private fun FeeYearCard(access: PortalAccess, vm: AppViewModel, st: FeeYearState
                 runCatching { PhotoPrep.load(context, uri)?.let(PhotoPrep::jpeg) }.getOrNull()
             }
             withContext(Dispatchers.IO) {
-                File(context.cacheDir, "fotos").listFiles { f -> f.name.startsWith("nachweis-") }?.forEach { it.delete() }
+                de.hubiplan.app.data.Kamerafotos.clear(context, "nachweis")
             }
             if (jpeg == null) message = tr("Das Foto ließ sich nicht lesen.") else file = ProofFile("nachweis.jpg", "image/jpeg", jpeg)
         }
@@ -179,12 +177,14 @@ private fun FeeYearCard(access: PortalAccess, vm: AppViewModel, st: FeeYearState
             }
         }
     }
-    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok -> if (ok) takePhoto(photoUri) }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        // Abgebrochen: die leere oder halbe Aufnahme nicht liegen lassen (SEC-05)
+        if (ok) takePhoto(photoUri) else de.hubiplan.app.data.Kamerafotos.clear(context, "nachweis")
+    }
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> takePhoto(uri) }
     val pdf = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri -> takePdf(uri) }
     fun startCamera() {
-        val dir = File(context.cacheDir, "fotos").apply { mkdirs() }
-        val f = File(dir, "nachweis-${UUID.randomUUID()}.jpg")
+        val f = de.hubiplan.app.data.Kamerafotos.neu(context, "nachweis")
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.dateien", f)
         photoUri = uri
         camera.launch(uri)

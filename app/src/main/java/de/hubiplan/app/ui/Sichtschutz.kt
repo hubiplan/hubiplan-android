@@ -4,7 +4,10 @@ import android.app.Activity
 import android.content.Context
 import android.view.WindowManager
 import android.webkit.CookieManager
+import android.os.Handler
+import android.os.Looper
 import android.webkit.WebStorage
+import android.webkit.WebView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.platform.LocalContext
@@ -59,16 +62,28 @@ object Sichtschutz {
      * nutzt dieselbe Instanz, dann bleibt deren Speicher (dort kann noch etwas Ungesendetes
      * liegen). [anyLeft]: Es gibt noch irgendein Konto; ohne Konto wird alles geleert.
      */
-    fun clearWebData(server: String, othersOnServer: Boolean, anyLeft: Boolean) {
-        runCatching {
-            if (!anyLeft) {
-                WebStorage.getInstance().deleteAllData()
+    fun clearWebData(context: Context, server: String, othersOnServer: Boolean, anyLeft: Boolean) {
+        val app = context.applicationContext
+        val work = Runnable {
+            runCatching {
+                if (!anyLeft) {
+                    WebStorage.getInstance().deleteAllData()
+                } else if (!othersOnServer) {
+                    WebStorage.getInstance().deleteOrigin(server.trimEnd('/'))
+                }
+            }
+            // Sitzung des Standmodus und Zwischenspeicher nie über die Abmeldung hinaus behalten,
+            // auch wenn noch andere Konten verbunden sind (Sicherheitsprüfung 26.11.2026,
+            // SEC-04). Die Webansicht dient nur dem Standmodus; ein Konto auf derselben Instanz
+            // öffnet ihn mit seinem Zugang neu.
+            runCatching {
                 CookieManager.getInstance().removeAllCookies(null)
                 CookieManager.getInstance().flush()
-            } else if (!othersOnServer) {
-                WebStorage.getInstance().deleteOrigin(server.trimEnd('/'))
             }
+            runCatching { WebView(app).apply { clearCache(true); destroy() } }
         }
+        // Die Webansicht verlangt den Hauptfaden; der Abgleich im Hintergrund ruft von woanders
+        if (Looper.myLooper() == Looper.getMainLooper()) work.run() else Handler(Looper.getMainLooper()).post(work)
     }
 }
 

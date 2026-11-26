@@ -387,7 +387,7 @@ internal class Viewer(
         scope.launch {
             try {
                 val bytes = load(api)
-                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Ansicht.store(context, name, bytes) }
+                val file = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { Ansicht.store(context, vm.localAccountKey().orEmpty(), name, bytes) }
                 messages?.host?.currentSnackbarData?.dismiss()
                 fail(openForViewing(context, file, mime))
             } catch (e: ApiException) {

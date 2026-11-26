@@ -22,6 +22,17 @@ fun openInBrowser(context: Context, url: String, messages: ActionMessages? = nul
     return ok
 }
 
+/**
+ * Geheimes (z. B. Passwort eines Videoraums) in die Zwischenablage legen: ab Android 13 als
+ * vertraulich markiert, damit es nicht in der Vorschau der Zwischenablage steht (SEC-06).
+ */
+fun copySensitive(context: Context, label: String, text: String) {
+    val clip = android.content.ClipData.newPlainText(label, text)
+    val key = if (android.os.Build.VERSION.SDK_INT >= 33) android.content.ClipDescription.EXTRA_IS_SENSITIVE else "android.content.extra.IS_SENSITIVE"
+    clip.description.extras = android.os.PersistableBundle().apply { putBoolean(key, true) }
+    runCatching { context.getSystemService(android.content.ClipboardManager::class.java)?.setPrimaryClip(clip) }
+}
+
 /** Kamera ist für diese App erlaubt. */
 fun cameraAllowed(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
