@@ -1,0 +1,2 @@
+• Mehr Sicherheit: Die App spricht nur noch mit der eigenen HUBIplan-Instanz, die Verwaltung sperrt beim Verlassen der App sofort, und Kurzmitteilungen an Mitglieder gehen nur mit entsperrter Verwaltung hinaus.
+• Standzugänge und Dateien für andere Apps liegen je Konto getrennt; nach dem Abmelden wird gründlicher aufgeräumt.

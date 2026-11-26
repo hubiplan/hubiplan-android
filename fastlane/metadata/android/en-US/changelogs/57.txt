@@ -1,0 +1,2 @@
+• More security: the app only talks to your own HUBIplan instance, administration locks as soon as you leave the app, and short messages to members can only be sent with administration unlocked.
+• Stand logins and files shared with other apps are kept separate per account; signing out cleans up more thoroughly.
